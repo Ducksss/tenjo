@@ -17,6 +17,12 @@ The user-selected [Invstor X reference](https://invstortemplate.webflow.io/) inf
 | [walkthrough-mobile.png](walkthrough-mobile.png)   | 390 px wide  | Same example entry on mobile                                          |
 | [drop-desktop.png](drop-desktop.png)               | 1440 px wide | Real local test-identity drop and public record                       |
 | [drop-mobile.png](drop-mobile.png)                 | 390 px wide  | Same local drop on mobile                                             |
+| [diagram-flow.svg](diagram-flow.svg)               | 760 × 508    | README flow from entry to pickup                                      |
+| [diagram-system.svg](diagram-system.svg)           | 760 × 400    | README map of how the pieces connect; Sui dashed as planned           |
+| [diagram-entry.svg](diagram-entry.svg)             | 760 × 704    | README decision tree for entry, in code order                         |
+| [diagram-pickup.svg](diagram-pickup.svg)           | 760 × 704    | README decision tree for pickup, in code order                        |
+
+The four diagrams are plain SVG in the palette above, drawn from the shared PRD and the checks in `src/lib/service.ts` and `src/lib/world.ts`. Edit them directly, and update them when those checks change.
 
 Screenshots come from the running Next.js app. Discovery and walkthrough captures use an empty local database matching the hosted first-visit experience; drop captures use labelled local test identities. They contain no real World proofs, personal details or real-money transactions. The ticket and console illustrations are CSS. None of the screenshots is a generated mockup.
 
