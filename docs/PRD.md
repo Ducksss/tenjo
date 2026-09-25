@@ -1,142 +1,257 @@
-# Pity Lottery PRD
+# Tenjō (天井) — Product Requirements Document
 
-Sep 25, 2026 · @Chai. Working name: **Tenjō (天井)**.
+Version 1.0 · September 26, 2026 · Product owner: Chai · Status: draft for review
 
-Source: user-provided PRD in the Codex task; original shared document: https://claude.ai/code/artifact/362406eb-c88c-46be-862b-f67704fb70aa . This repository transcription preserves the requirements and decisions; formatting and surrounding prose are condensed. Open questions are not resolved by their inclusion here.
+**One person, one entry, and every loss counts.**
 
-## Goal and problem
+This PRD describes Tenjō from the current repository, including the in-progress walkthrough and organiser improvements. It separates implemented behavior from integration gates and future scope. Product outcomes and measurement proposals are hypotheses, not observed results. The [original September 25 PRD](PRD-ORIGINAL.md) is preserved; R1–R15 retain their original meaning. This revision adds R16 for the explanatory walkthrough.
 
-Ship a working lottery by **September 27, 2026, 07:00 JST**. World ID gates entries and pickup. Each loss earns an extra ticket next time, scoped to the same series. Sui eventually runs the draw and makes every count public. Scarce Japanese drops attract duplicate accounts, while repeat losers cannot inspect the draw. Nintendo's first Switch 2 lottery attracted about 2.2 million applications; account/playtime restrictions are proxies for a real person.
+## 1. Product summary
 
-Hackathon success: full live run, World failure paths, and a draw inspectable on a Sui explorer. Phase 1 must work independently if Sui misses the cut line.
+Tenjō is a free lottery for scarce product drops. Fans enter once using a verified identity. Each unsuccessful entry earns an additional ticket in the next drop of the same series, up to six tickets total. A win resets that series’ loss count. Anyone can inspect anonymous entries, ticket weights, results and loss history.
 
-## Requirements
+The core product combines three capabilities:
 
-| ID  | Requirement                                                  | Phase              | Acceptance                                                                      |
-| --- | ------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------- |
-| R1  | Organiser creates item, quantity, entry window and series    | 1                  | Drop page shows item, close time and number of winners                          |
-| R2  | World proof verified on server before saving an entry        | 1                  | Valid simulator proof enters; unverified or tampered proof saves no entry       |
-| R3  | One entry per person per drop                                | 1                  | Re-entry from any account/browser is refused, with no second entry              |
-| R4  | Stable anonymous code across drops                           | 1                  | Same identity has same code in two drops; another identity has a different code |
-| R5  | Tickets = 1 + series losses, maximum 5 extra                 | 1                  | Three losses give four tickets                                                  |
-| R6  | Weighted draw after close                                    | 1 server / 2 Sui   | No early draw; quantity winners; log lists all entrants' weights                |
-| R7  | Losers +1, winners reset to zero                             | 1 server / 2 Sui   | Counts change through a draw only                                               |
-| R8  | Fresh World proof for pickup, winner only                    | 1                  | Winner collects once; another identity refused                                  |
-| R9  | Public audit and code lookup                                 | 1 database / 2 Sui | Entries, weights, winners, record and loss counts inspectable                   |
-| R10 | Built-in Sui randomness adapted from raffle example          | 2                  | Explorer transaction names winning codes                                        |
-| R11 | Public Sui ledger per series                                 | 2                  | Counts match audit; only draw settlement updates them                           |
-| R12 | Unclaimed wins pass to next drawn person after pickup window | Stretch            | Next entrant offered item                                                       |
-| R13 | Sui deposits, full loser refunds, small World-cost fee       | Stretch            | Losing test wallet refunded in draw transaction                                 |
-| R14 | No names, emails, phone numbers                              | 1                  | Only anonymous codes and drop data retained                                     |
-| R15 | World integration debrief                                    | 1                  | README records observed timing, friction, missing docs, top improvement         |
+- **Verified participation:** World ID is intended to enforce one eligible identity per drop without Tenjō collecting contact details.
+- **Recognition of repeat participation:** losses increase a fan’s future entry weight within the same series.
+- **Visible allocation:** a public record explains which weights entered the draw, who won and how loss counts changed.
 
-Out of scope: real money/mainnet, store/ticketing integrations, names/KYC, native mobile apps, multiple credential tiers, organiser billing. Free entry; no legal claim about real-money operation.
+Phase 1 uses a server draw and database ledger. Phase 2 proposes Sui randomness and an on-chain ledger. The current product requires trust in the server and database operator; a public record alone does not establish independent fairness.
 
-## Identity and trust
+## 2. Problem and product hypothesis
 
-Use @worldcoin/idkit, chosen passport credential (including My Number Card per PRD); Proof of Human/Orb is fallback if document proofs cannot run in staging. Selfie Check alone lacks the needed uniqueness assurance. Accepted limitation: a person holding both document types might get two World IDs.
+Fans repeatedly miss scarce drops without their previous participation affecting the next attempt. Organisers need a way to discourage duplicate entries and explain allocation decisions. Observers need enough information to inspect outcomes without seeing names or contact details.
 
-- One fixed World action for entry and pickup. Code is a short hash of the stable nullifier.
-- Backend issues a fresh signed request. Proof signal binds `enter:<drop>` or `collect:<drop>`.
-- Backend forwards original IDKit result bytes directly to `POST https://developer.world.org/api/v4/verify/{rp_id}`; never trust browser success alone.
-- Pickup requests `require_user_presence` (live selfie); if unavailable in simulator, demonstrate without it and label it untested.
-- Staging uses World's simulator and `allow_legacy_proofs: true`; staging actions verify only simulator proofs.
-- If repeated action proofs fail, investigate session fallback: prove uniqueness at signup and session on later entries.
+**Hypothesis:** a clear, capped benefit for previous losses, combined with identity verification and a public record, will make repeat participation feel more worthwhile and allocation easier to understand.
 
-## Pity and draw rules
+The mechanism intentionally gives different weights to people with different loss histories. It does not promise equal odds, eventual victory, resale prevention or universal person-level uniqueness beyond the selected identity credential’s guarantees.
 
-Base 1; +1 per loss; at most 6 total tickets. Win resets loss count even if uncollected. Counts scoped to artist/shop/product series, no manual admin editing. No guaranteed win at a fixed count.
+## 3. Users and jobs to be done
 
-Weighted sampling without replacement: a selected person's whole weight leaves the pool. For weights 1, 3, 6, first-pick odds are 10%, 30%, 60%; the second pick uses remaining weights. Draw log lists entrants and tickets.
+| User                     | Need                                                | Successful experience                                                                  |
+| ------------------------ | --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| First-time fan           | Understand the rules and enter an eligible drop     | Sees the item, deadline and ticket rule; verifies; receives an anonymous receipt       |
+| Returning fan            | Carry forward losses and understand the next chance | Uses the same identity; receives the correct series weight; inspects previous outcomes |
+| Winning fan              | Claim an allocation securely                        | Completes a fresh identity check; collects once; sees confirmation                     |
+| Organiser                | Allocate a limited quantity                         | Sets item details, quantity, series and JST schedule; obtains a settled public result  |
+| Public observer or judge | Check the mechanism and evidence                    | Reviews entries, weights, ordered winners and loss changes without signing in          |
 
-## Phase 2 contract sketch
+Initial context is a small, English-language hackathon demonstration of Japanese-style scarce drops. Broader demand, organiser adoption and retention remain unvalidated.
 
-- Shared `PityLedger` per series maps anonymous codes to loss counts.
-- Shared `Drop` stores close time, item count, entries, winners and state.
-- Server wallet owns `RegistrarCap`, the only authority to add entries.
-- `add_entry(drop, cap, code)` before close derives capped weights from the ledger.
-- Private entry `draw(drop, random, clock)` callable after close, multiple weighted winners.
-- Separate `settle(drop, ledger)` transaction increments losers, resets winners.
-- Use built-in `Random` at 0x8, clock at 0x6. Fixed work over every entry for every pick; no winner-dependent gas paths. Isolate randomness transaction, separate settlement. Validate against current Sui guide/compiler.
-- Server controls verified registration and pickup; chain controls weights, draw, counts. Database mirrors chain records. A few hundred entrants maximum for demo; larger drops need batching.
+## 4. Goals, scope and current status
 
-## Data model
+### Goals
 
-Hosted Postgres; Next.js; @worldcoin/idkit; phase 2 @mysten/sui; Vercel. Signing/wallet keys server environment only.
+1. Demonstrate the full loop: create → enter → draw → update loss counts → collect → enter the next drop.
+2. Prevent duplicate entry and repeat collection for the same verified identity, including concurrent requests.
+3. Make the ticket formula and each participant’s result understandable and inspectable.
+4. Preserve minimal identity data and disclose the public linkability of anonymous codes.
+5. Validate real World verification before describing the integrated flow as complete.
 
-- `members(code, created_at)` unique code, no personal/contact details.
-- `series(id, name, max_extra)` max_extra=5.
-- `drops(id, series_id, title, items, opens_at, closes_at, state, sui_drop_id, draw_tx)` draft → open → closed → drawn → settled.
-- `entries(drop_id, member_code, tickets, created_at)` unique drop/code.
-- `results(drop_id, member_code, outcome, pick_order)` only draw writes.
-- `pity(series_id, member_code, losses)` only settlement writes; mirrors chain in phase 2.
-- `pickups(drop_id, member_code, collected_at)` at most one per winner.
-- `proof_log(route, outcome, duration_ms, created_at)` timings only, never proof contents.
+### Delivery scope
 
-## API
+| Scope                   | Included                                                                                                         | Status based on repository evidence                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Phase 1 core            | Discovery, organiser creation, entries, weighted draw, settlement, pickup checks, public records and code lookup | Implemented with local test identities and automated test coverage                        |
+| First-visit explanation | Browser-only walkthrough of loss, win, duplicate refusal and pickup                                              | Present in current working tree; scripted, ephemeral and separate from real entries       |
+| World integration       | Signed requests, server verification, stable codes and replay protection                                         | Implemented and mock-tested; first real simulator success remains pending in project docs |
+| Production pickup       | Fresh winning identity plus server-attested liveness                                                             | Blocked pending liveness validation and implementation of a supported enforcement path    |
+| Hosting                 | Vercel application with hosted Postgres                                                                          | Reported deployed in operations docs; deployment was not revalidated for this PRD         |
+| Phase 2                 | Sui registration, randomness, ledger, settlement and explorer evidence                                           | Planned; no Move package or chain integration implemented                                 |
+| Stretch                 | Unclaimed-item handoff and test deposits/refunds                                                                 | Planned only after both phase gates pass                                                  |
 
-- POST `/api/rp-signature`: fresh IDKit request signature.
-- POST `/api/drops/:id/enter`: verify purpose-bound proof, reject repeat, persist; phase 2 registers on chain.
-- POST `/api/drops/:id/draw`: anyone after close; server crypto.randomInt in phase 1, draw + settle + mirror in phase 2.
-- POST `/api/drops/:id/collect`: fresh proof with liveness, winning code, collect once.
-- GET `/api/drops/:id/public`: entries, tickets, winners, chain links.
-- GET `/api/codes/:code`: entries, results, series loss counts.
-- POST `/api/admin/drops`: one admin password for demo; creates drop.
+### Non-goals for the MVP
 
-## Demo and failures
+Real-money entry, mainnet payments, organiser billing, native mobile apps, commerce/ticketing integrations, shipping or physical fulfilment management, names/contact profiles, simultaneous credential tiers, guaranteed wins and large-scale drops are excluded. Pickup records a claim; it does not itself prove physical delivery. Japanese localisation is outside the current English build.
 
-Four minutes: hook (2.2m applications); A enters with three past losses/four tickets; same A from second browser refused; close and draw; inspect explorer; loser gets one extra ticket; winner collects and wrong identity refused; close: “One person, one entry, and every loss counts, in public.” Demo history is created by setup script and labelled as setup on audit.
+## 5. Core product rules
 
-| Path                | UI                  | Effect                                          |
-| ------------------- | ------------------- | ----------------------------------------------- |
-| Repeat person       | Already entered     | No second entry                                 |
-| Cancel in World App | Entry not completed | No entry                                        |
-| Missing credential  | Credential needed   | No entry                                        |
-| Wrong collector     | Pickup refused      | Item uncollected                                |
-| Selfie fails        | Pickup refused      | Item uncollected                                |
-| Early draw          | Draw not open yet   | No state changes                                |
-| World unavailable   | Try again shortly   | No entry, outcome is unavailable, not rejection |
+### Entries and tickets
 
-## Milestones (JST)
+- A **series** groups related drops from a shop, artist or product line. A **drop** is one allocation event in that series.
+- One verified code may enter a drop once. Extra tickets increase that single entry’s weight; they are not extra entries.
+- `tickets = 1 + min(5, losses in this series since the last win)`.
+- The ticket cap is six. The stored loss count may continue above five.
+- A first-time participant receives one ticket. Three prior losses give four tickets. Losses in another series have no effect.
+- Weights are captured at entry. Only draw settlement changes loss counts; ordinary admins cannot manually edit them.
+- A series may have only one unsettled drop. The next drop cannot be created until its predecessor settles.
+- The current limit is 300 entrants per drop and 1–300 available items.
 
-- Fri 23:00–01:00: staging app/action/key, first real server verification; log time; Orb fallback if passport fails.
-- Sat 09:00–13:00: complete Phase 1. **Cut line 1: full server draw run works.**
-- Sat 13:00–19:00: Move testnet and integration. **Cut line 2: explorer draw or ship Phase 1.**
-- Sat 19:00–23:00: R13 then R12 only if Phase 2 passed.
-- Sun 00:00–05:00: setup, two clean four-minute rehearsals, video, README and debrief.
-- Sun 07:00 submit; actual deadline 09:00.
+### Draw and settlement
 
-## Submission checklist
+- Entry is accepted at or after opening time and strictly before closing time, using the server/database clock.
+- After closing, any same-origin caller may trigger the draw; the UI requires confirmation because the result is final.
+- Select `min(items, entrants)` distinct winners using weighted sampling without replacement. A winner’s entire weight leaves the pool.
+- For weights 1, 3 and 6, first-pick probabilities are 10%, 30% and 60%. Later picks use the remaining pool. These are not the final probabilities of winning at least one item in a multi-item draw.
+- Every losing entrant gains one loss; each winner resets to zero even if the item is never collected. Nonparticipants’ counts do not change.
+- The Phase 1 draw and settlement commit atomically. Repeated or concurrent draw requests return the existing result and never reroll.
+- If entrants are fewer than items, all entrants win once and the remainder is recorded as unallocated. An empty drop settles with zero winners.
 
-- [ ] New public repo started this weekend (no earlier project code reuse).
-- [ ] README names server verification file/line and actual Sui package ID.
-- [ ] Trust moment and credential choice explained.
-- [ ] Live successful verification and refusal demonstrated.
-- [ ] Real measured World debrief complete.
-- [ ] Sui drop, draw, ledger explorer links.
-- [ ] Rehearsal video.
-- [ ] World Best Use of IDKit; Sui DeFi & Payments only if deposits ship.
+### Identity and pickup
 
-## Risks and open questions
+- A stable 32-character anonymous code represents an identity across drops; loss counts remain series-specific.
+- Entry and pickup require separately issued, fresh challenges bound to purpose and drop. The code itself is a public lookup key, not a credential for claiming an item.
+- Only a settled drop’s winner may collect, once. A failed or wrong-identity attempt leaves the item uncollected.
+- The selected credential and identity configuration are pinned after the first accepted real entry. Changes require an explicit migration or a fresh database.
+- Document credential compatibility, repeat proofs and the original dual-document uniqueness concern remain validation questions. Orb is the planned fallback and must be selected before accepting real entries.
 
-Sui learning time: hard cutoff. Simulator passport failure: Orb fallback. Repeated action limitation: session fallback. Simulator selfie unsupported: disclose untested. Concert Kit comparison: this adds loss history and auditable draws. Wi-Fi: hotspot/video. Dual documents: accepted limitation. Real money: excluded, legal review before launch.
+## 6. User journeys and screens
 
-Unresolved decisions from the source:
+| Journey          | Screens and behavior                                                                                                                                       | Completion                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Discover         | `/` shows available drops, quantities and schedules. Empty state explains availability and links to the walkthrough.                                       | Fan opens a drop or starts the explanation               |
+| Learn            | `/demo` takes Fan A through four tickets, a loss, five tickets, a win and pickup; includes duplicate and wrong-identity refusals.                          | Fan understands the rule and can restart or browse drops |
+| Enter            | `/drops/[id]` explains item, series, entry window, ticket rule and verification availability; successful server commit displays a code and ticket receipt. | One durable entry exists                                 |
+| Check history    | `/codes` accepts a full code; `/codes/[code]` shows entries, results and per-series loss counts.                                                           | Fan can explain their current count and next weight      |
+| Draw and inspect | Drop page confirms finality before drawing; `/audit` and drop records expose entries, weights and results.                                                 | One settled draw and matching public history exist       |
+| Collect          | Winning fan starts a fresh identity check on the drop page.                                                                                                | One pickup is saved and confirmed                        |
+| Organise         | `/admin` collects title, description, quantity, series and opening/closing times; publishing requires the organiser password.                              | Validated drop is created and its page opens             |
 
-- Does this replace the existing bank account-unfreeze helper? Team/@Chai, Sep 25.
-- Does staging support passport with legacy proofs? World booth, Sep 25.
-- Repeated action proofs and stable nullifier? World booth, Sep 25.
-- Simulator presence and production My Number Card preset compatibility? World booth, Sep 25.
-- Do deposits/refunds qualify for Sui DeFi & Payments? Sui booth, Sep 26.
-- Ship deposits? Team, Sep 26 13:00.
-- Scope code hashing to series to reduce cross-series linking? Source recommends yes, but R4 describes stable cross-drop codes. Needs explicit decision.
-- Confirm Tenjō name, demo item and series.
+The hosted walkthrough must say that outcomes are scripted and no World check, real prize or saved entry exists. Refresh or restart clears its state. It must not call mutation APIs or fabricate public records. The separate local demo uses labelled test identities and real local database mutations; neither mode is evidence of real World verification.
 
-## Sources from the PRD
+## 7. Functional requirements and acceptance
 
-- https://mynintendonews.com/2025/04/23/japan-nintendo-confirms-2-2-million-people-applied-for-the-switch-2-lottery/
-- https://www.animenewsnetwork.com/interest/2025-04-08/my-nintendo-store-sets-restrictions-on-switch-2-pre-orders-in-japan/.223238
-- https://mynintendonews.com/2026/05/25/japan-nintendo-scraps-50-hour-playtime-requirement-to-get-switch-2-from-my-nintendo/
-- https://www.bcnretail.com/market/detail/20260210_596529.html
-- World Concert Kit, Apr 17 2026; World credential, IDKit, sessions and RP signatures guides.
-- Sui raffle example (example1.move) and on-chain randomness guide.
+Priority: **P0** = Phase 1 acceptance requirement; **P1** = Phase 2; **P2** = conditional stretch. Priorities describe delivery order, not proof of completion.
+
+| ID  | Priority | Requirement                          | Acceptance criteria                                                                                                                                                                                                                               |
+| --- | -------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | P0       | Organiser creates a drop             | Valid password and details create a drop showing item, quantity, series and schedule. Invalid quantity, malformed dates, close-before-open and a busy series create no drop. JST inputs preserve the intended instant in other browser timezones. |
+| R2  | P0       | Verify World proofs on the server    | A real valid staging proof admits an eligible identity. Tampered, missing, wrong-credential, wrong-purpose or expired proofs create no member or entry. Browser success alone is insufficient.                                                    |
+| R3  | P0       | One entry per identity per drop      | Re-entry from another browser or concurrent request produces no second entry. The original ticket weight remains unchanged.                                                                                                                       |
+| R4  | P0       | Stable anonymous receipt             | The same verified identity receives the same code in two drops under the pinned policy; a different identity receives a different code. Cross-series linkability is disclosed.                                                                    |
+| R5  | P0       | Apply capped series tickets          | Zero, three, five and six prior losses yield one, four, six and six tickets respectively. A different series starts at one unless it has its own losses.                                                                                          |
+| R6  | P0 / P1  | Draw after close                     | Early draw changes nothing. Eligible draw returns the required distinct winners, or all entrants when undersubscribed. Record includes every entry’s weight and ordered picks. Phase 1 uses server randomness; Phase 2 uses Sui.                  |
+| R7  | P0 / P1  | Settle loss history once             | Losers increment once, winners reset once, nonparticipants remain unchanged. Retrying preserves the result. Phase 1 failure rolls back the entire draw and settlement.                                                                            |
+| R8  | P0       | Winner-only pickup                   | Fresh proof for the winner collects once. Wrong identity, replay and second collection are refused. Production remains disabled until server-attested liveness is validated; any staging fallback is explicitly marked untested.                  |
+| R9  | P0 / P1  | Public records and lookup            | Without login, inspect entries, weights, winners, pickup status and before/after counts; search and paginate records; look up a code. Sui links appear only after real transactions exist.                                                        |
+| R10 | P1       | Sui randomness                       | A published testnet package performs a weighted draw after close and exposes a transaction identifying winning codes. Current Sui implementation guidance must be validated before build.                                                         |
+| R11 | P1       | Sui series ledger                    | On-chain counts match settled audit records; only authorised settlement changes them. Registration derives weights from the ledger; failed mirroring is recoverable without repeating a draw.                                                     |
+| R12 | P2       | Unclaimed-item handoff               | After a defined pickup window, the next eligible person is offered the allocation once. Deadline, alternate ordering and loss-count consequences require a product decision before implementation.                                                |
+| R13 | P2       | Test deposits and refunds            | Losing test wallets receive the required full refund with settlement; fee rules and failure recovery are defined before implementation. No real-money or mainnet rollout is authorised by this PRD.                                               |
+| R14 | P0       | Minimise retained identity data      | No names, emails, phone numbers, raw proofs or raw nullifiers are stored. Public codes and lottery records are retained; proof logs contain only purpose, outcome, timing and timestamp.                                                          |
+| R15 | P0       | Record the World integration debrief | Document measured first real verification timing, observed friction, unresolved behavior and the highest-value improvement. Pending measurements remain labelled pending.                                                                         |
+| R16 | P0       | Explain the loop without credentials | Walkthrough demonstrates loss increment, ticket cap explanation, win reset, duplicate refusal and matching-identity pickup. Restart/refresh resets example state; no entry or proof is saved.                                                     |
+
+## 8. Failure behavior and interaction requirements
+
+| Condition                                         | User-facing behavior                                                     | Data effect                                 |
+| ------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------- |
+| Duplicate entry                                   | “Already entered”; explain one entry per person                          | No second entry or weight change            |
+| Cancelled verification                            | Explain entry was not completed; allow a new attempt                     | No entry                                    |
+| Missing credential or invalid proof               | Explain what is required or why verification was refused                 | No member or entry created                  |
+| World unavailable or rate-limited                 | Temporary-unavailability message with manual retry                       | No entry; distinguish outage from rejection |
+| Missing configuration                             | Clearly state verification is unavailable                                | Fail closed                                 |
+| Closed, not-yet-open or full drop                 | Explain current eligibility state                                        | No entry                                    |
+| Early draw                                        | “Draw not open yet”                                                      | No state change                             |
+| Wrong collector, expired proof or failed presence | Pickup refused with a useful next step                                   | No pickup                                   |
+| Duplicate pickup                                  | “Already collected”                                                      | No second pickup                            |
+| Unknown code or empty search                      | Clear no-results state and recovery path                                 | Read-only                                   |
+| Invalid organiser input                           | Preserve values, link errors to fields and focus the first invalid field | No drop                                     |
+| Interrupted mutation response                     | Explain uncertainty and offer record refresh before retry                | Do not automatically repeat the mutation    |
+
+Primary flows must work by keyboard and on mobile. Use labelled controls, visible focus, persistent inline alerts, busy states and status announcements. Tables may scroll within their own region without overflowing the page. Dates must explicitly communicate JST; browser locale must not silently shift an organiser’s schedule. Entry, draw and pickup success may appear only after server confirmation.
+
+## 9. Data, APIs and trust boundaries
+
+### Product records
+
+| Record            | Purpose and invariant                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `members`         | Unique anonymous code; no contact profile                                                       |
+| `series`          | Related-drop grouping with five maximum extra tickets                                           |
+| `drops`           | Item details, quantity, schedule, state and demo/setup labels; optional future chain references |
+| `entries`         | One row per drop/code with captured ticket weight                                               |
+| `results`         | Outcome, winner order and before/after loss counts                                              |
+| `pity`            | Current losses per series/code                                                                  |
+| `pickups`         | At most one claim per winning code/drop, with presence-validation classification                |
+| `draw_records`    | Inputs, rolls, remaining pools, results, unallocated items and fingerprint                      |
+| `challenges`      | Fresh nonce, drop, purpose, expiry and consumption state                                        |
+| `identity_policy` | Pinned identity configuration to prevent accidental identity splitting                          |
+| `proof_log`       | Verification outcome and timing without proof contents                                          |
+
+In Phase 1, creation stores an `open` drop; opening and closing timestamps control actual entry eligibility. A closed-by-time drop may still have `open` stored state until draw. Successful draw moves directly to `settled` within one transaction. Schema values such as `draft` and `drawn` do not imply implemented publishing or intermediate-settlement workflows.
+
+### Application interface
+
+| Endpoint                      | Purpose                                                     |
+| ----------------------------- | ----------------------------------------------------------- |
+| `POST /api/rp-signature`      | Issue a fresh signed verification challenge                 |
+| `POST /api/drops/:id/enter`   | Verify proof and persist one eligible entry                 |
+| `POST /api/drops/:id/draw`    | Draw and settle after close, or return the committed result |
+| `POST /api/drops/:id/collect` | Verify a fresh winning identity and record pickup           |
+| `GET /api/drops/:id/public`   | Read paginated entries, winners and draw record             |
+| `GET /api/codes/:code`        | Read paginated history and series counts                    |
+| `POST /api/admin/drops`       | Authorise and create a drop                                 |
+
+The current architecture uses Next.js/React, server-side World ID verification, hosted Postgres and local PGlite. Implementation details live in [IMPLEMENTATION.md](IMPLEMENTATION.md) and [OPERATIONS.md](OPERATIONS.md).
+
+### Security, privacy and operational requirements
+
+- Verify the original proof body server-side and validate the configured credential result, identity, action, environment, nonce and purpose-bound signal. Challenge consumption must commit with the protected mutation.
+- Keep database and signing credentials server-only. Do not persist proofs, organiser passwords or signing material in browser storage.
+- Enforce origin checks, bounded request bodies, database uniqueness and transactional locking. Handle dependency failure without partial lottery state.
+- Restrict local test-identity routes to explicitly enabled, non-production localhost use; never admit those identities to real drops.
+- Treat public codes as pseudonymous and linkable across series. Series-scoped codes remain an open privacy decision requiring a migration design.
+- Explain that the Phase 1 SHA-256 fingerprint supports record comparison, not proof of unbiased randomness or protection from an operator rewriting both the record and hash.
+- Use hosted Postgres for serverless deployment. Keep local fixture databases isolated from production and from simultaneous PGlite processes.
+- Retention periods, abuse controls, load targets and production service objectives remain to be defined before a broader launch; this prototype has no established production SLA.
+
+## 10. Success measures and validation
+
+### Release acceptance measures
+
+| Measure                         | Required evidence                                                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Core loop correctness           | Complete local flow across two drops; formula, settlement and history agree                                                                 |
+| Duplicate and replay protection | Zero additional entries, settlements or pickups in tested duplicate/concurrent/replay cases                                                 |
+| Allocation integrity            | Distinct winner count equals `min(items, entrants)`; all before/after counts reconcile                                                      |
+| World integration               | At least one real server-verified simulator success, duplicate refusal and invalid-proof refusal; stable identity demonstrated across drops |
+| Pickup readiness                | Demonstrated server-attested liveness for production, or explicitly labelled staging-only fallback                                          |
+| Presentation readiness          | Two clean four-minute rehearsals, recording and measured integration debrief                                                                |
+| Phase 2 completion              | Real package ID and explorer transactions for registration, draw and settled ledger                                                         |
+
+Existing tests cover domain rules, races, HTTP protections, mocked proof verification and browser journeys, including the current walkthrough and JST scheduling changes. Their presence is evidence of intended checks, not a fresh passing test run for this document. Mocked World tests cannot satisfy the real integration gate.
+
+### Product learning measures — proposed, not instrumented
+
+- **Rule comprehension:** can a fan explain three losses → four tickets, the six-ticket cap, series scope and reset after winning in a short usability check?
+- **Entry completion:** accepted entries divided by eligible entry-flow starts; classify cancellations, refusals and dependency outages separately.
+- **Verification friction:** successful verification latency and failure categories, using minimal timing logs.
+- **Repeat participation:** previous losers who enter the next eligible drop in the same series divided by previous losers eligible for that drop.
+- **Pickup completion:** collected allocations divided by winning allocations, evaluated against a future agreed pickup window.
+
+Set baselines and targets after the first observed pilot. Any additional analytics must respect the minimal-data policy; do not claim retention or conversion gains before measurement.
+
+## 11. Delivery gates
+
+The original plan targets **September 27, 2026, 07:00 JST** for submission. This is the inherited team target, not an independently verified event deadline. The original detailed schedule and submission checklist remain in [PRD-ORIGINAL.md](PRD-ORIGINAL.md).
+
+1. **Phase 1 gate:** complete the server-backed lifecycle, validate real World entry/refusal and stable codes, demonstrate safe pickup behavior, and retain an inspectable record. The local implementation exists; real World evidence is outstanding in project docs.
+2. **Phase 2 gate:** only after Phase 1 passes, publish and validate Sui registration, weighted randomness, ledger settlement and database reconciliation. Design for an interrupted draw/settlement sequence and bounded work at the demo scale. If this gate misses the cut line, ship Phase 1 with its server-trust disclosure.
+3. **Stretch gate:** consider test deposits/refunds, then unclaimed handoff, only after both prior gates pass and their unresolved rules are approved.
+4. **Submission gate:** complete two rehearsals, video, setup instructions, honest integration debrief and real evidence links for every claimed integration.
+
+## 12. Risks and open decisions
+
+| Risk or decision                                  | Current position                                                                                    | Owner / resolution gate                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Real document proofs and repeated-action identity | Mocked behavior is insufficient; verify simulator and device behavior                               | Integration owner + Chai, before Phase 1 acceptance     |
+| Passport, My Number Card and Orb choice           | Compatibility and dual-document uniqueness remain unresolved; do not switch after accepting entries | Chai + World support, before first real entry           |
+| Pickup presence                                   | Production blocked; staging fallback must remain labelled untested                                  | Integration owner, before production collection         |
+| Public cross-series history                       | Current code is globally stable; series-scoped privacy would change R4 behavior                     | Chai, before identity migration or broader launch       |
+| Operator influence over Phase 1                   | Records and fingerprints do not remove server/database trust                                        | Disclose for Phase 1; reassess after Phase 2 validation |
+| Sui implementation and time budget                | No chain implementation exists; preserve standalone Phase 1 release                                 | Chai, at Phase 2 cut line                               |
+| Unclaimed items                                   | Wins reset losses even without pickup; no automatic reassignment                                    | Chai, before R12 implementation                         |
+| Deposits, fees and prize scope                    | No payments implemented; confirm test-only rules and relevance                                      | Chai, before R13 implementation                         |
+| Production operations                             | Retention, abuse protection, capacity, support and recovery expectations remain unspecified         | Product and engineering owners, before broader rollout  |
+| Team/project positioning                          | Original project-replacement, naming, demo-item and prize decisions remain owner decisions          | Chai, before submission                                 |
+
+## 13. Repository evidence
+
+This PRD was derived from local sources, not external market research or a fresh deployment audit:
+
+- [README](../README.md), [original PRD](PRD-ORIGINAL.md), [implementation decisions](IMPLEMENTATION.md), [operations guide](OPERATIONS.md) and [interaction contract](../UX-CONTRACT.md).
+- [Domain rules](../src/lib/domain.ts), [lottery service](../src/lib/service.ts), [World verification](../src/lib/world.ts) and [database schema](../db/schema.sql).
+- [Application screens](../src/app), [walkthrough](../src/components/walkthrough.tsx), [organiser form](../src/components/admin-form.tsx) and [tests](../tests).
+
+When older planning prose and current behavior differ, this document explicitly describes the implemented behavior and retains unvalidated integrations as gates. The original requirements remain available for traceability.
