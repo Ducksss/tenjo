@@ -16,6 +16,7 @@ import { worldConfig } from "@/lib/world";
 import { TicketCard } from "@/components/ticket-card";
 import { DemoInvitation } from "@/components/demo-invitation";
 import { Lookup } from "@/components/lookup";
+import { Architecture } from "@/components/architecture";
 export const dynamic = "force-dynamic";
 export default async function Home() {
   const drops = await listDrops(await database(), 6, 0, true);
@@ -202,6 +203,7 @@ export default async function Home() {
           to one.
         </p>
       </section>
+      <Architecture />
       <section aria-labelledby="drops-heading">
         <div className="section-header">
           <h2 id="drops-heading">

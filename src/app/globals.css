@@ -2780,3 +2780,189 @@ main {
     bottom: 16px;
   }
 }
+
+/* Architecture: how Tenjō uses World ID, drawn large on discovery. */
+.architecture {
+  margin-bottom: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+.architecture-intro .eyebrow {
+  color: var(--primary);
+}
+.architecture-intro h2 {
+  font: 500 clamp(28px, 3.2vw, 40px)/1.15 var(--font-display);
+  letter-spacing: -1.2px;
+  margin-top: 12px;
+  max-width: 760px;
+}
+.architecture-intro p {
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 640px;
+  margin-top: 14px;
+}
+.architecture-figure {
+  margin: 28px 0 0;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+}
+.architecture-map {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.arch-band {
+  fill: var(--tint);
+  stroke: #bac7e9;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+}
+.arch-band-chip {
+  fill: var(--primary);
+}
+.arch-band-label {
+  fill: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+}
+.arch-node {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.arch-node.hub {
+  stroke: var(--primary);
+  stroke-width: 2.5;
+}
+.arch-node.next {
+  fill: var(--background);
+  stroke: var(--muted);
+  stroke-dasharray: 7 6;
+}
+.arch-kicker {
+  fill: var(--primary);
+  font-family: var(--font-code);
+  font-size: 12px;
+  letter-spacing: 1.2px;
+}
+.arch-name {
+  fill: var(--ink);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.arch-sub {
+  fill: var(--muted);
+  font-size: 15px;
+}
+.arch-lines path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+.arch-lines path.next {
+  stroke-dasharray: 6 6;
+}
+.arch-arrowhead {
+  fill: var(--muted);
+}
+.arch-step {
+  fill: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.arch-step-number {
+  fill: var(--primary);
+  font-family: var(--font-code);
+}
+.arch-next-label {
+  fill: var(--muted);
+  font-size: 14px;
+}
+.architecture-steps {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 22px 0 0;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 22px;
+}
+.architecture-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.architecture-steps h3 {
+  font-size: 15px;
+}
+.architecture-steps p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.architecture-next {
+  margin-top: 20px;
+  padding: 12px 18px;
+  border: 1px dashed #bac7e9;
+  border-radius: 12px;
+  background: var(--background);
+  font-size: 12px;
+}
+.architecture-next strong {
+  color: var(--ink);
+}
+@media (max-width: 1100px) {
+  .architecture-map {
+    display: none;
+  }
+  .architecture-steps {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .architecture-steps li {
+    padding: 16px 18px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+}
+@media (max-width: 700px) {
+  .architecture-figure {
+    padding: 18px;
+    border-radius: 24px;
+  }
+  .architecture-steps {
+    grid-template-columns: 1fr;
+  }
+}
+@media (forced-colors: active) {
+  .arch-node,
+  .arch-band {
+    stroke: CanvasText;
+  }
+  .arch-band-chip,
+  .arch-arrowhead {
+    fill: CanvasText;
+  }
+  .arch-band-label {
+    fill: Canvas;
+  }
+  .arch-kicker,
+  .arch-name,
+  .arch-sub,
+  .arch-step,
+  .arch-step-number,
+  .arch-next-label {
+    fill: CanvasText;
+  }
+  .arch-lines path {
+    stroke: CanvasText;
+  }
+}
