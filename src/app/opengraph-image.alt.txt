@@ -1,1 +1,1 @@
-Tenjō — Every loss counts. One base ticket plus three past losses gives four tickets next time.
+Tenjō — Every loss counts. A pity system for ticket ballots: one base chance plus three past losses gives four chances next time.

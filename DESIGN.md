@@ -37,7 +37,7 @@ components:
 
 ## Overview
 
-A lottery entry should feel like a ticket you can keep and inspect. Signature: a layered cobalt ticket with a perforated stub and a prominent, meaningful ticket count. Deep navy type, ice-white space, geometric sans headlines and pill actions. Discovery borrows the openness of a brand site; operational pages keep their established product controls. Avoid casino visuals, speculative wealth claims, neon web3 dashboards and decorative Japanese stereotypes.
+A lottery entry should feel like a ticket you can keep and inspect. Signature: a layered cobalt ticket with a perforated stub and a prominent, meaningful chance count. Deep navy type, ice-white space, geometric sans headlines and pill actions. Discovery borrows the openness of a brand site; operational pages keep their established product controls. Avoid casino visuals, speculative wealth claims, neon web3 dashboards and decorative Japanese stereotypes.
 
 Audience: hackathon judges and fans of scarce Japan-market drops; English demo UI, Japanese product name, all times explicitly JST. Desktop stage demo and narrow mobile layouts. No real-money use. Evidence: docs/PRD.md. The September 2026 refresh applies the user-selected Invstor reference to the existing product without changing lottery behavior.
 
@@ -61,13 +61,13 @@ Quiet cool borders on operational cards; layered ticket artwork uses a restraine
 
 ## Shapes
 
-12px inputs, pill buttons, 24–32px feature panels, dashed ticket perforation. The asymmetric discovery art corner echoes the rounded architectural forms of the reference. Circular weight markers represent actual tickets, not decoration.
+12px inputs, pill buttons, 24–32px feature panels, dashed ticket perforation. The asymmetric discovery art corner echoes the rounded architectural forms of the reference. Circular weight markers represent actual chances, not decoration.
 
 ## Components
 
 Shared controls in src/components/ui.tsx own button, field and inline status. Busy controls remain stable and disabled; statuses use aria-live. Native links navigate; buttons mutate. Organiser forms use native date/time inputs with an explicit JST wall-time contract. The platform owns the picker; src/lib/date-input.ts converts to UTC independently of the browser timezone. Group details, scheduling and publishing with field-level errors and first-error focus. Native selects are allowed with platform popup behavior. Tables are semantic with labelled overflow and URL pagination. IDKit owns its verification modal. No app modal is needed for reversible entry; draw has an inline review/confirm step because settlement is final.
 
-Lucide outlined icons at 18–22px always have text labels or accessible names. Motion is limited to small hover feedback and a pending spinner; reduced-motion disables animation. Copy names actions: Enter drop, Run draw, Collect item, Look up code. Always state demo/setup/server status accurately. No invented live odds or Sui transactions. The /demo walkthrough is a separately labelled, browser-only teaching example with scripted outcomes and arithmetic odds; it never creates database entries. Public empty states lead visitors to this walkthrough, with organiser actions secondary.
+Lucide outlined icons at 18–22px always have text labels or accessible names. Motion is limited to small hover feedback and a pending spinner; reduced-motion disables animation. Copy names actions: Enter drop, Run draw, Collect item, Look up code. Vocabulary: an entry is one person’s application to a drop; chances are how many times their name is in the draw (1 + past losses in the series, six maximum); losses are the pity counter; tickets only ever means real event tickets, so it never names draw weight in fan-facing copy. The ticket shape remains the visual signature, and code, database and API names keep `tickets`. Always state demo/setup/server status accurately. No invented live odds or Sui transactions. The /demo walkthrough is a separately labelled, browser-only teaching example with scripted outcomes and arithmetic odds; it never creates database entries. Public empty states lead visitors to this walkthrough, with organiser actions secondary.
 
 ## Do's and Don'ts
 

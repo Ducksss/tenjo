@@ -93,6 +93,7 @@ export type Drop = {
   sui_drop_id: string | null;
   draw_tx: string | null;
   entry_count: number;
+  ticket_count: number;
   entry_open: boolean;
 };
 

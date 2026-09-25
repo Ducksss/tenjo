@@ -43,10 +43,10 @@ export default async function CodePage({
             <span className="eyebrow">{p.name}</span>
             <strong>
               {1 + Math.min(5, p.losses)}
-              <small>tickets next time</small>
+              <small>chances next time</small>
             </strong>
             <p>
-              {p.losses} past loss{p.losses === 1 ? "" : "es"} · 6-ticket
+              {p.losses} past loss{p.losses === 1 ? "" : "es"} · 6 chances
               maximum
             </p>
           </article>
@@ -62,7 +62,7 @@ export default async function CodePage({
           <thead>
             <tr>
               <th>Drop</th>
-              <th>Tickets</th>
+              <th>Chances</th>
               <th>Outcome</th>
               <th>Loss count</th>
             </tr>

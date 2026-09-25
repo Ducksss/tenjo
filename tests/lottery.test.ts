@@ -15,8 +15,10 @@ import {
   drawDrop,
   collectDrop,
   codeHistory,
+  listDrops,
   publicDrop,
 } from "../src/lib/service";
+import { dropStatus } from "../src/lib/format";
 
 async function setup() {
   const db = await makeDatabase("memory://");
@@ -147,6 +149,56 @@ test("empty and undersubscribed drops settle honestly and local identity cannot 
       enterDrop(db, real.id, fan("x"), new Date(t)),
       /Demo identities/,
     );
+  } finally {
+    await db.close();
+  }
+});
+test("discovery leads with the drop fans can enter and counts every chance in the pool", async () => {
+  const db = await setup();
+  try {
+    const now = Date.now();
+    const at = (ms: number) => new Date(now + ms).toISOString();
+    const first = await createDrop(
+      db,
+      { ...input("tour"), opens_at: at(-60000), closes_at: at(-50000) },
+      { demo: true },
+    );
+    for (const name of ["a", "b"])
+      await enterDrop(db, first.id, fan(name), new Date(now - 55000));
+    // The pool is sorted by code; pick b so that a carries one loss into the next drop.
+    const bFirst = demoCode("b").localeCompare(demoCode("a")) < 0;
+    await drawDrop(db, first.id, new Date(now - 40000), () => (bFirst ? 0 : 1));
+    const next = await createDrop(
+      db,
+      { ...input("tour"), opens_at: at(-30000), closes_at: at(60000) },
+      { demo: true },
+    );
+    await enterDrop(db, next.id, fan("a"), new Date(now));
+    await enterDrop(db, next.id, fan("c"), new Date(now));
+    const closed = await createDrop(
+      db,
+      { ...input("other"), opens_at: at(-20000), closes_at: at(-10000) },
+      { demo: true },
+    );
+    const upcoming = await createDrop(
+      db,
+      { ...input("later"), opens_at: at(60000), closes_at: at(120000) },
+      { demo: true },
+    );
+    assert.equal((await listDrops(db))[0].id, upcoming.id);
+    const discovery = await listDrops(db, 20, 0, true);
+    assert.deepEqual(
+      discovery.map((d) => d.id),
+      [next.id, upcoming.id, closed.id, first.id],
+    );
+    assert.deepEqual(discovery.map(dropStatus), [
+      "open",
+      "upcoming",
+      "closed",
+      "settled",
+    ]);
+    assert.equal(discovery[0].entry_count, 2);
+    assert.equal(discovery[0].ticket_count, 3);
   } finally {
     await db.close();
   }

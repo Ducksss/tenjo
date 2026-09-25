@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { jstInputValue } from "../src/lib/date-input";
 import { demoCode } from "../src/lib/domain";
 
-test("desktop discovery, duplicate refusal, 4-ticket receipt, public history and mobile reflow", async ({
+test("desktop discovery, duplicate refusal, 4-chance receipt, public history and mobile reflow", async ({
   page,
   request,
 }) => {
@@ -13,8 +13,9 @@ test("desktop discovery, duplicate refusal, 4-ticket receipt, public history and
   await expect(
     page.getByRole("heading", { name: /Good things come/ }),
   ).toBeVisible();
-  // Isolated fixture adds a newer closed drop. Navigate to the seeded featured drop directly.
-  await page.goto("/drops/weekend-drop");
+  // The isolated fixture adds a newer closed drop; discovery still leads with the drop fans can enter.
+  await page.getByRole("link", { name: "See the open drop" }).click();
+  await expect(page).toHaveURL(/\/drops\/weekend-drop$/);
   await expect(
     page.getByRole("button", { name: "Run draw", exact: true }),
   ).toBeDisabled();
@@ -22,7 +23,10 @@ test("desktop discovery, duplicate refusal, 4-ticket receipt, public history and
     409,
   );
   await page.getByRole("button", { name: "Enter with demo identity" }).click();
-  await expect(page.getByText("4 tickets in this draw")).toBeVisible();
+  await expect(page.getByText("4 chances in this draw")).toBeVisible();
+  await expect(
+    page.getByText("1 base + 3 for past losses in this series."),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Enter with demo identity" }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "Already entered",
@@ -64,6 +68,9 @@ test("closed draw confirmation, exactly three winners, wrong collector refusal a
 }) => {
   await page.goto("/drops/closed-rehearsal");
   await expect(
+    page.getByRole("heading", { name: "The draw is next." }),
+  ).toBeVisible();
+  await expect(
     page.getByRole("button", { name: "Run draw", exact: true }),
   ).toBeEnabled();
   await page.getByRole("button", { name: "Run draw", exact: true }).click();
@@ -71,6 +78,9 @@ test("closed draw confirmation, exactly three winners, wrong collector refusal a
   await page.getByRole("button", { name: "Confirm draw" }).click();
   await expect(
     page.getByRole("heading", { name: "3 winners, on the record." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Did you win?" }),
   ).toBeVisible();
   const audit = await (
     await request.get("/api/drops/closed-rehearsal/public")
@@ -219,27 +229,29 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
   await expect(
     page.getByText("Scripted outcomes.", { exact: false }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Enter the example drop" }).click();
+  await page
+    .getByRole("button", { name: "Enter with World ID (example)" })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "One entry. Four tickets." }),
+    page.getByRole("heading", { name: "One person. One entry. Four chances." }),
   ).toBeFocused();
   await page.getByRole("button", { name: "Try entering twice" }).click();
   await expect(page.getByRole("status")).toContainText("already entered");
   await page
-    .getByRole("button", { name: "Reveal example result", exact: true })
+    .getByRole("button", { name: "Reveal the Night 1 result", exact: true })
     .click();
   await expect(page.getByRole("table")).toContainText("3 → 4");
   await context.setOffline(true);
   await page
-    .getByRole("button", { name: "Enter the next example drop" })
+    .getByRole("button", { name: "Enter Night 2 with World ID (example)" })
     .click();
-  await expect(page.getByText(/45.5% chance/)).toBeVisible();
-  await page
-    .getByRole("button", { name: "Reveal next example result" })
-    .click();
+  await expect(page.getByText(/45.5% odds/)).toBeVisible();
+  await page.getByRole("button", { name: "Reveal the Night 2 result" }).click();
   await page.getByRole("button", { name: "Try another identity" }).click();
   await expect(page.getByRole("status")).toContainText("didn’t win");
-  await page.getByRole("button", { name: "Try example pickup" }).click();
+  await page
+    .getByRole("button", { name: "Collect with World ID (example)" })
+    .click();
   await expect(page.getByRole("table")).toContainText("Won · collected");
   await expect(page.getByRole("table")).toContainText("4 → 0");
   await context.setOffline(false);
@@ -252,7 +264,7 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
   await page.getByRole("button", { name: "Start again", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("heading", { name: "You’ve shown up before." }),
+    page.getByRole("heading", { name: "You’ve applied before." }),
   ).toBeFocused();
   await expect(page.getByRole("table")).toContainText("Not entered");
   await page.screenshot({

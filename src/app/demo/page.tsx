@@ -2,7 +2,7 @@ import { Walkthrough } from "@/components/walkthrough";
 export const metadata = {
   title: "Try the walkthrough",
   description:
-    "Explore Tenjō’s ticket, draw and pickup rules in a scripted example. No account or World ID needed.",
+    "Follow one fan through two concert ballots: World ID entry, a loss that adds a chance, a win and a pickup. Scripted; no account or World ID needed.",
 };
 export default function Demo() {
   return (
@@ -11,8 +11,9 @@ export default function Demo() {
         <span className="eyebrow">A MINUTE TO GET THE IDEA</span>
         <h1>Your next try is different.</h1>
         <p>
-          Follow one fan through two example drops. See what a loss earns, what
-          a win resets, and why only the winner can collect.
+          Follow one fan through the ballots for two nights of a sold-out dome
+          tour. Verify once with World ID, lose Night 1, carry an extra chance
+          into Night 2, win, and collect the seats.
         </p>
       </section>
       <Walkthrough />

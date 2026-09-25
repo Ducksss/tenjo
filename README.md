@@ -6,7 +6,7 @@
 
 <h1 align="center">Tenjō · 天井</h1>
 
-<p align="center"><strong>A free drop lottery where every loss earns another ticket.</strong></p>
+<p align="center"><strong>A pity system for ticket ballots: every loss earns an extra chance next time.</strong></p>
 
 <p align="center">
   <a href="https://tenjo-azure.vercel.app">Live site</a> ·
@@ -17,9 +17,9 @@
   <a href="https://github.com/Ducksss/tenjo/issues">Report an issue</a>
 </p>
 
-![Every loss counts. Three past losses give you four tickets in the next draw of the same series.](docs/assets/social-preview.png)
+![Every loss counts. Lose a ballot, get an extra chance: three past losses give you four chances in the next draw on the same tour.](docs/assets/social-preview.png)
 
-Scarce drops leave fans losing again and again. Tenjō remembers those losses: one base ticket, one extra per past loss in the same series, up to six total. A win resets the count. Every entry, weight and result has a public record.
+Concert ballots and scarce drops leave fans losing again and again: [3.5 million people](https://business.ticketmaster.com/press-release/taylor-swift-the-eras-tour-onsale-explained/) pre-registered for the Eras Tour presale, and [about 2.2 million](https://mynintendonews.com/2025/04/23/japan-nintendo-confirms-2-2-million-people-applied-for-the-switch-2-lottery/) applied for the first Switch 2 lottery in Japan. Tenjō adds a gacha-style pity counter (天井, _tenjō_, is gacha’s “pity ceiling”) to those ballots. World ID lets each real person enter once. Their name goes in the draw once, plus once per past loss in the same series (a tour, shop or product line), up to six chances. A win resets the count. Every entry, chance count and result has a public record.
 
 **Try it locally without credentials.** Entry, duplicate refusal, weighted server draws, loss counts and pickup work with explicitly labelled demo identities. World ID integration is implemented and mock-tested; **the first real simulator proof is still pending credentials**. Production pickup awaits verified liveness. The [live site](https://tenjo-azure.vercel.app) is deployed on Vercel with hosted Postgres and an empty production database. World entry is unavailable until credentials are configured; a [browser-only walkthrough](https://tenjo-azure.vercel.app/demo) explains the rules with scripted outcomes and no saved entries. The full database-backed test-identity demo remains local. Sui is not implemented.
 
@@ -40,16 +40,16 @@ Scarce drops leave fans losing again and again. Tenjō remembers those losses: o
 
 ## About the project
 
-World ID is intended to answer **who can enter**. Tenjō adds **what happens after they lose**: persistent series history, more tickets next time, and an inspectable draw. The Phase 1 implementation trusts the server and database operator; its record fingerprint is not independent proof of randomness.
+World ID is intended to answer **who can enter**. Tenjō adds **what happens after they lose**: persistent series history, more chances next time, and an inspectable draw. The Phase 1 implementation trusts the server and database operator; its record fingerprint is not independent proof of randomness.
 
-![Tenjō’s running discovery page: cobalt ticket artwork and a direct invitation to try the walkthrough.](docs/assets/discover-desktop.png)
+![Tenjō’s running discovery page: the ticket-ballot pitch, sourced ballot figures, the four-step story and an invitation to try the concert-ballot walkthrough.](docs/assets/discover-desktop.png)
 
 _Real application capture of the public first-visit experience. Ticket artwork is original CSS; the screen is not a generated mockup._
 
 | Working in the local demo | Rule                                                    |
 | ------------------------- | ------------------------------------------------------- |
 | Anonymous entry           | One code can enter each drop once                       |
-| Pity tickets              | `1 + min(5, past losses)` within the same series        |
+| Pity chances              | `1 + min(5, past losses)` within the same series        |
 | Weighted draw             | Runs after close; each entrant can win once             |
 | Settlement                | Losers gain one loss; winners reset to zero             |
 | Pickup                    | Only the winning demo identity can collect, once        |
@@ -81,7 +81,7 @@ npm run demo:seed
 npm run dev:demo
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The seed creates a console drop with three items and clearly labelled setup history. Fan A starts with three losses, so their next entry gets four tickets.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The seed creates a console drop with three items and clearly labelled setup history. Fan A starts with three losses, so their next entry gets four chances.
 
 Local data persists in `.data/tenjo`, which is excluded from Git. The seed is idempotent. **Stop the dev server before running scripts against that database:** local PGlite permits only one process at a time.
 
@@ -89,11 +89,11 @@ For real World staging, copy [.env.example](.env.example) to `.env.local` and fo
 
 ## Usage
 
-**First visit:** [try the hosted walkthrough](https://tenjo-azure.vercel.app/demo). Follow a scripted loss, increased ticket weight, win/reset and pickup. It needs no credentials and does not call lottery APIs or save entries.
+**First visit:** [try the hosted walkthrough](https://tenjo-azure.vercel.app/demo). Follow one fan through a scripted concert ballot: World ID entry, a loss that adds a chance, a win/reset and pickup. It needs no credentials and does not call lottery APIs or save entries.
 
 **Local database demo:**
 
-1. Open **The weekend console drop** and enter as **Fan A**. The receipt shows four tickets.
+1. Open **The weekend console drop** and enter as **Fan A**. The receipt shows four chances.
 2. Try Fan A again. The app refuses the duplicate without creating another entry.
 3. Look up the receipt's anonymous code to inspect its history.
 4. After entries close, confirm **Run draw**. Inspect the winners and updated loss counts.
@@ -107,7 +107,7 @@ npm run demo:rehearsal
 
 Follow the launch command it prints. This creates an isolated database and preserves existing records.
 
-![The running drop page, with demo entry controls, ticket rules and the public audit table.](docs/assets/drop-desktop.png)
+![The running drop page: live status, demo entry controls, the chance rules, the step-03 draw card and the public entry record.](docs/assets/drop-desktop.png)
 
 [View the mobile capture](docs/assets/drop-mobile.png). These controls use local test identities, **not World's simulator or a live selfie**. Demo routes are restricted to explicitly enabled local, non-production use and cannot enter real drops.
 
@@ -131,7 +131,7 @@ npm run build
 npm run format:check
 ```
 
-The implementation was checked with eleven backend tests, seven browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100. If that port is occupied, run `TENJO_TEST_PORT=3112 npm run test:e2e`.
+The implementation was checked with twelve backend tests, seven browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100. If that port is occupied, run `TENJO_TEST_PORT=3112 npm run test:e2e`.
 
 Real World credentials, production liveness and Sui require separate integration validation. Deployment instructions and the measured debrief are in the [operations guide](docs/OPERATIONS.md).
 

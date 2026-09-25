@@ -10,9 +10,16 @@ import {
 import { database } from "@/lib/db";
 import { publicDrop } from "@/lib/service";
 import { AppError } from "@/lib/domain";
-import { formatJST, shortCode } from "@/lib/format";
+import {
+  dropStatus,
+  formatJST,
+  fromNow,
+  shortCode,
+  statusLabel,
+} from "@/lib/format";
 import { pageNumber } from "@/lib/http";
 import { worldConfig } from "@/lib/world";
+import { DrawControls } from "@/components/draw-controls";
 import { DropActions } from "@/components/drop-actions";
 import { Notice } from "@/components/ui";
 export const dynamic = "force-dynamic";
@@ -53,6 +60,8 @@ export default async function DropPage({
   }
   const { drop, entries, total, record, winners } = audit;
   const world = worldConfig();
+  const status = dropStatus(drop);
+  const closesLabel = formatJST(drop.closes_at);
   return (
     <>
       <Link className="back-link" href="/">
@@ -61,15 +70,24 @@ export default async function DropPage({
       </Link>
       <section className="detail-header">
         <span className="eyebrow">
-          {drop.series_name} /{" "}
-          {drop.is_setup
-            ? "SETUP RECORD"
-            : drop.state === "settled"
-              ? "DRAW COMPLETE"
-              : "THE DROP"}
+          Series / {drop.series_name}
+          {drop.is_setup ? " · Setup record" : ""}
         </span>
         <h1>{drop.title}</h1>
         <p>{drop.description}</p>
+        <p className="drop-status">
+          <span className="pill">
+            <span className={`status-dot ${status === "open" ? "live" : ""}`} />
+            {statusLabel[status]}
+          </span>
+          {status === "open"
+            ? `Closes ${fromNow(drop.closes_at)} · ${closesLabel}`
+            : status === "upcoming"
+              ? `Opens ${fromNow(drop.opens_at)} · ${formatJST(drop.opens_at)}`
+              : status === "closed"
+                ? `Entries closed ${closesLabel}`
+                : `Drawn ${formatJST(drop.drawn_at!)}`}
+        </p>
       </section>
       {drop.is_demo ? (
         <Notice>
@@ -89,17 +107,25 @@ export default async function DropPage({
             <div>
               <Ticket size={20} />
               <strong>{drop.items}</strong>
-              <span>items to win</span>
+              <span>{drop.items === 1 ? "item" : "items"} to win</span>
             </div>
             <div>
               <ShieldCheck size={20} />
               <strong>{drop.entry_count}</strong>
-              <span>entries recorded</span>
+              <span>
+                {drop.entry_count === 1 ? "person" : "people"} entered ·{" "}
+                {drop.ticket_count} chance{drop.ticket_count === 1 ? "" : "s"}{" "}
+                in the draw
+              </span>
             </div>
             <div>
               <Clock3 size={20} />
-              <strong className="date-fact">{formatJST(drop.closes_at)}</strong>
-              <span>entry closes</span>
+              <strong className="date-fact">{closesLabel}</strong>
+              <span>
+                {status === "open" || status === "upcoming"
+                  ? "entries close"
+                  : "entries closed"}
+              </span>
             </div>
           </div>
           <div className="odds-card">
@@ -107,7 +133,7 @@ export default async function DropPage({
             <h2>Every loss earns a little more chance.</h2>
             <div
               className="ticket-marks"
-              aria-label="One base ticket plus up to five tickets for past losses"
+              aria-label="One base chance plus up to five more for past losses"
             >
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <span className={n === 1 ? "base-ticket" : ""} key={n}>
@@ -117,11 +143,12 @@ export default async function DropPage({
               ))}
             </div>
             <p>
-              1 ticket + your past losses in this series. Six tickets maximum. A
-              win resets your count, even if you don’t collect.
+              Your name goes in the draw once, plus once for every past loss in
+              the {drop.series_name} series: six chances at most. A win resets
+              your count, even if you don’t collect.
             </p>
             <p className="small muted">
-              Winners leave the pool before the next pick. Extra tickets improve
+              Winners leave the pool before the next pick. Extra chances improve
               your odds; they never guarantee a win.
             </p>
           </div>
@@ -151,34 +178,31 @@ export default async function DropPage({
                 <p>No entries were recorded; no items were allocated.</p>
               )}
               <p className="small muted">
-                Server draw · Counts updated atomically. Sui integration is
-                pending.
+                Drawn on Tenjō’s server; winners and loss counts were saved in
+                the same step. On-chain Sui verification is not live yet.
               </p>
               <a className="text-link" href={`/api/drops/${id}/public`}>
                 Open full draw record (JSON)
                 <ArrowUpRight size={16} />
               </a>
             </div>
-          ) : null}
+          ) : (
+            <DrawControls
+              id={id}
+              closesAt={new Date(drop.closes_at).toISOString()}
+              closesLabel={closesLabel}
+              items={drop.items}
+            />
+          )}
         </div>
         <aside className="entry-card">
-          <span className="eyebrow">
-            {drop.state === "settled" ? "WINNER PICKUP" : "YOUR WAY IN"}
-          </span>
-          <h2>
-            {drop.state === "settled"
-              ? "A win worth collecting."
-              : "One entry. All you."}
-          </h2>
-          <p>
-            Keep the anonymous code on your receipt. It’s how you find your
-            result.
-          </p>
           <DropActions
             id={id}
+            status={status}
             closesAt={new Date(drop.closes_at).toISOString()}
             opensAt={new Date(drop.opens_at).toISOString()}
-            settled={drop.state === "settled"}
+            closesLabel={closesLabel}
+            opensLabel={formatJST(drop.opens_at)}
             demo={drop.is_demo}
             demoEnabled={
               process.env.TENJO_DEMO_MODE === "true" &&
@@ -196,7 +220,7 @@ export default async function DropPage({
             <span className="eyebrow">OPEN TO EVERYONE</span>
             <h2>Public entry record</h2>
           </div>
-          <span className="pill">{record ? "Settled" : "Awaiting draw"}</span>
+          <span className="pill">{statusLabel[status]}</span>
         </div>
         <form noValidate className="table-search" action={`/drops/${id}`}>
           <label htmlFor="audit-search">Filter by code</label>
@@ -220,13 +244,13 @@ export default async function DropPage({
           className="table-scroll"
           tabIndex={0}
           role="region"
-          aria-label="Entries and ticket counts"
+          aria-label="Entries and chance counts"
         >
           <table className="data-table">
             <thead>
               <tr>
                 <th>Anonymous code</th>
-                <th>Tickets</th>
+                <th>Chances</th>
                 <th>Result</th>
                 <th>Losses after draw</th>
                 <th>Pickup</th>

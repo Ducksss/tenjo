@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://tenjo-azure.vercel.app"),
   title: { default: "Tenjō — Every loss counts", template: "%s · Tenjō" },
   description:
-    "One person, one entry. A free drop lottery where every loss earns another ticket and every draw has a public record.",
+    "A free ballot for concert tickets and limited drops. World ID lets each person enter once; every loss adds a chance next time, and every draw has a public record.",
 };
 export default function RootLayout({
   children,

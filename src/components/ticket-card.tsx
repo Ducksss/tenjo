@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { ArrowUpRight, Gamepad2, ShieldCheck, Ticket } from "lucide-react";
 import type { Drop } from "@/lib/domain";
-import { formatJST } from "@/lib/format";
+import { dropStatus, formatJST, fromNow, statusLabel } from "@/lib/format";
+const action = {
+  open: "Enter this drop",
+  upcoming: "See when it opens",
+  closed: "See the draw",
+  settled: "See the results",
+};
 export function TicketCard({ drop }: { drop: Drop }) {
-  const open = drop.entry_open;
+  const status = dropStatus(drop);
+  const closing = status === "open" || status === "upcoming";
   return (
     <article className="ticket">
       <div className="ticket-main">
@@ -13,12 +20,8 @@ export function TicketCard({ drop }: { drop: Drop }) {
             {drop.series_name}
           </span>
           <span className="pill">
-            <span className={`status-dot ${open ? "live" : ""}`} />
-            {drop.state === "settled"
-              ? "Draw complete"
-              : open
-                ? "Entries open"
-                : "Entries closed"}
+            <span className={`status-dot ${status === "open" ? "live" : ""}`} />
+            {statusLabel[status]}
           </span>
         </div>
         <div className="ticket-art" aria-hidden="true">
@@ -59,9 +62,9 @@ export function TicketCard({ drop }: { drop: Drop }) {
             <ShieldCheck size={16} />
             {drop.is_demo ? "Demo identities" : "World ID at entry"}
           </span>
-          <Link href={`/drops/${drop.id}`}>
-            View drop
-            <ArrowUpRight size={19} />
+          <Link className="button" href={`/drops/${drop.id}`}>
+            {action[status]}
+            <ArrowUpRight size={17} />
           </Link>
         </div>
       </div>
@@ -71,12 +74,15 @@ export function TicketCard({ drop }: { drop: Drop }) {
           <strong className="item-count">
             {String(drop.items).padStart(2, "0")}
           </strong>
-          <span>items to win</span>
+          <span>{drop.items === 1 ? "item" : "items"} to win</span>
         </div>
         <div className="stub-divider" />
         <div>
-          <span className="eyebrow">Closes</span>
+          <span className="eyebrow">{closing ? "Closes" : "Closed"}</span>
           <strong className="stub-date">{formatJST(drop.closes_at)}</strong>
+          {status === "open" ? (
+            <span className="stub-relative">{fromNow(drop.closes_at)}</span>
+          ) : null}
         </div>
         <div className="stub-people">
           <div className="people-dots" aria-hidden="true">

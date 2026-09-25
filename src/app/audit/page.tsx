@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, ScanLine } from "lucide-react";
 import { database } from "@/lib/db";
 import { listDrops } from "@/lib/service";
-import { formatJST } from "@/lib/format";
+import { dropStatus, formatJST, statusLabel } from "@/lib/format";
 import { pageNumber } from "@/lib/http";
 import { Lookup } from "@/components/lookup";
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export default async function Audit({
         <span className="eyebrow">TRUST, WITH RECEIPTS</span>
         <h1>The public record.</h1>
         <p>
-          Every entry. Every ticket. Every outcome. Find a drop to inspect the
+          Every entry. Every chance. Every outcome. Find a drop to inspect the
           full draw.
         </p>
       </section>
@@ -47,9 +47,7 @@ export default async function Audit({
                 </span>
               </div>
               <span className="record-list-end">
-                <span className="pill">
-                  {drop.state === "settled" ? "Settled" : "Awaiting draw"}
-                </span>
+                <span className="pill">{statusLabel[dropStatus(drop)]}</span>
                 <ArrowUpRight size={23} />
               </span>
             </Link>

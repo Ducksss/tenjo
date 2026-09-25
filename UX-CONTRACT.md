@@ -34,8 +34,16 @@ Checks: npm run lint; npm run typecheck; npm test; npm run build; npm run test:e
 
 ## First visit and organiser improvements
 
-The hosted /demo walkthrough is a browser-only explanation of the PRD’s ticket/reset/pickup rules. Example outcomes are scripted, records are ephemeral, and no World proof or API mutation occurs. Reset and refresh discard example state. It never shares a code with real lookup. Empty discovery, audit and lookup flows offer a route to this example without requiring organiser access.
+The hosted /demo walkthrough is a browser-only explanation of the PRD’s chance/reset/pickup rules, told as one fan’s concert ballots for two nights of a tour, with World ID at entry and pickup. Example outcomes are scripted, records are ephemeral, and no World proof or API mutation occurs. Reset and refresh discard example state. It never shares a code with real lookup. Empty discovery, audit and lookup flows offer a route to this example without requiring organiser access.
 
 The organiser form groups drop details, JST scheduling and publishing. Native datetime-local controls use the browser’s picker presentation; values are explicitly treated as Japan wall times and converted by src/lib/date-input.ts, never by the browser’s local timezone. Invalid values remain in place, errors are linked to their fields, and submit focuses the first invalid field. Server authority and creation destination are unchanged. Password reveal is transient and nothing is persisted. FormLeaveGuard confirms in-app link navigation with a native HTML dialog and warns on actual page unload; Keep editing preserves all fields. Browser history navigation remains browser-owned.
 
 Verification: tests/app.spec.ts exercises the walkthrough’s loss/win/refusal/reset states, field-error focus, schedule preset and timezone conversion, narrow viewports and keyboard controls. tests/date-input.test.ts checks JST midnight and impossible dates.
+
+## Story and storefront clarity
+
+Discovery states the product before the brand line: a free pity system for ticket ballots, World ID for one entry per real person, and an extra chance after each loss. A four-step story (verify, enter, draw, win or try again) follows the hero, introduced by sourced real-world ballot figures. A “why” section explains the World ID trust moment and credential choice, the 天井 name, and the server-now/Sui-next trust boundary. Examples use concert ballots; a real artist appears only in the sourced statistic, never as a demo drop.
+
+Discovery features drops that are open for entry before newer closed ones. One status vocabulary (Entries open, Opens soon, Awaiting draw, Draw complete) is shared by discovery, drop and record pages. On the drop page the entry card’s copy follows the live phase, and crossing the open or close time refreshes server-rendered status. Draw controls sit in their own step-03 card rather than beside entry. Receipts explain the chance breakdown and when the draw runs.
+
+Fan-facing copy calls draw weight chances; tickets means real event tickets only. See DESIGN.md for the vocabulary.

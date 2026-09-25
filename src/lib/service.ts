@@ -26,18 +26,25 @@ export const createDropSchema = z
     path: ["closes_at"],
   });
 
+const dropColumns = `d.*, (d.state='open' AND now()>=d.opens_at AND now()<d.closes_at) AS entry_open, s.name AS series_name, (SELECT count(*)::int FROM entries e WHERE e.drop_id=d.id) AS entry_count, (SELECT coalesce(sum(e.tickets),0)::int FROM entries e WHERE e.drop_id=d.id) AS ticket_count`;
 export async function getDrop(db: SQL, id: string): Promise<Drop> {
   const { rows } = await db.query<Drop>(
-    `SELECT d.*, (d.state='open' AND now()>=d.opens_at AND now()<d.closes_at) AS entry_open, s.name AS series_name, (SELECT count(*)::int FROM entries e WHERE e.drop_id=d.id) AS entry_count FROM drops d JOIN series s ON s.id=d.series_id WHERE d.id=$1`,
+    `SELECT ${dropColumns} FROM drops d JOIN series s ON s.id=d.series_id WHERE d.id=$1`,
     [id],
   );
   if (!rows[0]) throw new AppError(404, "not_found", "Drop not found.");
   return rows[0];
 }
-export async function listDrops(db: SQL, limit = 20, offset = 0) {
+/** Newest first. Discovery passes openFirst so a drop fans can still enter is always featured. */
+export async function listDrops(
+  db: SQL,
+  limit = 20,
+  offset = 0,
+  openFirst = false,
+) {
   return (
     await db.query<Drop>(
-      `SELECT d.*, (d.state='open' AND now()>=d.opens_at AND now()<d.closes_at) AS entry_open, s.name AS series_name, (SELECT count(*)::int FROM entries e WHERE e.drop_id=d.id) AS entry_count FROM drops d JOIN series s ON s.id=d.series_id WHERE NOT d.is_setup ORDER BY d.opens_at DESC LIMIT $1 OFFSET $2`,
+      `SELECT ${dropColumns} FROM drops d JOIN series s ON s.id=d.series_id WHERE NOT d.is_setup ORDER BY ${openFirst ? "entry_open DESC, " : ""}d.opens_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset],
     )
   ).rows;
