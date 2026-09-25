@@ -66,9 +66,9 @@ The draw uses Node's `crypto.randomInt`. Hosted Postgres runs on Neon’s free p
 
 ## How it works
 
-One person gets one entry per drop, and every loss adds a ticket in the next draw of the same series.
+One person gets one entry per drop, and every loss adds a chance in the next draw of the same series.
 
-![Flowchart: a fan enters with World ID, and a repeat entry is refused. An entry is saved with 1 plus past losses as tickets. A weighted draw runs on the server today, with Sui planned. Losers gain one public loss count. Winners prove with World ID again at pickup, and a different person is refused.](docs/assets/diagram-flow.svg)
+![Flowchart: a fan enters with World ID, and a repeat entry is refused. An entry is saved with 1 plus past losses as chances. A weighted draw runs on the server today, with Sui planned. Losers gain one public loss count. Winners prove with World ID again at pickup, and a different person is refused.](docs/assets/diagram-flow.svg)
 
 ### How the pieces connect
 
@@ -80,7 +80,7 @@ Locally, PGlite replaces Neon and labelled test identities stand in for World.
 
 Every entry and pickup runs these checks in this order. A stop never saves an entry or a pickup: dashed grey boxes mean not now, and red boxes mean refused.
 
-![Entry decision tree. After a fan taps Enter, the server checks that World ID is set up and entries are open, the person proves in World App, then it checks that World is reachable, the proof is valid for this drop and the person hasn't entered. The entry is then saved with 1 plus past losses as tickets, up to 6.](docs/assets/diagram-entry.svg)
+![Entry decision tree. After a fan taps Enter, the server checks that World ID is set up and entries are open, the person proves in World App, then it checks that World is reachable, the proof is valid for this drop and the person hasn't entered. The entry is then saved with 1 plus past losses as chances, up to 6.](docs/assets/diagram-entry.svg)
 
 "Proof valid" covers five checks: the identity settings haven't changed, the app and environment match, the challenge is fresh and unused, the credential and signal are present, and World confirms them with a matching nullifier.
 
