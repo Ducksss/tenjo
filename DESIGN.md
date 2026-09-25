@@ -3,19 +3,19 @@ version: alpha
 name: Tenjō
 description: A human-first drop lottery with visible loss history and ticket-shaped receipts.
 colors:
-  primary: "#245B48"
-  background: "#F6F7F4"
+  primary: "#3851F5"
+  background: "#F6F8FF"
   surface: "#FFFFFF"
-  ink: "#202B27"
-  muted: "#64716A"
-  accent: "#D8E9B0"
-  border: "#DDE3DC"
+  ink: "#101637"
+  muted: "#545D78"
+  accent: "#DBE4FF"
+  border: "#DCE2F1"
   danger: "#AD3535"
 typography:
   sans:
-    fontFamily: "Arial, Helvetica, sans-serif"
+    fontFamily: "Manrope, sans-serif"
   display:
-    fontFamily: "Georgia, serif"
+    fontFamily: "Manrope, sans-serif"
   mono:
     fontFamily: "ui-monospace, monospace"
 rounded:
@@ -24,7 +24,7 @@ rounded:
   lg: "1.5rem"
 spacing:
   section-gap: "3rem"
-  page-max: "76rem"
+  page-max: "80rem"
 components:
   button: {}
   field: {}
@@ -37,31 +37,31 @@ components:
 
 ## Overview
 
-A lottery entry should feel like a ticket you can keep and inspect. Signature: a large sage ticket with a perforated stub and six explicit weight marks. Quiet white navigation, forest-green actions, generous air, and restrained serif headlines. Product UI, not a marketing landing page. Avoid casino visuals, speculative wealth claims, neon web3 dashboards and decorative Japanese stereotypes.
+A lottery entry should feel like a ticket you can keep and inspect. Signature: a layered cobalt ticket with a perforated stub and a prominent, meaningful ticket count. Deep navy type, ice-white space, geometric sans headlines and pill actions. Discovery borrows the openness of a brand site; operational pages keep their established product controls. Avoid casino visuals, speculative wealth claims, neon web3 dashboards and decorative Japanese stereotypes.
 
-Audience: hackathon judges and fans of scarce Japan-market drops; English demo UI, Japanese product name, all times explicitly JST. Desktop stage demo and narrow mobile layouts. No real-money use. Evidence: docs/PRD.md. There is no previous app design or sibling workflow beyond the Next starter.
+Audience: hackathon judges and fans of scarce Japan-market drops; English demo UI, Japanese product name, all times explicitly JST. Desktop stage demo and narrow mobile layouts. No real-money use. Evidence: docs/PRD.md. The September 2026 refresh applies the user-selected Invstor reference to the existing product without changing lottery behavior.
 
 Runtime ownership is Model B: src/app/globals.css is canonical; this file mirrors accepted semantic tokens. Mapping: colors.primary → --primary; background → --background; surface → --surface; ink → --ink; muted → --muted; accent → --accent; border → --border; danger → --danger. CSS consumers are shared .button, .field, .notice, .ticket, .data-table. No independent theme adapter. Privacy follows R14; global code follows R4 until the open series-hashing decision is resolved.
 
 ## Colors
 
-Green is entry/positive action, muted sage is ticket paper, white is an operational surface. Errors use danger and text, never color alone. Light theme only. Focus uses primary; forced colors defer to system colors. Global scrollbars use muted thumb and background track.
+Cobalt is the brand/action color; pale blue (--tint: #EDF1FF) is ticket paper, white is an operational surface. Blue is not itself a claim of successful verification. Errors use danger and text, never color alone. Light theme only. Focus uses primary; forced colors defer to system colors. Global scrollbars use muted thumb and background track.
 
 ## Typography
 
-Georgia display headlines at 40–64px; Arial/Helvetica body 16px with 1.55 line-height; system mono for anonymous codes and numerical records. System fonts avoid network/font-loading shifts. Japanese name uses system Japanese fallback. No full Japanese locale claimed.
+Manrope variable font: 43–68px display with 500 weight, 16px body with 1.55 line-height; system mono for anonymous codes and numerical records. The SIL-licensed font is bundled in src/app/fonts and self-hosted through next/font/local, with adjusted fallback metrics. --font-manrope supplies both --font-body and --font-display. Japanese name uses system Japanese fallback. No full Japanese locale claimed.
 
 ## Layout
 
-76rem maximum content, 3rem sections, 24px gutters; sidebar becomes a wrapping top navigation below 900px. Ticket and information columns stack below 700px. Document owns vertical scrolling; tables own horizontal overflow only. Minimum 44px action targets. Forms stay natural height.
+80rem maximum content, 3rem sections, 18–46px responsive gutters. Shared horizontal navigation wraps below 900px; at 450px the four destinations form a two-column grid. The discovery hero splits copy and original ticket artwork, stacking below 700px. Ticket and information columns stack below 700px. Document owns vertical scrolling; tables own horizontal overflow only. Minimum 44px action targets. Forms stay natural height.
 
 ## Elevation & Depth
 
-Quiet borders on cards, slight ticket shadow only. No blurred backgrounds or fixed-height page traps.
+Quiet cool borders on operational cards; layered ticket artwork uses a restrained cobalt gradient and shadow. No blurred backgrounds or fixed-height page traps.
 
 ## Shapes
 
-12px control/card radius, 24px main ticket, dashed ticket perforation. Circular weight markers represent actual tickets, not decoration.
+12px inputs, pill buttons, 24–32px feature panels, dashed ticket perforation. The asymmetric discovery art corner echoes the rounded architectural forms of the reference. Circular weight markers represent actual tickets, not decoration.
 
 ## Components
 
@@ -75,3 +75,11 @@ Lucide outlined icons at 18–22px always have text labels or accessible names. 
 - Do give failures a persistent explanation and a retry path.
 - Don't claim verified identity or liveness before the server confirms it.
 - Don't display demo history as real participation.
+
+## Reference taste: Invstor X
+
+Reference: [Invstor X](https://invstortemplate.webflow.io/) and its [Home V1](https://invstortemplate.webflow.io/home-pages/home-v1), reviewed 26 September 2026. The reference uses Thicccboi sans type, oversized medium-weight headlines, deep navy on icy white, electric-blue actions, generous negative space, pill controls and a large abstract sculptural hero. Its confidence comes from scale and restraint rather than dense decoration.
+
+Tenjō translates those qualities into self-hosted Manrope, a spacious top navigation, a split discovery hero and layered ticket forms. The blue ticket explains the actual arithmetic instead of borrowing the template's investment imagery. No template code, images, logos or font files are reused. The 天 mark, project name, pity rules, field behavior, refusal states and public-record access remain Tenjō's own.
+
+Asset palette and typography follow these runtime tokens. Original editable SVGs and raster exports are in docs/assets; real screenshots document both the hosted-style walkthrough and local test-identity drop. The application icon and Open Graph card match the same direction.

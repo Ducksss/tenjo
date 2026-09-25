@@ -1,18 +1,25 @@
 # Tenjō presentation assets
 
-Forest green (`#245B48`), deep green (`#173F33`), sage (`#D8E9B0`) and off-white (`#F6F7F4`), with Georgia display text and Arial body text. The stylised 天 mark and perforated ticket continue the existing app identity. Editable vector artwork is stored alongside the exports.
+Cobalt (`#3851F5`), navy (`#101637`), ice white (`#F6F8FF`) and pale blue (`#EDF1FF`), with Manrope geometric sans typography. The existing stylised 天 mark and perforated ticket remain the identity; layered blue ticket forms now connect the website, README and share card.
 
-| File                                         | Size            | Purpose                                                           |
-| -------------------------------------------- | --------------- | ----------------------------------------------------------------- |
-| [logo.svg](logo.svg)                         | 80 × 80         | Compact mark; light sage tile works on light and dark backgrounds |
-| [wordmark.svg](wordmark.svg)                 | 360 × 100       | Full wordmark on off-white                                        |
-| [hero.svg](hero.svg)                         | 1280 × 640      | README banner explaining the pity rule                            |
-| [social-preview.png](social-preview.png)     | 1280 × 640      | Shareable card; editable source in social-preview.svg             |
-| [favicon.svg](favicon.svg)                   | 80 × 80 viewBox | Small mark asset; not installed in app metadata                   |
-| [discover-desktop.png](discover-desktop.png) | 1440 px wide    | Real local discovery page                                         |
-| [drop-desktop.png](drop-desktop.png)         | 1440 px wide    | Real local drop and audit page                                    |
-| [drop-mobile.png](drop-mobile.png)           | 390 px wide     | Real local drop page at mobile width                              |
+The user-selected [Invstor X reference](https://invstortemplate.webflow.io/) informed the spacious split composition, medium-weight geometric headlines, cool palette and pill actions. No template code, artwork or font files were reused. See [the design rationale](../../DESIGN.md#reference-taste-invstor-x).
 
-The screenshots were captured from the running Next.js app with local demo data. They contain no real World ID proofs, personal details or real-money transactions. The console illustration is implemented in the app's CSS. Screenshots are not generated mockups.
+| File                                               | Size         | Purpose                                                               |
+| -------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
+| [logo.svg](logo.svg)                               | 80 × 80      | Compact mark on a pale tile for light and dark backgrounds            |
+| [wordmark.svg](wordmark.svg)                       | 360 × 100    | Full wordmark on ice white                                            |
+| [hero.svg](hero.svg)                               | 1280 × 640   | Editable README banner artwork                                        |
+| [social-preview.png](social-preview.png)           | 1280 × 640   | README hero and website Open Graph card; source in social-preview.svg |
+| [favicon.svg](favicon.svg)                         | 80 × 80      | Same mark installed as src/app/icon.svg                               |
+| [discover-desktop.png](discover-desktop.png)       | 1440 px wide | Actual first-visit discovery page                                     |
+| [discover-mobile.png](discover-mobile.png)         | 390 px wide  | Actual mobile discovery page                                          |
+| [walkthrough-desktop.png](walkthrough-desktop.png) | 1440 px wide | Scripted browser-only walkthrough after example entry                 |
+| [walkthrough-mobile.png](walkthrough-mobile.png)   | 390 px wide  | Same example entry on mobile                                          |
+| [drop-desktop.png](drop-desktop.png)               | 1440 px wide | Real local test-identity drop and public record                       |
+| [drop-mobile.png](drop-mobile.png)                 | 390 px wide  | Same local drop on mobile                                             |
 
-The vector marks and ticket illustration are editable project artwork, with no stock photography or third-party brand logos. The social PNG is a rendering of its SVG source. GitHub's social preview setting has **not** been changed; the file is ready for manual upload. Application UI and metadata were not redesigned by this packaging pass.
+Screenshots come from the running Next.js app. Discovery and walkthrough captures use an empty local database matching the hosted first-visit experience; drop captures use labelled local test identities. They contain no real World proofs, personal details or real-money transactions. The ticket and console illustrations are CSS. None of the screenshots is a generated mockup.
+
+Vector marks and ticket art are original project artwork, with no stock photography or third-party logos. The social PNG renders its editable SVG using the bundled [Manrope font](https://github.com/google/fonts/tree/main/ofl/manrope), licensed under [SIL OFL](../../src/app/fonts/OFL.txt). SVG text falls back to Helvetica/sans-serif if Manrope is unavailable; the PNG preserves the exact typography everywhere.
+
+The favicon and Open Graph card are installed in application metadata. GitHub's separate social preview setting has **not** been changed; social-preview.png is ready for manual upload. GitHub description, topics and homepage are managed separately by the polish workflow.

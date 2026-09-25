@@ -1,65 +1,48 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Grid2X2,
-  ScanLine,
-  Ticket,
-  Plus,
-  ArrowUpRight,
-  Play,
-} from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 export function Navigation() {
   const path = usePathname();
   return (
-    <aside className="sidebar">
-      <Link href="/" className="brand" aria-label="Tenjo home">
-        <span className="brand-symbol">天</span>
+    <header className="site-navigation">
+      <Link href="/" className="site-brand" aria-label="Tenjo home">
+        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <path
+            d="M8 9h24M5 18h30M20 10v8c0 9-5 14-13 17M20 18c0 9 5 14 13 17"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+        </svg>
         <span>
-          tenjō<span className="brand-dot">.</span>
+          tenjō<span className="site-brand-dot">.</span>
         </span>
       </Link>
-      <p className="nav-caption">A fairer way in.</p>
       <nav aria-label="Main navigation">
         {[
-          { href: "/", label: "Discover drops", icon: Grid2X2 },
-          { href: "/demo", label: "Try the walkthrough", icon: Play },
-          { href: "/audit", label: "Public record", icon: ScanLine },
-          { href: "/codes", label: "My entries", icon: Ticket },
-        ].map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`nav-link ${path === href || (href !== "/" && path.startsWith(href)) ? "selected" : ""}`}
-            aria-current={
-              path === href || (href !== "/" && path.startsWith(href))
-                ? "page"
-                : undefined
-            }
-          >
-            <Icon size={19} />
-            {label}
-          </Link>
-        ))}
+          { href: "/", label: "Discover drops" },
+          { href: "/demo", label: "Try the walkthrough" },
+          { href: "/audit", label: "Public record" },
+          { href: "/codes", label: "My entries" },
+        ].map(({ href, label }) => {
+          const selected =
+            path === href || (href !== "/" && path.startsWith(href));
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`site-nav-link ${selected ? "selected" : ""}`}
+              aria-current={selected ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          );
+        })}
       </nav>
-      <div className="sidebar-bottom">
-        <div className="sidebar-note">
-          <span className="small-orbit">◎</span>
-          <p>
-            One person.
-            <br />
-            One entry.
-            <br />
-            <strong>Every loss counts.</strong>
-          </p>
-        </div>
-        <Link className="nav-link" href="/admin">
-          <Plus size={19} />
-          Create a drop
-          <ArrowUpRight size={14} />
-        </Link>
-        <span className="sidebar-foot">Built for people, not bots.</span>
-      </div>
-    </aside>
+      <Link className="organiser-link" href="/admin">
+        Create a drop <ArrowUpRight size={15} />
+      </Link>
+    </header>
   );
 }

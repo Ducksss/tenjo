@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { Navigation } from "@/components/navigation";
 import "./globals.css";
+const manrope = localFont({
+  src: "./fonts/Manrope.ttf",
+  variable: "--font-manrope",
+  display: "swap",
+  weight: "200 800",
+});
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tenjo-azure.vercel.app"),
   title: { default: "Tenjō — Every loss counts", template: "%s · Tenjō" },
   description:
     "One person, one entry. A free drop lottery where every loss earns another ticket and every draw has a public record.",
@@ -12,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" className={manrope.variable} data-scroll-behavior="smooth">
       <body>
         <a className="skip-link" href="#main">
           Skip to content

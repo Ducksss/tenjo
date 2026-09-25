@@ -16,29 +16,85 @@ export default async function Home() {
   const drops = await listDrops(await database(), 6);
   return (
     <>
-      <section className="page-intro">
-        <div>
-          <span className="eyebrow">THE NEXT TRY ISN’T THE SAME TRY</span>
+      <section className="discovery-hero">
+        <div className="hero-copy">
+          <span className="eyebrow">01 / A FAIRER WAY INTO YOUR NEXT DROP</span>
           <h1>
             Good things come
             <br />
             to those who <em>try.</em>
           </h1>
           <p>
-            One person, one entry. Didn’t win? Your next entry gets
-            <br className="desktop-break" /> an extra ticket. Because showing up
-            should count.
+            One person, one entry. Didn’t win? Your next entry gets an extra
+            ticket. Because showing up should count.
           </p>
+          <div className="hero-actions">
+            <Link href="/demo" className="button">
+              Try the walkthrough <ArrowRight size={17} />
+            </Link>
+            <Link href="/audit" className="button secondary">
+              See the public record
+            </Link>
+          </div>
+          <span className="hero-caption">
+            Free to enter. No account needed for the walkthrough.
+          </span>
         </div>
         <div
-          className="intro-stamp"
-          aria-label="One base ticket, up to five extra"
+          className="hero-art"
+          role="img"
+          aria-label="Example: three past losses plus one base ticket gives four tickets next time."
         >
-          <Ticket size={26} />
-          <span>1 + up to 5</span>
-          <small>EVERY LOSS COUNTS</small>
+          <span className="hero-art-label">
+            EVERY LOSS BECOMES A LITTLE MORE POSSIBILITY.
+          </span>
+          <div className="ticket-object" aria-hidden="true">
+            <div className="ticket-layer" />
+            <div className="ticket-layer second" />
+            <div className="hero-ticket">
+              <div className="hero-ticket-top">
+                <span>tenjō.</span>
+                <ArrowUpRight size={20} />
+              </div>
+              <strong className="hero-ticket-number">4</strong>
+              <span className="hero-ticket-unit">chances, next time.</span>
+              <div className="hero-ticket-stub">
+                <span>1 BASE + 3 PAST LOSSES</span>
+                <Ticket />
+              </div>
+            </div>
+          </div>
+          <span className="hero-art-note">
+            ILLUSTRATIVE TICKET / SAME SERIES
+          </span>
         </div>
       </section>
+      <div className="rule-strip" aria-label="Lottery rules">
+        <div>
+          <strong>01</strong>
+          <span>
+            person, one entry
+            <br />
+            in every drop
+          </span>
+        </div>
+        <div>
+          <strong>+1</strong>
+          <span>
+            ticket after each loss
+            <br />
+            up to six total
+          </span>
+        </div>
+        <div>
+          <strong>100%</strong>
+          <span>
+            of entry weights
+            <br />
+            on the public record
+          </span>
+        </div>
+      </div>
       <section aria-labelledby="drops-heading">
         <div className="section-header">
           <h2 id="drops-heading">

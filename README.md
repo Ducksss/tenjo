@@ -17,7 +17,7 @@
   <a href="https://github.com/Ducksss/tenjo/issues">Report an issue</a>
 </p>
 
-![Every loss counts. Three past losses give you four tickets in the next draw of the same series.](docs/assets/hero.svg)
+![Every loss counts. Three past losses give you four tickets in the next draw of the same series.](docs/assets/social-preview.png)
 
 Scarce drops leave fans losing again and again. Tenjō remembers those losses: one base ticket, one extra per past loss in the same series, up to six total. A win resets the count. Every entry, weight and result has a public record.
 
@@ -42,9 +42,9 @@ Scarce drops leave fans losing again and again. Tenjō remembers those losses: o
 
 World ID is intended to answer **who can enter**. Tenjō adds **what happens after they lose**: persistent series history, more tickets next time, and an inspectable draw. The Phase 1 implementation trusts the server and database operator; its record fingerprint is not independent proof of randomness.
 
-![Tenjō's running local demo: discover a console drop and see its entry window and three available items.](docs/assets/discover-desktop.png)
+![Tenjō’s running discovery page: cobalt ticket artwork and a direct invitation to try the walkthrough.](docs/assets/discover-desktop.png)
 
-_Real application capture with local test data. The console is a CSS illustration; the screen is not a generated mockup._
+_Real application capture of the public first-visit experience. Ticket artwork is original CSS; the screen is not a generated mockup._
 
 | Working in the local demo | Rule                                                    |
 | ------------------------- | ------------------------------------------------------- |
@@ -131,7 +131,7 @@ npm run build
 npm run format:check
 ```
 
-The implementation was checked with eleven backend tests, seven browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100.
+The implementation was checked with eleven backend tests, seven browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100. If that port is occupied, run `TENJO_TEST_PORT=3112 npm run test:e2e`.
 
 Real World credentials, production liveness and Sui require separate integration validation. Deployment instructions and the measured debrief are in the [operations guide](docs/OPERATIONS.md).
 
@@ -147,7 +147,7 @@ Real World credentials, production liveness and Sui require separate integration
 - [ ] Stretch: deposits/refunds and unclaimed-item handoff, after both phase gates pass.
 - [ ] Record two clean rehearsals, complete the debrief and submit to ETHGlobal.
 
-The [PRD](docs/PRD.md) covers the current product, acceptance criteria, release gates and open decisions. The [original PRD](docs/PRD-ORIGINAL.md) preserves the initial plan. [Implementation notes](docs/IMPLEMENTATION.md) document the current choices and limits.
+The [PRD](docs/PRD.md) covers the current product, acceptance criteria, release gates and open decisions. [Implementation notes](docs/IMPLEMENTATION.md) document the current choices and limits.
 
 ## Contributing
 
@@ -166,6 +166,8 @@ Maintained by [Chai / Ducksss](https://github.com/Ducksss). Use [repository issu
 - README structure adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template), with project-specific content.
 - World ID IDKit, Next.js, React, PGlite, Postgres, Playwright and Lucide power the implementation and tooling.
 - The repository includes a pre-existing agent configuration template, separate from the lottery application.
-- The SVG marks and ticket artwork follow Tenjō's existing design; product screenshots show the running app. See the [asset guide](docs/assets/README.md) for sources, dimensions and usage.
+- Visual direction inspired by [Invstor X by BRIX Templates](https://invstortemplate.webflow.io/): geometric type, navy on icy white, cobalt accents and spacious compositions. No template code or artwork is reused. The [design guide](DESIGN.md#reference-taste-invstor-x) records the translation.
+- [Manrope](https://github.com/google/fonts/tree/main/ofl/manrope) is self-hosted under its bundled SIL Open Font License.
+- The SVG marks and layered ticket artwork are original Tenjō assets; product screenshots show the running app. See the [asset guide](docs/assets/README.md) for sources, dimensions and usage.
 
 [Back to top](#readme-top)

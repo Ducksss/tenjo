@@ -2,6 +2,8 @@ import { defineConfig } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import os from "node:os";
+const testPort = Number(process.env.TENJO_TEST_PORT ?? 3100);
+const testOrigin = `http://127.0.0.1:${testPort}`;
 export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
@@ -11,14 +13,13 @@ export default defineConfig({
   expect: { timeout: 10000 },
   outputDir: path.join(os.tmpdir(), "tenjo-playwright-results"),
   use: {
-    baseURL: "http://127.0.0.1:3100",
+    baseURL: testOrigin,
     headless: true,
     viewport: { width: 1440, height: 1000 },
   },
   webServer: {
-    command:
-      "npm run demo:seed && node --import tsx scripts/seed-e2e.ts && npm run dev:demo -- --port 3100",
-    url: "http://127.0.0.1:3100",
+    command: `npm run demo:seed && node --import tsx scripts/seed-e2e.ts && npm run dev:demo -- --port ${testPort}`,
+    url: testOrigin,
     reuseExistingServer: false,
     timeout: 120000,
     env: {

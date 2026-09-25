@@ -264,13 +264,15 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
 
 test("organiser errors focus the right field and scheduling stays JST in a different timezone", async ({
   browser,
+  baseURL,
 }) => {
   const context = await browser.newContext({
+    baseURL,
     timezoneId: "America/Los_Angeles",
     viewport: { width: 390, height: 844 },
   });
   const page = await context.newPage();
-  await page.goto("http://127.0.0.1:3100/admin");
+  await page.goto("/admin");
   await page.getByRole("button", { name: "Create drop", exact: true }).click();
   await expect(page.getByLabel("Drop title", { exact: true })).toBeFocused();
   await expect(page.getByLabel("Drop title", { exact: true })).toHaveAttribute(
