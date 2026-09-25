@@ -27,6 +27,7 @@ Concert ballots and scarce drops leave fans losing again and again: [3.5 million
 <summary>Contents</summary>
 
 - [About the project](#about-the-project)
+- [How it works](#how-it-works)
 - [Getting started](#getting-started)
 - [Usage](#usage)
 - [Verification](#verification)
@@ -62,6 +63,30 @@ No names, emails or phone numbers are stored. Codes are public and currently lin
 Next.js 16 · React 19 · TypeScript · World ID IDKit 4 · Postgres / local PGlite · Playwright
 
 The draw uses Node's `crypto.randomInt`. Hosted Postgres runs on Neon’s free plan in Singapore. **Sui is planned, not part of the current implementation.**
+
+## How it works
+
+One person gets one entry per drop, and every loss adds a ticket in the next draw of the same series.
+
+![Flowchart: a fan enters with World ID, and a repeat entry is refused. An entry is saved with 1 plus past losses as tickets. A weighted draw runs on the server today, with Sui planned. Losers gain one public loss count. Winners prove with World ID again at pickup, and a different person is refused.](docs/assets/diagram-flow.svg)
+
+### How the pieces connect
+
+![System map: the fan's browser gets a signed request from Tenjō on Vercel, the person proves in World App or the staging simulator, and the browser sends the proof back. The server checks it with World's verify API and stores entries, counts and draws in Neon Postgres. Sui testnet is dashed because phase 2 is not built.](docs/assets/diagram-system.svg)
+
+Locally, PGlite replaces Neon and labelled test identities stand in for World.
+
+### What the server decides
+
+Every entry and pickup runs these checks in this order. A stop never saves an entry or a pickup: dashed grey boxes mean not now, and red boxes mean refused.
+
+![Entry decision tree. After a fan taps Enter, the server checks that World ID is set up and entries are open, the person proves in World App, then it checks that World is reachable, the proof is valid for this drop and the person hasn't entered. The entry is then saved with 1 plus past losses as tickets, up to 6.](docs/assets/diagram-entry.svg)
+
+"Proof valid" covers five checks: the identity settings haven't changed, the app and environment match, the challenge is fresh and unused, the credential and signal are present, and World confirms them with a matching nullifier.
+
+![Pickup decision tree. After a winner taps Collect, the server checks that pickup is switched on and the draw is settled, the person proves in World App with a live selfie requested, then it checks that the proof checks out, this code won and it hasn't been collected. The item is then collected once and marked untested-staging.](docs/assets/diagram-pickup.svg)
+
+In production, the first check stops every pickup until liveness is confirmed on the server. In staging, an explicit setting allows pickup, and each one is recorded as `untested-staging`.
 
 ## Getting started
 
