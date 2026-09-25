@@ -105,6 +105,7 @@ export default async function Home() {
           <span className="hero-art-note">ILLUSTRATIVE ENTRY / SAME TOUR</span>
         </div>
       </section>
+      <Architecture />
       <section className="story" aria-labelledby="how-heading">
         <div className="story-intro">
           <span className="eyebrow">HOW TENJŌ WORKS</span>
@@ -203,7 +204,6 @@ export default async function Home() {
           to one.
         </p>
       </section>
-      <Architecture />
       <section aria-labelledby="drops-heading">
         <div className="section-header">
           <h2 id="drops-heading">
