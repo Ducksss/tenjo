@@ -4,7 +4,7 @@
 
 A free drop lottery built from scratch for the September 2026 hackathon. World ID gates entry and pickup; each loss adds a ticket to the next drop in the same series, capped at six total. The public record shows anonymous entries, ticket weights, draws and loss changes.
 
-**Current status:** Phase 1 application and a working local demonstration. The World ID request/verification integration is implemented and tested with mocked verifier responses, but **no real simulator proof has been verified yet**: app/RP/signing credentials are missing. Production pickup is deliberately blocked pending server-attested liveness. **Sui Phase 2, deposits, hosting, video and submission are not complete.** No fabricated World successes, transactions or explorer links.
+**Current status:** Phase 1 application and a working local demonstration. The World ID request/verification integration is implemented and tested with mocked verifier responses, but **no real simulator proof has been verified yet**: app/RP/signing credentials are missing. Production pickup is deliberately blocked pending server-attested liveness. **Sui Phase 2, deposits, video and submission are not complete.** Hosting is live at [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app); World credentials are still required for real entries. No fabricated World successes, transactions or explorer links.
 
 ## Run the local demo
 
@@ -78,7 +78,9 @@ npm run build
 npm start
 ```
 
-On Vercel, configure the World variables, ADMIN_PASSWORD, DATABASE_URL and `APP_ORIGIN=https://your-deployment.example`. Run migrations against that database before deployment. Do not use PGlite in serverless production. Keep all database credentials server-only and do not grant public/anonymous roles writes to these tables. No cloud database has been provisioned or deployment performed by this build.
+On Vercel, configure the World variables, ADMIN_PASSWORD, DATABASE_URL and `APP_ORIGIN=https://your-deployment.example`. Run migrations against that database before deployment. Do not use PGlite in serverless production. Keep all database credentials server-only and do not grant public/anonymous roles writes to these tables. Tenjō is deployed to [Vercel](https://tenjo-azure.vercel.app), project `ducksss-projects/tenjo`, with a dedicated Neon Free Postgres database (`tenjo-db`) in Singapore. The schema has been applied. Production starts empty; local setup identities and records were not copied. Vercel stores `DATABASE_URL`, `ADMIN_PASSWORD` and `APP_ORIGIN`. The generated organiser password is saved privately on the setup machine at `.vercel/tenjo-admin-password` (Git-ignored); never put it into documentation or a public issue. World keys are not configured.
+
+`vercel.json` selects the Singapore function region and the existing production build command. `.vercelignore` excludes local data, secrets and development artifacts. The GitHub repository is connected for automatic deployments; production configuration currently belongs to the production environment, not preview deployments.
 
 `npm run build` uses supported Next.js Webpack mode because this local tool environment denied Turbopack's CSS worker port. Development still uses Turbopack. There are no network-loaded fonts.
 
@@ -129,7 +131,7 @@ Every real verification attempt records only purpose, category, elapsed millisec
 
 - [ ] Complete real World simulator success and refusal; resolve passport/Orb choice.
 - [ ] Validate liveness or explicitly show the staging fallback.
-- [ ] Provision hosted Postgres and deploy.
+- [x] Provision hosted Postgres and deploy to Vercel.
 - [ ] Phase 2: Sui Move package, testnet publish, registration, randomness, settlement and database mirror.
 - [ ] **Sui package ID: not deployed.** Explorer links: not available.
 - [ ] Stretch deposits/refunds and unclaimed handoff only after both phase gates pass.

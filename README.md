@@ -9,6 +9,7 @@
 <p align="center"><strong>A free drop lottery where every loss earns another ticket.</strong></p>
 
 <p align="center">
+  <a href="https://tenjo-azure.vercel.app">Live site</a> ·
   <a href="#getting-started">Run the local demo</a> ·
   <a href="docs/PRD.md">Read the PRD</a> ·
   <a href="docs/OPERATIONS.md">Integration guide</a> ·
@@ -19,7 +20,7 @@
 
 Scarce drops leave fans losing again and again. Tenjō remembers those losses: one base ticket, one extra per past loss in the same series, up to six total. A win resets the count. Every entry, weight and result has a public record.
 
-**Try it locally without credentials.** Entry, duplicate refusal, weighted server draws, loss counts and pickup work with explicitly labelled demo identities. World ID integration is implemented and mock-tested; **the first real simulator proof is still pending credentials**. Production pickup awaits verified liveness. Sui and a hosted demo are not available yet.
+**Try it locally without credentials.** Entry, duplicate refusal, weighted server draws, loss counts and pickup work with explicitly labelled demo identities. World ID integration is implemented and mock-tested; **the first real simulator proof is still pending credentials**. Production pickup awaits verified liveness. The [live site](https://tenjo-azure.vercel.app) is deployed on Vercel with hosted Postgres and an empty production database. World entry is unavailable until credentials are configured; the interactive test-identity demo remains local. Sui is not implemented.
 
 <details>
 <summary>Contents</summary>
@@ -59,7 +60,7 @@ No names, emails or phone numbers are stored. Codes are public and currently lin
 
 Next.js 16 · React 19 · TypeScript · World ID IDKit 4 · Postgres / local PGlite · Playwright
 
-The draw uses Node's `crypto.randomInt`. Hosted Postgres is supported but not provisioned. **Sui is planned, not part of the current implementation.**
+The draw uses Node's `crypto.randomInt`. Hosted Postgres runs on Neon’s free plan in Singapore. **Sui is planned, not part of the current implementation.**
 
 ## Getting started
 
@@ -136,7 +137,7 @@ Real World credentials, production liveness and Sui require separate integration
 - [x] Public repository, screenshots and setup documentation.
 - [ ] Verify a real World simulator proof and refusal; confirm the credential choice.
 - [ ] Validate pickup liveness or explicitly demonstrate the staging fallback.
-- [ ] Provision hosted Postgres and deploy.
+- [x] Provision hosted Postgres and deploy to Vercel.
 - [ ] Phase 2: Sui randomness, on-chain loss ledger, settlement and explorer links.
 - [ ] Stretch: deposits/refunds and unclaimed-item handoff, after both phase gates pass.
 - [ ] Record two clean rehearsals, complete the debrief and submit to ETHGlobal.
