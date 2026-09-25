@@ -57,9 +57,12 @@ export default async function Audit({
         ) : (
           <div className="empty-state">
             <h2>No drops recorded yet.</h2>
-            <p>Created drops and their entry records will appear here.</p>
-            <Link className="button" href="/admin">
-              Create a drop
+            <p>
+              Real entries and results will appear here after the first drop. In
+              the meantime, follow a sample draw from entry to pickup.
+            </p>
+            <Link className="button" href="/demo">
+              Try the walkthrough
             </Link>
           </div>
         )}

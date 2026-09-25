@@ -9,6 +9,7 @@ import {
 import { database } from "@/lib/db";
 import { listDrops } from "@/lib/service";
 import { TicketCard } from "@/components/ticket-card";
+import { DemoInvitation } from "@/components/demo-invitation";
 import { Lookup } from "@/components/lookup";
 export const dynamic = "force-dynamic";
 export default async function Home() {
@@ -41,29 +42,17 @@ export default async function Home() {
       <section aria-labelledby="drops-heading">
         <div className="section-header">
           <h2 id="drops-heading">
-            In the draw<span className="count-chip">{drops.length}</span>
+            {drops.length ? "Browse drops" : "Start here"}
+            {drops.length ? (
+              <span className="count-chip">{drops.length}</span>
+            ) : null}
           </h2>
           <Link href="/audit">
             Explore the public record
             <ArrowUpRight size={16} />
           </Link>
         </div>
-        {drops.length ? (
-          <TicketCard drop={drops[0]} />
-        ) : (
-          <div className="empty-state">
-            <Ticket size={32} />
-            <h2>Your first drop starts here.</h2>
-            <p>
-              Create a drop as organiser, or run the local demo setup to explore
-              the complete flow.
-            </p>
-            <Link className="button" href="/admin">
-              Create a drop
-              <ArrowRight size={17} />
-            </Link>
-          </div>
-        )}
+        {drops.length ? <TicketCard drop={drops[0]} /> : <DemoInvitation />}
         {drops.length > 1 ? (
           <div className="other-drops">
             {drops.slice(1).map((drop) => (
@@ -78,6 +67,25 @@ export default async function Home() {
           </div>
         ) : null}
       </section>
+      {!drops.length ? (
+        <div className="availability-note">
+          <span className="status-dot" />
+          <p>
+            <strong>No public drops yet.</strong> You can explore the
+            walkthrough while the first drop gets ready.
+          </p>
+          <Link href="/admin">
+            For organisers <ArrowRight size={15} />
+          </Link>
+        </div>
+      ) : (
+        <div className="availability-note">
+          <p>New to Tenjō? See how every loss earns another ticket.</p>
+          <Link href="/demo">
+            Try the walkthrough <ArrowRight size={15} />
+          </Link>
+        </div>
+      )}
       <section className="how-section" aria-labelledby="how-heading">
         <div className="section-header">
           <h2 id="how-heading">A little less luck. A little more fair.</h2>

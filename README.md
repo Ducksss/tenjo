@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://tenjo-azure.vercel.app">Live site</a> ·
+  <a href="https://tenjo-azure.vercel.app/demo">Try the walkthrough</a> ·
   <a href="#getting-started">Run the local demo</a> ·
   <a href="docs/PRD.md">Read the PRD</a> ·
   <a href="docs/OPERATIONS.md">Integration guide</a> ·
@@ -20,7 +21,7 @@
 
 Scarce drops leave fans losing again and again. Tenjō remembers those losses: one base ticket, one extra per past loss in the same series, up to six total. A win resets the count. Every entry, weight and result has a public record.
 
-**Try it locally without credentials.** Entry, duplicate refusal, weighted server draws, loss counts and pickup work with explicitly labelled demo identities. World ID integration is implemented and mock-tested; **the first real simulator proof is still pending credentials**. Production pickup awaits verified liveness. The [live site](https://tenjo-azure.vercel.app) is deployed on Vercel with hosted Postgres and an empty production database. World entry is unavailable until credentials are configured; the interactive test-identity demo remains local. Sui is not implemented.
+**Try it locally without credentials.** Entry, duplicate refusal, weighted server draws, loss counts and pickup work with explicitly labelled demo identities. World ID integration is implemented and mock-tested; **the first real simulator proof is still pending credentials**. Production pickup awaits verified liveness. The [live site](https://tenjo-azure.vercel.app) is deployed on Vercel with hosted Postgres and an empty production database. World entry is unavailable until credentials are configured; a [browser-only walkthrough](https://tenjo-azure.vercel.app/demo) explains the rules with scripted outcomes and no saved entries. The full database-backed test-identity demo remains local. Sui is not implemented.
 
 <details>
 <summary>Contents</summary>
@@ -88,6 +89,10 @@ For real World staging, copy [.env.example](.env.example) to `.env.local` and fo
 
 ## Usage
 
+**First visit:** [try the hosted walkthrough](https://tenjo-azure.vercel.app/demo). Follow a scripted loss, increased ticket weight, win/reset and pickup. It needs no credentials and does not call lottery APIs or save entries.
+
+**Local database demo:**
+
 1. Open **The weekend console drop** and enter as **Fan A**. The receipt shows four tickets.
 2. Try Fan A again. The app refuses the duplicate without creating another entry.
 3. Look up the receipt's anonymous code to inspect its history.
@@ -126,7 +131,7 @@ npm run build
 npm run format:check
 ```
 
-The implementation was checked with nine backend tests, four browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100.
+The implementation was checked with eleven backend tests, seven browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100.
 
 Real World credentials, production liveness and Sui require separate integration validation. Deployment instructions and the measured debrief are in the [operations guide](docs/OPERATIONS.md).
 
@@ -142,7 +147,7 @@ Real World credentials, production liveness and Sui require separate integration
 - [ ] Stretch: deposits/refunds and unclaimed-item handoff, after both phase gates pass.
 - [ ] Record two clean rehearsals, complete the debrief and submit to ETHGlobal.
 
-The [PRD](docs/PRD.md) contains the original gates and open team decisions. [Implementation notes](docs/IMPLEMENTATION.md) document the current choices and limits.
+The [PRD](docs/PRD.md) covers the current product, acceptance criteria, release gates and open decisions. The [original PRD](docs/PRD-ORIGINAL.md) preserves the initial plan. [Implementation notes](docs/IMPLEMENTATION.md) document the current choices and limits.
 
 ## Contributing
 

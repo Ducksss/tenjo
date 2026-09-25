@@ -43,18 +43,37 @@ export function Notice({
 export function Field({
   label,
   hint,
+  error,
   id,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  hint?: string;
+  error?: string;
+}) {
   return (
     <div className="form-field">
       <label htmlFor={id}>{label}</label>
       <input
         id={id}
         {...props}
-        aria-describedby={hint ? `${id}-hint` : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={
+          [
+            hint ? `${id}-hint` : "",
+            error ? `${id}-error` : "",
+            props["aria-describedby"] || "",
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
       />
       {hint ? <small id={`${id}-hint`}>{hint}</small> : null}
+      {error ? (
+        <small className="field-error" id={`${id}-error`}>
+          {error}
+        </small>
+      ) : null}
     </div>
   );
 }

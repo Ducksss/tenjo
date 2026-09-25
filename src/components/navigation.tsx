@@ -1,7 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Grid2X2, ScanLine, Ticket, Plus, ArrowUpRight } from "lucide-react";
+import {
+  Grid2X2,
+  ScanLine,
+  Ticket,
+  Plus,
+  ArrowUpRight,
+  Play,
+} from "lucide-react";
 export function Navigation() {
   const path = usePathname();
   return (
@@ -16,6 +23,7 @@ export function Navigation() {
       <nav aria-label="Main navigation">
         {[
           { href: "/", label: "Discover drops", icon: Grid2X2 },
+          { href: "/demo", label: "Try the walkthrough", icon: Play },
           { href: "/audit", label: "Public record", icon: ScanLine },
           { href: "/codes", label: "My entries", icon: Ticket },
         ].map(({ href, label, icon: Icon }) => (
@@ -23,7 +31,11 @@ export function Navigation() {
             key={href}
             href={href}
             className={`nav-link ${path === href || (href !== "/" && path.startsWith(href)) ? "selected" : ""}`}
-            aria-current={path === href ? "page" : undefined}
+            aria-current={
+              path === href || (href !== "/" && path.startsWith(href))
+                ? "page"
+                : undefined
+            }
           >
             <Icon size={19} />
             {label}

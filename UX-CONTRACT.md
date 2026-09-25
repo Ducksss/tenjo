@@ -6,7 +6,7 @@ Business source: docs/PRD.md (R1–R15). Visual source: DESIGN.md. No inherited 
 | ------------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Buttons and fields | src/components/ui.tsx                                       | Native elements, focus, busy state, labelled fields                     |
 | Feedback           | Notice in ui.tsx                                            | Persistent inline status/alert, errors retain form data                 |
-| Date               | src/lib/format.ts                                           | JST display; organiser submits explicit ISO +09:00 text                 |
+| Date               | src/lib/format.ts                                           | JST display; native wall-time inputs converted by date-input.ts         |
 | Select/Listbox     | Native select via field classes                             | Platform popup/keyboard accepted                                        |
 | Scrollbars         | globals.css                                                 | Global visible standard + WebKit fallback, forced-colors override       |
 | Forms              | zod schemas in src/lib/service.ts; client inline validation | noValidate, no native validation bubbles                                |
@@ -25,9 +25,17 @@ Checks: npm run lint; npm run typecheck; npm test; npm run build; npm run test:e
 
 ## Canonical UI Map
 
-| Capability     | Canonical owner              | Source of truth                          | Allowed variants                         | Verification                                                      |
-| -------------- | ---------------------------- | ---------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------- |
-| Select/Listbox | Native select in DropActions | DESIGN.md / demo-only identity selection | Native platform popup                    | tests/app.spec.ts focus and selection; keyboard lookup submission |
-| Date           | src/lib/format.ts            | PRD entry window / explicit JST          | Typed ISO input, Intl display            | unit + admin browser flow                                         |
-| Form           | ui.tsx fields and zod schema | PRD R1 / server validation               | Admin create, code lookup                | tests/app.spec.ts                                                 |
-| Scrollbar      | src/app/globals.css          | DESIGN.md runtime tokens                 | Global baseline, table horizontal scroll | Mobile overflow assertion                                         |
+| Capability     | Canonical owner              | Source of truth                          | Allowed variants                                              | Verification                                                      |
+| -------------- | ---------------------------- | ---------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Select/Listbox | Native select in DropActions | DESIGN.md / demo-only identity selection | Native platform popup                                         | tests/app.spec.ts focus and selection; keyboard lookup submission |
+| Date           | src/lib/date-input.ts        | PRD entry window / explicit JST          | Native date/time input, explicit JST conversion, Intl display | unit + admin browser flow                                         |
+| Form           | ui.tsx fields and zod schema | PRD R1 / server validation               | Admin create, code lookup                                     | tests/app.spec.ts                                                 |
+| Scrollbar      | src/app/globals.css          | DESIGN.md runtime tokens                 | Global baseline, table horizontal scroll                      | Mobile overflow assertion                                         |
+
+## First visit and organiser improvements
+
+The hosted /demo walkthrough is a browser-only explanation of the PRD’s ticket/reset/pickup rules. Example outcomes are scripted, records are ephemeral, and no World proof or API mutation occurs. Reset and refresh discard example state. It never shares a code with real lookup. Empty discovery, audit and lookup flows offer a route to this example without requiring organiser access.
+
+The organiser form groups drop details, JST scheduling and publishing. Native datetime-local controls use the browser’s picker presentation; values are explicitly treated as Japan wall times and converted by src/lib/date-input.ts, never by the browser’s local timezone. Invalid values remain in place, errors are linked to their fields, and submit focuses the first invalid field. Server authority and creation destination are unchanged. Password reveal is transient and nothing is persisted. FormLeaveGuard confirms in-app link navigation with a native HTML dialog and warns on actual page unload; Keep editing preserves all fields. Browser history navigation remains browser-owned.
+
+Verification: tests/app.spec.ts exercises the walkthrough’s loss/win/refusal/reset states, field-error focus, schedule preset and timezone conversion, narrow viewports and keyboard controls. tests/date-input.test.ts checks JST midnight and impossible dates.

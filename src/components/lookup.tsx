@@ -1,11 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowRight } from "lucide-react";
 import { Button, Notice } from "./ui";
 export function Lookup({ initial = "" }: { initial?: string }) {
   const [value, setValue] = useState(initial);
   const [error, setError] = useState("");
+  const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
   return (
     <form
@@ -15,6 +16,7 @@ export function Lookup({ initial = "" }: { initial?: string }) {
         e.preventDefault();
         if (!/^[a-f0-9]{32}$/i.test(value.trim())) {
           setError("Enter the full 32-character code from your entry receipt.");
+          input.current?.focus();
           return;
         }
         setError("");
@@ -25,6 +27,7 @@ export function Lookup({ initial = "" }: { initial?: string }) {
       <div className="lookup-row">
         <Search size={19} aria-hidden="true" />
         <input
+          ref={input}
           id="code-lookup"
           value={value}
           onChange={(e) => {
@@ -44,6 +47,7 @@ export function Lookup({ initial = "" }: { initial?: string }) {
             onClick={() => {
               setValue("");
               setError("");
+              input.current?.focus();
             }}
             aria-label="Clear code"
           >

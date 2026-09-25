@@ -1764,3 +1764,523 @@ main {
     border-left-color: CanvasText;
   }
 }
+
+/* First visit and guided example share the app’s ticket language. */
+.demo-invitation {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(200px, 0.8fr);
+  align-items: center;
+  gap: 40px;
+  background: var(--sage);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 38px;
+  overflow: hidden;
+}
+.demo-invitation h2 {
+  font: 40px/1.13 var(--font-display);
+  letter-spacing: -1px;
+  margin: 14px 0;
+}
+.demo-invitation p {
+  max-width: 440px;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.demo-invitation-note {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 12px;
+}
+.invitation-ticket {
+  background: var(--accent);
+  color: var(--primary);
+  padding: 28px;
+  border-radius: 16px;
+  transform: rotate(5deg);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 255px;
+  justify-self: center;
+  width: 100%;
+}
+.invitation-ticket > span {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+}
+.invitation-ticket strong {
+  font: 86px/1 var(--font-display);
+}
+.invitation-ticket strong span {
+  font-size: 28px;
+  margin-left: 10px;
+}
+.invitation-ticket-rule {
+  border-top: 1px dashed var(--primary);
+  opacity: 0.4;
+  margin: 6px -28px;
+}
+.availability-note {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 22px 2px;
+  font-size: 12px;
+}
+.availability-note p {
+  flex: 1;
+}
+.availability-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+  min-height: 44px;
+}
+.lookup-help {
+  display: flex;
+  gap: 16px;
+  padding: 28px 0;
+  max-width: 590px;
+  border-top: 1px solid var(--border);
+  margin-top: 28px;
+}
+.lookup-help > svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.lookup-help h2 {
+  font-size: 16px;
+}
+.lookup-help p {
+  font-size: 13px;
+  margin: 9px 0;
+}
+.walkthrough-heading {
+  padding-bottom: 20px;
+}
+.walkthrough-disclaimer {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 23px;
+}
+.walkthrough-disclaimer .pill {
+  flex-shrink: 0;
+}
+.walkthrough-disclaimer p {
+  font-size: 12px;
+}
+.walkthrough-steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0;
+  margin: 28px 0;
+  gap: 16px;
+}
+.walkthrough-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.walkthrough-steps li > span {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+.walkthrough-steps .reached {
+  color: var(--primary);
+}
+.walkthrough-steps .reached > span {
+  background: var(--sage);
+  border-color: var(--primary);
+}
+.walkthrough-steps [aria-current="step"] {
+  font-weight: bold;
+}
+.walkthrough-steps [aria-current="step"] > span {
+  background: var(--primary);
+  color: white;
+}
+.walkthrough-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 42px;
+  align-items: start;
+  padding: 26px 0;
+}
+.walkthrough-story h2 {
+  font: 43px/1.12 var(--font-display);
+  letter-spacing: -1px;
+  margin: 16px 0;
+  min-height: 96px;
+}
+.walkthrough-story h2:focus {
+  outline: none;
+}
+.walkthrough-copy {
+  font-size: 15px;
+  line-height: 1.8;
+  min-height: 110px;
+  max-width: 560px;
+}
+.walkthrough-actions {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+.walkthrough-feedback {
+  min-height: 76px;
+}
+.walkthrough-explainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+}
+.walkthrough-explainer svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.walkthrough-explainer p {
+  font-size: 12px;
+}
+.example-ticket {
+  padding: 26px;
+  border-radius: 18px;
+  background: var(--sage);
+  border: 1px solid var(--border);
+  color: var(--primary);
+}
+.example-ticket-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.example-ticket-caption {
+  display: block;
+  font-size: 13px;
+  margin-top: 30px;
+}
+.example-ticket-count {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font: 100px/1.1 var(--font-display);
+  margin: 10px 0 20px;
+}
+.example-ticket-count span {
+  font-size: 30px;
+}
+.example-pips {
+  display: flex;
+  gap: 6px;
+}
+.example-pips > span {
+  height: 34px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--primary);
+  border-radius: 5px;
+}
+.example-pips > .filled {
+  background: var(--primary);
+  color: white;
+  border-style: solid;
+}
+.example-ticket > p {
+  font-size: 12px;
+  margin-top: 12px;
+}
+.example-ticket-stub {
+  display: grid;
+  gap: 6px;
+  border-top: 1px dashed var(--muted);
+  margin: 28px -26px -26px;
+  padding: 22px 26px;
+}
+.example-ticket-stub span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.example-ticket-stub strong {
+  font: 18px var(--font-code);
+}
+.example-record {
+  margin: 24px 0;
+}
+.example-record > p {
+  margin-top: 14px;
+}
+.form-section {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+  min-inline-size: 0;
+}
+.form-section + .form-section {
+  border-top: 1px solid var(--border);
+  padding-top: 28px;
+  margin-top: 8px;
+}
+.form-section legend {
+  padding: 0 0 20px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.form-section legend span {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--sage);
+  color: var(--primary);
+  font: 12px var(--font-code);
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+}
+.form-field input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.form-field .field-error {
+  color: var(--danger);
+}
+.schedule-hint {
+  display: grid;
+  gap: 6px;
+}
+.schedule-hint p {
+  font-size: 13px;
+}
+.schedule-hint .text-button {
+  justify-self: start;
+}
+.password-field {
+  position: relative;
+}
+.password-field input {
+  padding-right: 50px;
+}
+.password-toggle {
+  position: absolute;
+  top: 28px;
+  right: 4px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.password-toggle:hover {
+  color: var(--primary);
+  background: var(--sage);
+}
+.organiser-note {
+  max-width: 720px;
+  margin: -8px 0 28px;
+  padding: 18px 20px;
+  border-left: 3px solid var(--primary);
+  background: var(--sage);
+  font-size: 13px;
+}
+.organiser-note a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .demo-invitation {
+    gap: 20px;
+    padding: 28px;
+  }
+  .demo-invitation h2 {
+    font-size: 34px;
+  }
+  .walkthrough-grid {
+    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+}
+@media (max-width: 700px) {
+  .demo-invitation {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 26px;
+  }
+  .demo-invitation h2 {
+    font-size: 33px;
+  }
+  .invitation-ticket {
+    display: none;
+  }
+  .availability-note {
+    flex-wrap: wrap;
+  }
+  .availability-note > p {
+    flex-basis: 80%;
+  }
+  .availability-note > a {
+    margin-left: 0;
+  }
+  .walkthrough-disclaimer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .walkthrough-steps {
+    gap: 10px;
+  }
+  .walkthrough-steps li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 10px;
+  }
+  .walkthrough-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 10px;
+    gap: 16px;
+  }
+  .walkthrough-story h2 {
+    font-size: 36px;
+    min-height: 81px;
+  }
+  .walkthrough-copy {
+    min-height: 130px;
+    font-size: 14px;
+  }
+  .walkthrough-actions .button {
+    width: 100%;
+    white-space: normal;
+  }
+  .example-ticket {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
+    padding: 22px;
+  }
+  .example-ticket-top {
+    grid-column: 1/-1;
+  }
+  .example-ticket-caption {
+    margin-top: 12px;
+    grid-column: 1/-1;
+  }
+  .example-ticket-count {
+    margin: 0;
+    font-size: 70px;
+  }
+  .example-ticket-count span {
+    font-size: 22px;
+  }
+  .example-pips {
+    align-self: center;
+    gap: 4px;
+  }
+  .example-pips > span {
+    height: 25px;
+  }
+  .example-pips svg {
+    width: 12px;
+  }
+  .example-ticket > p {
+    margin: 0;
+  }
+  .example-ticket-stub {
+    grid-column: 1/-1;
+    margin: 10px -22px -22px;
+    padding: 18px 22px;
+  }
+  .example-record .section-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .form-section legend {
+    font-size: 17px;
+  }
+  .form-field input[type="datetime-local"] {
+    min-width: 0;
+    width: 100%;
+  }
+}
+@media (max-width: 520px) {
+  .sidebar nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .sidebar nav .nav-link {
+    white-space: normal;
+    min-height: 44px;
+    gap: 8px;
+    padding: 9px;
+  }
+  .sidebar nav .nav-link svg {
+    flex-shrink: 0;
+  }
+}
+@media (max-width: 700px) {
+  .walkthrough-heading {
+    padding: 0 0 18px;
+  }
+  .walkthrough-heading h1 {
+    font-size: 34px;
+    margin: 10px 0 12px;
+  }
+  .walkthrough-heading p {
+    font-size: 13px;
+  }
+  .walkthrough-steps {
+    margin: 20px 0;
+  }
+  .walkthrough-story h2 {
+    font-size: 32px;
+    min-height: 72px;
+    margin: 12px 0;
+  }
+  .walkthrough-copy {
+    min-height: 105px;
+  }
+  .walkthrough-actions {
+    margin-top: 14px;
+  }
+}
+.leave-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.leave-dialog::backdrop {
+  background: rgb(32 43 39 / 45%);
+}
+.leave-dialog h2 {
+  font: 28px/1.2 var(--font-display);
+}
+.leave-dialog p {
+  font-size: 14px;
+  margin-top: 14px;
+}

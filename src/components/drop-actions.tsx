@@ -167,8 +167,12 @@ export function DropActions({
           <p className="action-hint">Free entry · One entry per identity</p>
           {!demo && !worldReady ? (
             <Notice>
-              World ID setup is pending. Entries stay disabled until server
-              verification is configured.
+              The organiser is finishing World ID setup. You can explore the
+              rules now in the{" "}
+              <Link className="text-link" href="/demo">
+                walkthrough
+              </Link>
+              , or come back to enter once verification is ready.
             </Notice>
           ) : null}
         </>

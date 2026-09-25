@@ -65,9 +65,9 @@ Quiet borders on cards, slight ticket shadow only. No blurred backgrounds or fix
 
 ## Components
 
-Shared controls in src/components/ui.tsx own button, field and inline status. Busy controls remain stable and disabled; statuses use aria-live. Native links navigate; buttons mutate. Organiser forms use text inputs for ISO/JST timestamps with explanatory format, avoiding hidden browser-timezone conversion. Native selects are allowed with platform popup behavior. Tables are semantic with labelled overflow and URL pagination. IDKit owns its verification modal. No app modal is needed for reversible entry; draw has an inline review/confirm step because settlement is final.
+Shared controls in src/components/ui.tsx own button, field and inline status. Busy controls remain stable and disabled; statuses use aria-live. Native links navigate; buttons mutate. Organiser forms use native date/time inputs with an explicit JST wall-time contract. The platform owns the picker; src/lib/date-input.ts converts to UTC independently of the browser timezone. Group details, scheduling and publishing with field-level errors and first-error focus. Native selects are allowed with platform popup behavior. Tables are semantic with labelled overflow and URL pagination. IDKit owns its verification modal. No app modal is needed for reversible entry; draw has an inline review/confirm step because settlement is final.
 
-Lucide outlined icons at 18–22px always have text labels or accessible names. Motion is limited to small hover feedback and a pending spinner; reduced-motion disables animation. Copy names actions: Enter drop, Run draw, Collect item, Look up code. Always state demo/setup/server status accurately. No invented percentages or Sui transactions.
+Lucide outlined icons at 18–22px always have text labels or accessible names. Motion is limited to small hover feedback and a pending spinner; reduced-motion disables animation. Copy names actions: Enter drop, Run draw, Collect item, Look up code. Always state demo/setup/server status accurately. No invented live odds or Sui transactions. The /demo walkthrough is a separately labelled, browser-only teaching example with scripted outcomes and arithmetic odds; it never creates database entries. Public empty states lead visitors to this walkthrough, with organiser actions secondary.
 
 ## Do's and Don'ts
 

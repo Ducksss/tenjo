@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { jstInputValue } from "../src/lib/date-input";
 import { demoCode } from "../src/lib/domain";
 
 test("desktop discovery, duplicate refusal, 4-ticket receipt, public history and mobile reflow", async ({
@@ -126,7 +127,9 @@ test("organiser creates a real drop; missing World config cannot admit anyone", 
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "Complete every required field",
   );
-  await page.getByLabel("Organiser password").fill("tenjo-e2e-admin-password");
+  await page
+    .getByLabel("Organiser password", { exact: true })
+    .fill("tenjo-e2e-admin-password");
   await page
     .getByLabel("Drop title", { exact: true })
     .fill("World staging integration");
@@ -137,10 +140,10 @@ test("organiser creates a real drop; missing World config cannot admit anyone", 
   const now = Date.now();
   await page
     .getByLabel("Entries open (JST)", { exact: true })
-    .fill(new Date(now - 60000).toISOString());
+    .fill(jstInputValue(new Date(now - 60000)));
   await page
     .getByLabel("Entries close (JST)", { exact: true })
-    .fill(new Date(now + 3600000).toISOString());
+    .fill(jstInputValue(new Date(now + 3600000)));
   await page.getByRole("button", { name: "Create drop", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "World staging integration" }),
@@ -200,4 +203,149 @@ test("keyboard lookup, identity selection, no-results filter and offline recover
   ).toBeVisible();
   await page.getByRole("link", { name: "Clear", exact: true }).click();
   await expect(page.getByRole("table")).toContainText(demoCode("fan-b"));
+});
+
+test("walkthrough teaches both outcomes and refusals without writing entries", async ({
+  page,
+  context,
+}) => {
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().includes("/api/"))
+      writes.push(request.url());
+  });
+  await page.goto("/demo");
+  await expect(page).toHaveTitle("Try the walkthrough · Tenjō");
+  await expect(
+    page.getByText("Scripted outcomes.", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Enter the example drop" }).click();
+  await expect(
+    page.getByRole("heading", { name: "One entry. Four tickets." }),
+  ).toBeFocused();
+  await page.getByRole("button", { name: "Try entering twice" }).click();
+  await expect(page.getByRole("status")).toContainText("already entered");
+  await page
+    .getByRole("button", { name: "Reveal example result", exact: true })
+    .click();
+  await expect(page.getByRole("table")).toContainText("3 → 4");
+  await context.setOffline(true);
+  await page
+    .getByRole("button", { name: "Enter the next example drop" })
+    .click();
+  await expect(page.getByText(/45.5% chance/)).toBeVisible();
+  await page
+    .getByRole("button", { name: "Reveal next example result" })
+    .click();
+  await page.getByRole("button", { name: "Try another identity" }).click();
+  await expect(page.getByRole("status")).toContainText("didn’t win");
+  await page.getByRole("button", { name: "Try example pickup" }).click();
+  await expect(page.getByRole("table")).toContainText("Won · collected");
+  await expect(page.getByRole("table")).toContainText("4 → 0");
+  await context.setOffline(false);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.getByRole("button", { name: "Start again", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "You’ve shown up before." }),
+  ).toBeFocused();
+  await expect(page.getByRole("table")).toContainText("Not entered");
+  await page.screenshot({
+    path: "/private/tmp/tenjo-walkthrough-mobile.png",
+    fullPage: true,
+  });
+  expect(writes).toEqual([]);
+});
+
+test("organiser errors focus the right field and scheduling stays JST in a different timezone", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    timezoneId: "America/Los_Angeles",
+    viewport: { width: 390, height: 844 },
+  });
+  const page = await context.newPage();
+  await page.goto("http://127.0.0.1:3100/admin");
+  await page.getByRole("button", { name: "Create drop", exact: true }).click();
+  await expect(page.getByLabel("Drop title", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("Drop title", { exact: true })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await page
+    .getByLabel("Drop title", { exact: true })
+    .fill("An accessible test drop");
+  await page.getByLabel("Series name", { exact: true }).fill("Test series");
+  await page.getByLabel("Series ID", { exact: true }).fill("test-series");
+  await page
+    .getByRole("button", { name: "Start now · close in 1 hour" })
+    .click();
+  const open = await page
+    .getByLabel("Entries open (JST)", { exact: true })
+    .inputValue();
+  expect(Math.abs(Date.parse(open + ":00+09:00") - Date.now())).toBeLessThan(
+    65000,
+  );
+  await page.getByLabel("Entries close (JST)", { exact: true }).fill(open);
+  await page
+    .getByLabel("Organiser password", { exact: true })
+    .fill("test-password");
+  await page
+    .getByRole("button", { name: "Show organiser password", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Organiser password", { exact: true }),
+  ).toHaveAttribute("type", "text");
+  await page
+    .getByRole("button", { name: "Hide organiser password", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Create drop", exact: true }).click();
+  await expect(
+    page.getByLabel("Entries close (JST)", { exact: true }),
+  ).toBeFocused();
+  await expect(
+    page.getByText("Closing time must be after opening time.", { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await context.close();
+});
+
+test("unfinished organiser form can be kept or discarded when following navigation", async ({
+  page,
+}) => {
+  await page.goto("/admin");
+  await page
+    .getByLabel("Drop title", { exact: true })
+    .fill("Keep these details");
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Try the walkthrough" })
+    .click();
+  const dialog = page.getByRole("dialog", {
+    name: "Leave this unfinished drop?",
+  });
+  await expect(dialog).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Keep editing" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByLabel("Drop title", { exact: true })).toHaveValue(
+    "Keep these details",
+  );
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Try the walkthrough" })
+    .click();
+  await page.getByRole("button", { name: "Discard and leave" }).click();
+  await expect(page).toHaveURL(/\/demo$/);
 });
