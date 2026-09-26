@@ -88,7 +88,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 - _What stops bots?_ Entry needs a World ID proof verified on our server, and the nullifier becomes an anonymous code. The Move contract also refuses a repeat code, so a second wallet can’t enter the same human twice.
 - _Real World IDs get a fresh code every drop. How do their losses carry?_ A passkey on the fan’s phone keeps one code for them. World ID lets them in once per drop; the passkey remembers their losses. Tenjō stores only its public key, and a second passkey never buys a second entry.
 - _Why not World ID session proofs?_ They would tie the pity to the person, and we’d switch when their server verification is documented. They also add a second World App prompt. Passkeys work on every phone today.
-- _Two passports?_ It’s a known limit of document credentials, and we disclose it. Orb Proof of Human is the configured fallback.
+- _Two passports?_ It’s a known limit of document credentials, and we disclose it. Real World IDs enter with Orb Proof of Human, which closes it; the passport credential runs in World’s simulator.
 - _Scalping?_ The winner’s `Ticket` has `key` but not `store`, so only our module could move it, and it has no transfer function. Pickup also needs a fresh World ID proof from the winner.
 - _Does it scale?_ The demo caps a drop at 300 entrants. Settlement is one atomic transaction, and Sui batches up to 1,024 payments in one. Big ballots would shard into several drops, or refunds would become claimable instead of pushed.
 
@@ -106,7 +106,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 **World (Best use of IDKit):**
 
 - **Trust moment:** fair access to a scarce benefit.
-- **Credential:** passport, because we need uniqueness, not identity. Orb is the fallback.
+- **Credential:** Orb Proof of Human for real World IDs, because we need uniqueness, not identity; the simulator runs passport, the document path for fans without an Orb visit. Selfie Check alone lacks uniqueness.
 - **Verification:** server-side, byte for byte, with nullifier, action, environment, nonce and signal all checked.
 - **Alternative paths:** duplicate, cancelled, missing credential, outage and wrong collector are all refused without saving anything.
 - **Returning fans:** World ID 4 nullifiers are single-use per action, so each drop has its own action and a real World ID starts fresh every time. A passkey carries the fan’s code; World ID still admits one entry per person per drop.
