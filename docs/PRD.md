@@ -157,7 +157,8 @@ Priority: **P0** = core acceptance; **P1** = Sui phase; **P2** = conditional str
 | Passkey unknown or its signature invalid        | Nothing saved; enter again to create a new passkey                                  | No entry; the World ID proof is not spent   |
 | Passkey already entered in this drop            | Use your own passkey, or enter with World ID alone                                  | No entry; the World ID proof is not spent   |
 | Wallet can't connect                            | "Connection failed" from the wallet picker (Slush's web wallet is blocked in Japan) | Nothing                                     |
-| Deposit refused in the wallet                   | Sui refused the entry; the deposit did not move                                     | No entry                                    |
+| Deposit refused or cancelled in the wallet      | The wallet didn't approve the deposit, which did not move; entry not completed      | No entry                                    |
+| Deposit refused by Sui                          | Sui refused the entry; the deposit did not move                                     | No entry                                    |
 | Missing configuration                           | Verification is unavailable                                                         | Fail closed                                 |
 | Closed, not-yet-open or full drop               | The current eligibility state                                                       | No entry                                    |
 | Early draw                                      | "Draw not open yet"                                                                 | No change                                   |
