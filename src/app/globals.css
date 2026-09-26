@@ -2936,7 +2936,7 @@ main {
   font-size: 12.5px;
   overflow-wrap: anywhere;
 }
-.evidence a {
+.evidence > a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2945,13 +2945,20 @@ main {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.evidence span a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .panel.plum .evidence {
   border-color: #6a3a4c;
   background: #5a2236;
   color: var(--on-dark);
 }
-.panel.plum .evidence a {
+.panel.plum .evidence > a {
   color: var(--lime);
+}
+.panel.plum .evidence span a {
+  color: var(--on-dark);
 }
 .panel.plum .evidence code {
   background: none;
@@ -3954,4 +3961,43 @@ mysten-dapp-kit-connect-modal {
   --font-weight-medium: 600;
   --font-weight-semibold: 600;
   --radius: 1.25rem;
+}
+.receipt .capsules {
+  margin: -6px 0 12px;
+}
+.pity-card .capsules {
+  margin: 4px 0 10px;
+}
+.sui-evidence {
+  margin-top: 24px;
+  padding: 27px;
+  border-radius: 24px;
+  background: var(--periwinkle-soft);
+}
+.sui-evidence h2 {
+  margin: 10px 0 4px;
+  font: 500 27px/1.2 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.evidence-note {
+  color: var(--muted);
+}
+.seed-check {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.seed-check code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.recompute {
+  font-size: 14px;
+  font-weight: 600;
+}
+.recompute.match {
+  color: var(--forest);
+}
+.recompute.mismatch {
+  color: var(--danger);
 }

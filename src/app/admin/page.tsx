@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AdminForm } from "@/components/admin-form";
+import { suiStatus } from "@/lib/sui-status";
 export const metadata = { title: "Create a drop" };
 export default function Admin() {
+  const sui = suiStatus();
   return (
     <>
       <section className="page-heading">
@@ -14,7 +16,7 @@ export default function Admin() {
         <Link href="/demo">Try the walkthrough without an account.</Link>
       </div>
       <section className="admin-panel">
-        <AdminForm />
+        <AdminForm suiNetwork={sui.ready ? sui.network : null} />
       </section>
     </>
   );

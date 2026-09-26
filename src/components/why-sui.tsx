@@ -1,5 +1,6 @@
 import { Archive, ArrowUpRight, Coins, Dices, Layers } from "lucide-react";
-import { shortId, suiscan, type SuiStatus } from "@/lib/sui-status";
+import Link from "next/link";
+import { explorable, shortId, suiscan, type SuiStatus } from "@/lib/sui-status";
 
 const facts = [
   {
@@ -28,7 +29,18 @@ const facts = [
   },
 ];
 
-export function WhySui({ sui }: { sui: SuiStatus }) {
+export function WhySui({
+  sui,
+  latestDraw,
+}: {
+  sui: SuiStatus;
+  latestDraw?: {
+    id: string;
+    title: string;
+    settle_tx: string;
+    sui_network: string;
+  };
+}) {
   return (
     <section className="panel plum sui-section" aria-labelledby="sui-heading">
       <div className="section-intro">
@@ -109,9 +121,11 @@ export function WhySui({ sui }: { sui: SuiStatus }) {
               {sui.network}
             </span>
             <code title={sui.packageId}>{shortId(sui.packageId)}</code>
-            <a href={suiscan(sui.network, "object", sui.packageId)}>
-              View on Suiscan <ArrowUpRight size={14} aria-hidden="true" />
-            </a>
+            {explorable(sui.network) ? (
+              <a href={suiscan(sui.network, "object", sui.packageId)}>
+                View on Suiscan <ArrowUpRight size={14} aria-hidden="true" />
+              </a>
+            ) : null}
           </li>
         ) : (
           <li className="evidence">
@@ -124,6 +138,28 @@ export function WhySui({ sui }: { sui: SuiStatus }) {
             </span>
           </li>
         )}
+        {sui.ready && latestDraw ? (
+          <li className="evidence">
+            <span>
+              Latest settlement ·{" "}
+              <Link href={`/drops/${latestDraw.id}`}>{latestDraw.title}</Link>
+            </span>
+            <code title={latestDraw.settle_tx}>
+              {shortId(latestDraw.settle_tx)}
+            </code>
+            {explorable(latestDraw.sui_network) ? (
+              <a
+                href={suiscan(
+                  latestDraw.sui_network,
+                  "tx",
+                  latestDraw.settle_tx,
+                )}
+              >
+                View on Suiscan <ArrowUpRight size={14} aria-hidden="true" />
+              </a>
+            ) : null}
+          </li>
+        ) : null}
       </ul>
     </section>
   );

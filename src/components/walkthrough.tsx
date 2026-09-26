@@ -160,7 +160,9 @@ export function Walkthrough() {
             <p>
               {afterWin
                 ? "A win resets your count even if you don’t collect. You can’t bank a winning streak’s extra chances."
-                : "In the real flow, the server verifies World ID before accepting an entry. A browser’s claim alone never counts."}
+                : stage === "lost"
+                  ? "On a paid drop, a losing deposit comes straight back in the same Sui transaction that ran the draw, and your loss is written to the series’ ledger on-chain."
+                  : "In the real flow, the server verifies World ID before accepting an entry. A browser’s claim alone never counts."}
             </p>
           </div>
         </section>

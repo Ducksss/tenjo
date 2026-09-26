@@ -5,6 +5,7 @@ import { AppError } from "@/lib/domain";
 import { pageNumber } from "@/lib/http";
 import { Lookup } from "@/components/lookup";
 import { Notice } from "@/components/ui";
+import { Capsules } from "@/components/capsules";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Entry history" };
 export default async function CodePage({
@@ -45,6 +46,7 @@ export default async function CodePage({
               {1 + Math.min(5, p.losses)}
               <small>chances next time</small>
             </strong>
+            <Capsules count={1 + Math.min(5, p.losses)} />
             <p>
               {p.losses} past loss{p.losses === 1 ? "" : "es"} · 6 chances
               maximum

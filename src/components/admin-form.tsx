@@ -7,7 +7,7 @@ import { FormLeaveGuard } from "./form-leave-guard";
 import { api } from "@/lib/client-api";
 import { jstInputToISO, jstInputValue } from "@/lib/date-input";
 
-export function AdminForm() {
+export function AdminForm({ suiNetwork }: { suiNetwork?: string | null }) {
   const router = useRouter();
   const submitting = useRef(false);
   const [dirty, setDirty] = useState(false);
@@ -47,6 +47,7 @@ export function AdminForm() {
           const seriesId = String(form.get("series_id") || "").trim();
           const seriesName = String(form.get("series_name") || "").trim();
           const items = Number(form.get("items"));
+          const price = String(form.get("price") || "").trim();
           const opensAt = jstInputToISO(opens);
           const closesAt = jstInputToISO(closes);
           const nextErrors: Record<string, string> = {};
@@ -60,6 +61,12 @@ export function AdminForm() {
               "Use 1–64 lowercase letters, numbers or hyphens, such as weekend-tech.";
           if (!Number.isInteger(items) || items < 1 || items > 300)
             nextErrors.items = "Choose a whole number from 1 to 300.";
+          if (
+            price &&
+            (!/^\d{1,4}(\.\d{1,9})?$/.test(price) || Number(price) <= 0)
+          )
+            nextErrors.price =
+              "Enter an amount in SUI, such as 0.01, or leave it empty for a free drop.";
           if (!opensAt)
             nextErrors.opens_at = "Choose a valid opening date and time.";
           if (!closesAt)
@@ -97,6 +104,7 @@ export function AdminForm() {
                 items,
                 opens_at: opensAt,
                 closes_at: closesAt,
+                ...(price ? { price } : {}),
               }),
             });
             setDirty(false);
@@ -164,6 +172,18 @@ export function AdminForm() {
             hint="One item per winner. Up to 300 items."
             required
           />
+          {suiNetwork ? (
+            <Field
+              label="Entry deposit in SUI (optional)"
+              id="price"
+              name="price"
+              inputMode="decimal"
+              placeholder="0.01"
+              maxLength={14}
+              hint={`Leave empty for a free drop. Winners pay the deposit for their seat; losers get it back in the settlement transaction on Sui ${suiNetwork}.`}
+              error={errors.price}
+            />
+          ) : null}
         </fieldset>
         <fieldset disabled={busy} className="form-section">
           <legend>

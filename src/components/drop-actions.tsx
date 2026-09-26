@@ -14,6 +14,7 @@ import { api } from "@/lib/client-api";
 import type { DropStatus } from "@/lib/format";
 import { shortId, suiscan } from "@/lib/sui-status";
 import { Button, Notice } from "./ui";
+import { Capsules } from "./capsules";
 import { useNow } from "./use-now";
 import type { Challenge } from "./world-widget";
 import type { EntryPermit, SuiWalletApi } from "./sui-wallet";
@@ -316,6 +317,7 @@ export function DropActions({
                 ? "Pickup recorded"
                 : `${receipt.tickets} chance${receipt.tickets === 1 ? "" : "s"} in this draw`}
             </div>
+            {receipt.tickets ? <Capsules count={receipt.tickets} /> : null}
             {receipt.tickets ? (
               <p className="receipt-breakdown">
                 {receipt.tickets === 1

@@ -14,10 +14,24 @@ import { Capsules } from "@/components/capsules";
 import { WhySui } from "@/components/why-sui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
-  const drops = await listDrops(await database(), 6, 0, true);
+  const db = await database();
+  const drops = await listDrops(db, 6, 0, true);
   const open = drops.filter((drop) => drop.entry_open);
   const world = worldConfig();
   const sui = suiStatus();
+  // The newest on-chain settlement, so the Sui panel can link a real transaction.
+  const latestDraw = sui.ready
+    ? (
+        await db.query<{
+          id: string;
+          title: string;
+          settle_tx: string;
+          sui_network: string;
+        }>(
+          "SELECT id,title,settle_tx,sui_network FROM drops WHERE settle_tx IS NOT NULL AND NOT is_setup ORDER BY drawn_at DESC LIMIT 1",
+        )
+      ).rows[0]
+    : undefined;
   const credential =
     world.credential === "orb"
       ? "Proof of Human credential: one Orb-verified person, one entrant"
@@ -99,7 +113,7 @@ export default async function Home() {
               Sui ·{" "}
               {sui.ready
                 ? `live on ${sui.network}`
-                : "Move package in testing, not published yet"}
+                : "Move package tested, not yet published"}
             </li>
             <li>
               {open.length === 1
@@ -236,7 +250,7 @@ export default async function Home() {
 
       <Architecture sui={sui} />
 
-      <WhySui sui={sui} />
+      <WhySui sui={sui} latestDraw={latestDraw} />
 
       <section className="drops-section" aria-labelledby="drops-heading">
         <div className="section-header">

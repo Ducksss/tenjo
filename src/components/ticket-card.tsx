@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Gamepad2, ShieldCheck, Ticket } from "lucide-react";
 import type { Drop } from "@/lib/domain";
 import { dropStatus, formatJST, fromNow, statusLabel } from "@/lib/format";
+import { formatSui } from "@/lib/sui-status";
 const action = {
   open: "Enter this drop",
   upcoming: "See when it opens",
@@ -11,6 +12,7 @@ const action = {
 export function TicketCard({ drop }: { drop: Drop }) {
   const status = dropStatus(drop);
   const closing = status === "open" || status === "upcoming";
+  const onSui = !!drop.sui_drop_id && !!drop.sui_network;
   return (
     <article className="ticket">
       <div className="ticket-main">
@@ -61,6 +63,11 @@ export function TicketCard({ drop }: { drop: Drop }) {
           <span>
             <ShieldCheck size={16} />
             {drop.is_demo ? "Demo identities" : "World ID at entry"}
+            {onSui
+              ? drop.price_mist !== "0"
+                ? ` · ${formatSui(drop.price_mist)} refundable deposit on Sui`
+                : ` · drawn on Sui ${drop.sui_network}`
+              : ""}
           </span>
           <Link className="button" href={`/drops/${drop.id}`}>
             {action[status]}
@@ -95,7 +102,11 @@ export function TicketCard({ drop }: { drop: Drop }) {
         </div>
         <div className="barcode" aria-hidden="true" />
         <span className="stub-small">
-          {drop.is_demo ? "LOCAL / DEMO" : "TENJO / ENTRY"}
+          {onSui
+            ? `SUI / ${drop.sui_network!.toUpperCase()}`
+            : drop.is_demo
+              ? "LOCAL / DEMO"
+              : "TENJO / ENTRY"}
         </span>
       </div>
     </article>

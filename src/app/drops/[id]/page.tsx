@@ -21,7 +21,9 @@ import { pageNumber } from "@/lib/http";
 import { worldConfig } from "@/lib/world";
 import { DrawControls } from "@/components/draw-controls";
 import { DropActions } from "@/components/drop-actions";
+import { SuiEvidence } from "@/components/sui-evidence";
 import { Notice } from "@/components/ui";
+import { formatSui } from "@/lib/sui-status";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -62,6 +64,9 @@ export default async function DropPage({
   const world = worldConfig();
   const status = dropStatus(drop);
   const closesLabel = formatJST(drop.closes_at);
+  const onSui = !!drop.sui_drop_id && !!drop.sui_network;
+  const paid = onSui && drop.price_mist !== "0";
+  const suiRecord = (record?.record as { sui?: unknown } | undefined)?.sui;
   return (
     <>
       <Link className="back-link" href="/">
@@ -92,7 +97,10 @@ export default async function DropPage({
       {drop.is_demo ? (
         <Notice>
           {drop.is_setup ? "Setup history" : "Local demo"} · These are test
-          identities. No World ID verification or Sui transaction is claimed.
+          identities.{" "}
+          {onSui
+            ? `No World ID verification is claimed; the Sui ${drop.sui_network} transactions are real.`
+            : "No World ID verification or Sui transaction is claimed."}
         </Notice>
       ) : (
         <Notice>
@@ -178,8 +186,9 @@ export default async function DropPage({
                 <p>No entries were recorded; no items were allocated.</p>
               )}
               <p className="small muted">
-                Drawn on Tenjō’s server; winners and loss counts were saved in
-                the same step. On-chain Sui verification is not live yet.
+                {suiRecord
+                  ? "Drawn on Sui: sui::random committed the seed, and one settlement transaction picked the winners, refunded the losers and updated every loss count."
+                  : "Drawn on Tenjō’s server; winners and loss counts were saved in the same step. This drop has no on-chain record."}
               </p>
               <a className="text-link" href={`/api/drops/${id}/public`}>
                 Open full draw record (JSON)
@@ -194,6 +203,11 @@ export default async function DropPage({
               items={drop.items}
             />
           )}
+          <SuiEvidence
+            drop={drop}
+            record={(record?.record as Record<string, unknown>) ?? null}
+            winners={winners.map((w) => w.member_code)}
+          />
         </div>
         <aside className="entry-card">
           <DropActions
@@ -211,6 +225,8 @@ export default async function DropPage({
             }
             worldReady={world.ready}
             pickupAllowed={world.pickupAllowed}
+            paid={paid ? { priceLabel: formatSui(drop.price_mist) } : null}
+            suiNetwork={onSui ? drop.sui_network : null}
           />
         </aside>
       </div>
@@ -330,9 +346,9 @@ export default async function DropPage({
           <details className="record-details">
             <summary>Inspect draw fingerprint</summary>
             <p>
-              The SHA-256 fingerprint identifies this server record. It does not
-              prove independent randomness or prevent a server operator from
-              changing data.
+              {suiRecord
+                ? "The SHA-256 fingerprint identifies Tenjō’s mirror of the on-chain result. The randomness, refunds and loss counts themselves live on Sui; check them with the links above."
+                : "The SHA-256 fingerprint identifies this server record. It does not prove independent randomness or prevent a server operator from changing data."}
             </p>
             <code>{record.record_hash}</code>
           </details>
