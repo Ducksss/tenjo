@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
@@ -17,6 +17,8 @@ import {
 } from "../src/lib/service";
 import { suiChain, type Settlement } from "../src/lib/sui";
 import { chainDraw } from "../src/lib/sui-draw";
+import { linkWallet } from "../src/lib/wallet";
+import { walletCode } from "../src/lib/wallet-code";
 
 process.env.SUI_NETWORK = "localnet";
 process.env.SUI_PACKAGE_ID = normalizeSuiAddress("0xabc");
@@ -354,6 +356,87 @@ test("priced drops take deposits only through permits and a confirmed Sui entry"
     assert.equal(loser.refunded_mist, "10000000");
     const audit = await publicDrop(db, drop.id);
     assert.ok(audit.entries.every((e) => e.paid_mist === "10000000"));
+  } finally {
+    await db.close();
+  }
+});
+
+test("a real World ID's paid entries use its wallet's code, so its losses carry on-chain", async () => {
+  const db = await setup();
+  // A verified real World ID for one drop: `person` stands in for that drop's World ID code.
+  const realFan = async (dropId: string, person: string, wallet: string) => {
+    const challengeId = randomUUID();
+    await db.query(
+      "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at,mode) VALUES($1,$1,$2,'enter',now()+interval '5 minutes','production')",
+      [challengeId, dropId],
+    );
+    return linkWallet(
+      {
+        code: demoCode(person),
+        mode: "production",
+        policy: "real",
+        challengeId,
+      },
+      wallet,
+    );
+  };
+  const deposit = async (dropId: string, sender: string, code: string) => {
+    const drop = (await publicDrop(db, dropId)).drop;
+    const tx = digest();
+    deposits.set(tx, { sender, dropId: drop.sui_drop_id!, code });
+    return confirmEntry(db, dropId, tx);
+  };
+  try {
+    const wallets = [normalizeSuiAddress("0xa1"), normalizeSuiAddress("0xa2")];
+    const first = await createDrop(db, input("wallet-paid", { price: "0.01" }));
+    for (const [i, wallet] of wallets.entries()) {
+      const permit = await permitEntry(
+        db,
+        first.id,
+        await realFan(first.id, `drop-1-fan-${i}`, wallet),
+        wallet,
+        new Date(t),
+      );
+      assert.equal(permit.permit.code_hex, walletCode(wallet));
+      assert.equal(permit.wallet_linked, true);
+      await deposit(first.id, wallet, permit.permit.code_hex);
+    }
+    // The permit only works for the wallet whose code it carries.
+    await assert.rejects(
+      permitEntry(
+        db,
+        first.id,
+        await realFan(first.id, "drop-1-fan-3", wallets[0]),
+        normalizeSuiAddress("0xa3"),
+        new Date(t),
+      ),
+      /wallet you connected/,
+    );
+    const record = (await drawDrop(db, first.id, afterGrace)) as {
+      entries: { member_code: string; outcome: string }[];
+    };
+    const loser = wallets.find(
+      (w) =>
+        record.entries.find((e) => e.member_code === walletCode(w))!.outcome ===
+        "lost",
+    )!;
+    const next = await createDrop(
+      db,
+      input("wallet-paid", { price: "0.01", title: "Chain console drop 2" }),
+    );
+    // A new drop means a new World ID code, but the same wallet brings its loss.
+    const permit = await permitEntry(
+      db,
+      next.id,
+      await realFan(next.id, "drop-2-loser", loser),
+      loser,
+      new Date(t),
+    );
+    assert.equal(permit.permit.code_hex, walletCode(loser));
+    assert.equal(permit.losses, 1);
+    assert.equal(permit.tickets, 2);
+    const confirmed = await deposit(next.id, loser, permit.permit.code_hex);
+    assert.equal(confirmed.tickets, 2);
   } finally {
     await db.close();
   }

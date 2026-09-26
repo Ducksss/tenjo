@@ -58,7 +58,7 @@ Every chain claim on the site links to its object or transaction on Suiscan.
 ## How it works
 
 1. **Prove you’re one person.** World ID checks that you’re a unique human, on the server. No name, email or phone.
-2. **Enter once.** Your chances are `1 + min(5, losses in this series)`. On a paid drop, your wallet locks a refundable deposit in the drop’s escrow on Sui.
+2. **Enter once.** Your chances are `1 + min(5, losses in this series)`. On a paid drop, your wallet locks a refundable deposit in the drop’s escrow on Sui. A real World ID gets a fresh code in every drop, so its losses follow the Sui wallet it enters with ([src/lib/wallet.ts](src/lib/wallet.ts)).
 3. **The draw.** After close, anyone can start it. `draw` commits 32 random bytes from `sui::random`, and `settle` picks winners deterministically from them, weighted by chances, without replacement.
 4. **Win, or try again.** Winners pay for their seat from the deposit, receive a non-transferable Ticket object and claim with a fresh World ID check. Losers are refunded in the same transaction and start the next draw with one more chance.
 

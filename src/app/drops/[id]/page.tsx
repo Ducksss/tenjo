@@ -111,7 +111,9 @@ export default async function DropPage({
             : `World ID ${world.environment} · ${world.credential === "orb" ? "Proof of Human" : "Passport"} credential`}{" "}
           · Public record uses anonymous codes.
           {realWorld
-            ? " A real World ID gets a fresh code for each drop, so for now extra chances from past losses build up on the simulator only."
+            ? onSui
+              ? " A real World ID gets a fresh code in each drop. Enter with a Sui wallet and your extra chances follow it to the next one."
+              : " A real World ID gets a fresh code in each drop, so extra chances build up with the simulator."
             : ""}
         </Notice>
       )}
@@ -218,6 +220,8 @@ export default async function DropPage({
         <aside className="entry-card">
           <DropActions
             id={id}
+            seriesId={drop.series_id}
+            seriesName={drop.series_name}
             status={status}
             closesAt={new Date(drop.closes_at).toISOString()}
             opensAt={new Date(drop.opens_at).toISOString()}

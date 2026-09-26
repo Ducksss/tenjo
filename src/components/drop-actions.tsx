@@ -13,7 +13,9 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "@/lib/client-api";
 import type { DropStatus } from "@/lib/format";
+import { chancesFor } from "@/lib/sui-draw";
 import { shortId, suiscan } from "@/lib/sui-status";
+import { walletCode, walletLinkMessage } from "@/lib/wallet-code";
 import { Button, Notice } from "./ui";
 import { Capsules } from "./capsules";
 import { useNow } from "./use-now";
@@ -36,14 +38,19 @@ type Receipt = {
   collected?: boolean;
   digest?: string;
   sui_status?: string;
+  /** The code comes from the entrant's wallet, so losses carry to their next entry with it. */
+  wallet_linked?: boolean;
 };
 type PermitResponse = {
   code: string;
   tickets: number;
   permit: EntryPermit;
+  wallet_linked?: boolean;
 };
 export function DropActions({
   id,
+  seriesId,
+  seriesName,
   status,
   closesAt,
   opensAt,
@@ -58,6 +65,8 @@ export function DropActions({
   suiNetwork,
 }: {
   id: string;
+  seriesId: string;
+  seriesName: string;
   status: DropStatus;
   closesAt: string;
   opensAt: string;
@@ -89,6 +98,39 @@ export function DropActions({
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [wallet, setWallet] = useState<SuiWalletApi | null>(null);
   const address = wallet?.address ?? null;
+  // Sent with the World ID proof: the paying wallet, or a free entry's signed wallet link.
+  const [entryHeaders, setEntryHeaders] = useState<Record<string, string>>();
+  const [entryMode, setEntryMode] = useState<"primary" | "production">(
+    "primary",
+  );
+  // A real World ID gets a fresh code in every drop; entering with a wallet keeps its losses.
+  const linkable = realWorld && !demo && !!suiNetwork;
+  const linkedCode = linkable && address ? walletCode(address) : null;
+  const [carried, setCarried] = useState<{
+    code: string;
+    losses: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!linkedCode) return;
+    let live = true;
+    api<{ pity: { series_id: string; losses: number }[] }>(
+      `/api/codes/${linkedCode}`,
+    )
+      .then((history) => {
+        if (live)
+          setCarried({
+            code: linkedCode,
+            losses:
+              history.pity.find((p) => p.series_id === seriesId)?.losses ?? 0,
+          });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [linkedCode, seriesId]);
+  const carriedLosses =
+    carried && carried.code === linkedCode ? carried.losses : null;
   const settled = status === "settled";
   const closed = now !== null && now >= Date.parse(closesAt);
   const notOpen = now !== null && now < Date.parse(opensAt);
@@ -137,13 +179,14 @@ export function DropActions({
     setInfo(`Confirm the ${paid?.priceLabel} deposit in your wallet.`);
     const digest = await wallet.enter(value.permit);
     setInfo("Deposit locked on Sui. Recording your entry…");
-    verified(
-      await api<Receipt>(`/api/drops/${id}/confirm`, {
+    verified({
+      ...(await api<Receipt>(`/api/drops/${id}/confirm`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ digest }),
-      }),
-    );
+      })),
+      wallet_linked: value.wallet_linked,
+    });
   }
   function verified(value: Receipt | null) {
     completedFlow.current = true;
@@ -206,13 +249,39 @@ export function DropActions({
           }),
         );
       } else {
-        setChallenge(
-          await api<Challenge>("/api/rp-signature", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ drop_id: id, purpose: nextPurpose, mode }),
-          }),
-        );
+        const next = await api<Challenge>("/api/rp-signature", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ drop_id: id, purpose: nextPurpose, mode }),
+        });
+        const entering = nextPurpose === "enter";
+        let headers: Record<string, string> | undefined =
+          paid && entering && address
+            ? { "x-tenjo-sui-address": address }
+            : undefined;
+        // A free entry links the wallet by signing this drop and this World ID request.
+        if (entering && !paid && mode === "production" && linkedCode) {
+          setInfo("Sign in your wallet to keep your extra chances. It’s free.");
+          let signature: string;
+          try {
+            signature = await wallet!.sign(
+              walletLinkMessage(id, address!, next.id),
+            );
+          } catch {
+            setInfo("");
+            throw new Error(
+              "Your wallet didn’t sign, so nothing was entered. Sign to keep your extra chances, or disconnect the wallet to enter with World ID alone.",
+            );
+          }
+          setInfo("");
+          headers = {
+            "x-tenjo-sui-address": address!,
+            "x-tenjo-wallet-signature": signature,
+          };
+        }
+        setEntryMode(mode);
+        setEntryHeaders(headers);
+        setChallenge(next);
       }
     } catch (error) {
       fail(error);
@@ -261,17 +330,26 @@ export function DropActions({
         ) : null}
         {!settled ? (
           <>
-            {paid && suiNetwork && !closed ? (
+            {suiNetwork && !closed && (paid || linkable) ? (
               <div className="wallet-step">
                 <span className="eyebrow">
-                  Paid drop · {paid.priceLabel} deposit on Sui {suiNetwork}
+                  {paid
+                    ? `Paid drop · ${paid.priceLabel} deposit on Sui ${suiNetwork}`
+                    : "Optional · keep your extra chances"}
                 </span>
                 <p>
-                  Your deposit waits in this drop’s escrow. Win, and it pays for
-                  your seat. Lose, and it’s refunded in the same Sui transaction
-                  as the draw.
+                  {paid
+                    ? "Your deposit waits in this drop’s escrow. Win, and it pays for your seat. Lose, and it’s refunded in the same Sui transaction as the draw."
+                    : "World ID gives you a fresh code in every drop. Connect a Sui wallet and your entries use its code instead, so each loss in this series adds a chance next time. Skip it to enter with World ID alone."}
                 </p>
                 <SuiWallet network={suiNetwork} onChange={setWallet} />
+                {carriedLosses !== null ? (
+                  <p className="action-hint">
+                    {carriedLosses
+                      ? `This wallet carries ${carriedLosses} ${carriedLosses === 1 ? "loss" : "losses"} in ${seriesName}: ${chancesFor(carriedLosses)} chances with World ID.`
+                      : `No extra chances with this wallet in ${seriesName} yet. Lose this draw and your next entry with it gets 2.`}
+                  </p>
+                ) : null}
               </div>
             ) : null}
             <Button
@@ -368,9 +446,17 @@ export function DropActions({
             {receipt.tickets ? <Capsules count={receipt.tickets} /> : null}
             {receipt.tickets ? (
               <p className="receipt-breakdown">
-                {receipt.tickets === 1
-                  ? "1 base chance. If you don’t win, your next entry in this series gets one more."
-                  : `1 base + ${receipt.tickets - 1} for past losses in this series${receipt.tickets === 6 ? ": the maximum" : ""}.`}
+                {receipt.tickets > 1
+                  ? `1 base + ${receipt.tickets - 1} for past losses in this series${receipt.tickets === 6 ? ": the maximum" : ""}.`
+                  : demo || entryMode === "primary" || receipt.wallet_linked
+                    ? "1 base chance. If you don’t win, your next entry in this series gets one more."
+                    : "1 base chance. A real World ID starts fresh in every drop, so enter with a Sui wallet to carry your losses."}
+              </p>
+            ) : null}
+            {receipt.wallet_linked ? (
+              <p className="receipt-breakdown">
+                This code comes from your wallet. Enter the next drop in{" "}
+                {seriesName} with it to keep your extra chances.
               </p>
             ) : null}
             {receipt.digest && suiNetwork ? (
@@ -386,7 +472,11 @@ export function DropActions({
                 </a>
               </p>
             ) : null}
-            <span className="eyebrow">Your anonymous code</span>
+            <span className="eyebrow">
+              {receipt.wallet_linked
+                ? "Your code · from your wallet"
+                : "Your anonymous code"}
+            </span>
             <code>{receipt.code}</code>
             <div className="receipt-links">
               <Link href={`/codes/${receipt.code}`}>
@@ -434,11 +524,7 @@ export function DropActions({
                 ? `/api/drops/${id}/permit`
                 : undefined
             }
-            headers={
-              paid && purpose === "enter" && address
-                ? { "x-tenjo-sui-address": address }
-                : undefined
-            }
+            headers={entryHeaders}
             onVerified={(value) => {
               if (paid && purpose === "enter")
                 deposit(value as unknown as PermitResponse).catch(fail);
@@ -480,7 +566,7 @@ function AlreadyEntered({
         <p>
           {demo
             ? "This demo identity already has an entry in this drop."
-            : "World ID matched you to an entry already in this drop, whichever phone or account you use."}{" "}
+            : "World ID matched you to an entry already in this drop, whichever phone, account or wallet you use."}{" "}
           One person gets one entry, so nothing new was saved
           {paid ? " and no deposit moved" : ""}. Your first entry still counts.
         </p>
