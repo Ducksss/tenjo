@@ -108,7 +108,7 @@ Sui right now: [~300 ms to finality](https://www.sui.io/payments), [$0.00 stable
 
 ## For judges
 
-### World · Best use of IDKit
+### World · Best Use of IDKit
 
 | Requirement                       | Where                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -119,7 +119,7 @@ Sui right now: [~300 ms to finality](https://www.sui.io/payments), [$0.00 stable
 | Returning fans                    | World ID 4 nullifiers are single-use per action, so each drop has its own action; a passkey carries the pity code while World ID gates entry ([src/lib/passkey.ts](src/lib/passkey.ts))                                                                                                                                                                                                                                                           |
 | Integration debrief               | About 18 hours to the first server-verified proof, most of it on World’s new staging gate; 22 verified entries averaging 0.93 s; top ask: an official Next.js example covering session proofs. Full debrief in [docs/OPERATIONS.md](docs/OPERATIONS.md#world-integration-debrief)                                                                                                                                                                 |
 
-### Sui · DeFi & Payments
+### Sui · DeFi, Payments, Agents
 
 | Brief                                | Tenjō                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
