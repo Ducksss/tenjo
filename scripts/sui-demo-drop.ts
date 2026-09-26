@@ -1,5 +1,5 @@
 // npm run sui:demo-drop [-- --fresh] [--live-drop] [--closes-in <seconds>]
-// Stages the labelled Capsule Shop demo on the configured Sui network, in the LOCAL database:
+// Stages the labelled Nintendo Switch 2 pre-drop demo on the configured Sui network, in the LOCAL database:
 // round 1 is entered by six throwaway fan wallets with real deposits and settled at once, so
 // four fans carry on-chain losses; round 2 is entered by the same fans and left open for a live
 // draw. Stop the dev server first: PGlite allows one process. Fan keys stay in
@@ -132,18 +132,18 @@ async function enterAll(dropId: string) {
   }
 }
 const series = {
-  series_id: `capsule-shop${suffix}`,
-  series_name: "Capsule Shop",
+  series_id: `switch-2-pre-drops${suffix}`,
+  series_name: "Nintendo Switch 2",
 };
 const label =
-  "Labelled demo: six throwaway test wallets lock real testnet deposits; losers are refunded when it settles.";
+  "Demo drop, not affiliated with Nintendo. Six throwaway test wallets lock real testnet deposits; losers are refunded when it settles.";
 try {
   console.log(`Network ${config.network}; package ${config.packageId}\n`);
   const round1 = await createDrop(
     db,
     {
       ...series,
-      title: "Capsule Shop · Restock 1",
+      title: "Nintendo Switch 2 · Pre-drop 1",
       description: label,
       items: 2,
       opens_at: at(-1000),
@@ -186,7 +186,7 @@ try {
     db,
     {
       ...series,
-      title: "Capsule Shop · Limited console lottery",
+      title: "Nintendo Switch 2 · Pre-drop 2",
       description: label,
       items: 2,
       opens_at: at(-1000),
@@ -203,11 +203,11 @@ try {
 
   if (args.includes("--live-drop")) {
     const live = await createDrop(db, {
-      series_id: `hoshizora-2026${suffix}`,
-      series_name: "Hoshizora Dome Tour 2026",
-      title: "Tokyo Dome · Night 2",
+      series_id: `taylor-swift-tokyo-2026${suffix}`,
+      series_name: "Taylor Swift · Tokyo 2026",
+      title: "Taylor Swift · Tokyo Night 2",
       description:
-        "Three seats. Enter with World ID and a refundable 0.01 SUI deposit.",
+        "Demo drop, not affiliated with Taylor Swift. Three seats. Enter with World ID and a refundable 0.01 SUI deposit.",
       items: 3,
       opens_at: at(-1000),
       closes_at: at(2 * 3600 * 1000),

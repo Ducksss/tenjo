@@ -30,15 +30,15 @@ A pity counter only works if nobody can cheat it, and the two cheats need two ne
 
 ## Status: what’s real right now
 
-| Piece                         | Status                                                                                                                                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| World ID (IDKit 4)            | Integrated and server-verified; staging credentials configured on the live site. Real simulator success is recorded in the [debrief](docs/OPERATIONS.md#world-integration-debrief-in-progress) once measured. |
-| Pity ledger, weighted draw    | Live in the app and covered by tests. Without Sui configuration, the draw runs on Tenjō’s server with `crypto.randomInt`.                                                                                     |
-| Sui Move package              | [`tenjo::ballot`](move/tenjo/sources/ballot.move) written and covered by Move unit tests. **Testnet publish pending**: no package ID or explorer links are claimed yet.                                       |
-| Paid drops (deposit → refund) | Move escrow, wallet flow and permit design built. Goes live with the testnet publish.                                                                                                                         |
-| Hosting                       | [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app) on Vercel with Neon Postgres (Singapore).                                                                                                            |
+| Piece                         | Status                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| World ID (IDKit 4)            | Live on production for World's simulator and real World IDs, verified server-side byte for byte: 14 verified entries so far ([debrief](docs/OPERATIONS.md#world-integration-debrief)).                                                                                                                                          |
+| Pity ledger, weighted draw    | Live. New drops draw on Sui testnet from a `sui::random` seed and keep the loss ledger on-chain; a local run without Sui draws on Tenjō’s server with `crypto.randomInt`.                                                                                                                                                       |
+| Sui Move package              | Live on Sui testnet: [`tenjo::ballot`](move/tenjo/sources/ballot.move), package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65) ([publish](https://suiscan.xyz/testnet/tx/EbbQyCRbv9Xv5LMvTZxK78fEUGjV1e1Lym4tSDF7Pe3G)), covered by 22 Move unit tests. |
+| Paid drops (deposit → refund) | Live on testnet: the fan’s wallet locks a refundable deposit in the drop’s escrow, and one [settlement](https://suiscan.xyz/testnet/tx/DGAHZgteY7e1HMmmkCNsLwV67NzLqbGUoXN1Wci6RsuJ) pays the organiser for the winners’ seats and refunds every loser.                                                                         |
+| Hosting                       | [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app) on Vercel with Neon Postgres (Singapore).                                                                                                                                                                                                                              |
 
-Nothing on the site says “live on Sui” until the configured package exists. Every chain claim links to a real object or transaction on Suiscan.
+Every chain claim on the site links to its object or transaction on Suiscan.
 
 <details>
 <summary>Contents</summary>
@@ -115,13 +115,13 @@ Sui right now: [~300 ms to finality](https://www.sui.io/payments), [$0.00 stable
 
 ### Sui · DeFi & Payments
 
-| Brief                                | Tenjō                                                                                                                    |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Programmable payment flow            | Deposit on entry, then one settlement: organiser paid, every loser refunded ([`settle`](move/tenjo/sources/ballot.move)) |
-| Vaults and capital allocation        | Each `Drop<T>` is an escrow vault whose allocation is decided by `sui::random` and the pity ledger                       |
-| Automation                           | Anyone can trigger the draw after close; settlement needs no operator decisions                                          |
-| Financial abstraction for real users | Fans see “pay if you win, refunded if you don’t”. A loss turns into a future chance instead of a sunk cost               |
-| Evidence                             | Move unit tests in [move/tenjo/tests](move/tenjo/tests); testnet package and transactions are listed here once published |
+| Brief                                | Tenjō                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Programmable payment flow            | Deposit on entry, then one settlement: organiser paid, every loser refunded ([`settle`](move/tenjo/sources/ballot.move))                                                                                                                                                                                                                                                                                        |
+| Vaults and capital allocation        | Each `Drop<T>` is an escrow vault whose allocation is decided by `sui::random` and the pity ledger                                                                                                                                                                                                                                                                                                              |
+| Automation                           | Anyone can trigger the draw after close; settlement needs no operator decisions                                                                                                                                                                                                                                                                                                                                 |
+| Financial abstraction for real users | Fans see “pay if you win, refunded if you don’t”. A loss turns into a future chance instead of a sunk cost                                                                                                                                                                                                                                                                                                      |
+| Evidence                             | Move unit tests in [move/tenjo/tests](move/tenjo/tests); testnet [package](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65), a [`sui::random` draw](https://suiscan.xyz/testnet/tx/8hCVmGFzq57mDy488F4bfha9AMdKc5qsYZt2vDAtHKdF) and the [settlement that refunds the loser](https://suiscan.xyz/testnet/tx/DGAHZgteY7e1HMmmkCNsLwV67NzLqbGUoXN1Wci6RsuJ) |
 
 ## Getting started
 
@@ -178,7 +178,7 @@ The Move suite covers:
 - the six-chance cap;
 - every draw and settle gate.
 
-Browser tests check keyboard access, mobile layouts and page overflow. They start an isolated database and server on port 3100, with Sui switched off; if that port is busy, run `TENJO_TEST_PORT=3112 npm run test:e2e`. Mocked World tests don’t replace a real simulator run.
+Browser tests check keyboard access, mobile layouts and page overflow. They start an isolated database and server on port 3100, with Sui switched off; if that port is busy, run `TENJO_TEST_PORT=3112 npm run test:e2e`. Real World ID runs are measured in the [debrief](docs/OPERATIONS.md#world-integration-debrief).
 
 ## Roadmap
 
@@ -188,8 +188,8 @@ For a page-by-page wireframe, user journeys and current/optional architecture ma
 - [x] Server-side World ID boundary, hosted on Vercel with Neon Postgres.
 - [x] `tenjo::ballot` Move package: escrow, permits, `sui::random` draw, settlement, ledger, soulbound tickets, unit tests.
 - [x] Warm capsule-machine redesign (see [DESIGN.md](DESIGN.md)).
-- [ ] Publish to Sui testnet, mirror on-chain draws and link every transaction.
-- [ ] Record a real World simulator success and complete the debrief.
+- [x] Publish to Sui testnet, mirror on-chain draws and link every transaction.
+- [x] Real World ID entries on production, for the simulator and real World IDs, with a measured debrief.
 - [ ] Stablecoin deposits (USDsui/USDC) and sponsored gas, so fans never need SUI.
 - [ ] Unclaimed-seat handoff to the next pick after a pickup window.
 
