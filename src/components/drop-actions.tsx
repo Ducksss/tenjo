@@ -192,11 +192,23 @@ export function DropActions({
       text: `Winning codes are listed on this page. If one is yours, collect with the same ${demo ? "demo identity" : "World ID"} you entered with. Anyone else is refused.`,
     },
   }[phase];
+  // Nothing went through: World ID closed without a proof, or the wallet sent no deposit.
+  const unfinished = (step: "enter" | "collect") =>
+    step === "enter"
+      ? "Entry not completed. You can verify again when ready."
+      : "Pickup not completed. You can verify again when ready.";
   // Paid entry, after World ID (or a demo identity) earned a permit: the wallet locks the deposit on Sui.
   async function deposit(value: PermitResponse) {
     if (!wallet?.address) throw new Error("Connect a Sui wallet first.");
-    setInfo(`Confirm the ${paid?.priceLabel} deposit in your wallet.`);
-    const digest = await wallet.enter(value.permit);
+    setInfo(`Approve the ${paid?.priceLabel} deposit in your wallet.`);
+    let digest: string;
+    try {
+      digest = await wallet.enter(value.permit);
+    } catch (error) {
+      // The wallet's refusal says the deposit didn't move; the prompt above no longer applies.
+      setInfo(unfinished("enter"));
+      throw error;
+    }
     setInfo("Deposit locked on Sui. Recording your entry…");
     verified({
       ...(await api<Receipt>(`/api/drops/${id}/confirm`, {
@@ -687,20 +699,21 @@ export function DropActions({
             }
             headers={entryHeaders}
             onVerified={(value) => {
-              if (paid && purpose === "enter")
-                deposit(value as unknown as PermitResponse).catch(fail);
-              else verified(value as Receipt);
+              // Tenjō accepted the proof, so World ID's part is done and closing it is no longer
+              // an unfinished entry. A paid entry moves on to the wallet, which reports its own outcome.
+              completedFlow.current = true;
+              if (paid && purpose === "enter") {
+                setBusy(true);
+                deposit(value as unknown as PermitResponse)
+                  .catch(fail)
+                  .finally(() => setBusy(false));
+              } else verified(value as Receipt);
             }}
             onError={fail}
             onOpenChange={(open) => {
               if (!open) {
                 setChallenge(null);
-                if (!completedFlow.current)
-                  setInfo(
-                    purpose === "enter"
-                      ? "Entry not completed. You can verify again when ready."
-                      : "Pickup not completed. You can verify again when ready.",
-                  );
+                if (!completedFlow.current) setInfo(unfinished(purpose));
               }
             }}
           />

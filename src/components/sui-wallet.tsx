@@ -70,9 +70,14 @@ function Bridge({ onChange }: { onChange: (api: SuiWalletApi) => void }) {
             tx.object.clock(),
           ],
         });
-        const result = await dAppKit.signAndExecuteTransaction({
-          transaction: tx,
-        });
+        const result = await dAppKit
+          .signAndExecuteTransaction({ transaction: tx })
+          .catch((error: unknown) => {
+            // Declined, closed or unable to pay: the wallet sent nothing to Sui.
+            throw new Error(
+              `Your wallet didn’t approve the deposit${error instanceof Error && error.message ? ` (${error.message})` : ""}. Your deposit did not move.`,
+            );
+          });
         if (result.FailedTransaction)
           throw new Error(
             `Sui refused the entry (${result.FailedTransaction.status.error?.message ?? "transaction failed"}). Your deposit did not move.`,
