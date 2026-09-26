@@ -298,10 +298,10 @@ export async function createDrop(
 export type VerifiedIdentity = {
   /** The code the entry is recorded under: its pity, receipt and on-chain ledger key. */
   code: string;
-  /** This drop's World ID code, when `code` comes from a linked wallet instead. */
+  /** This drop's World ID code, when `code` comes from a passkey instead. */
   person?: string;
-  /** The Sui wallet whose code this entry uses (real World IDs only). */
-  wallet?: string;
+  /** The passkey (credential ID) whose code this entry uses (real World IDs only). */
+  passkey?: string;
   challengeId?: string;
   policy?: string;
   /** Which World setup verified it; the second setup keeps its own identity lock. */
@@ -398,7 +398,7 @@ async function admit(
       "deposit_required",
       "This drop takes a refundable deposit. Enter with a Sui wallet.",
     );
-  // A real World ID may enter under its wallet's code, so this drop's World ID code is checked
+  // A real World ID may enter under its passkey's code, so this drop's World ID code is checked
   // too: the code this person already holds here, if any.
   const person = identity.person ?? identity.code;
   const real = identity.mode === "production";
@@ -418,11 +418,11 @@ async function admit(
       )
     ).rows.length
   ) {
-    if (identity.wallet && held !== identity.code)
+    if (identity.passkey && held !== identity.code)
       throw new AppError(
         409,
-        "wallet_in_use",
-        "This wallet already has an entry in this drop. Use another wallet, or enter with World ID alone.",
+        "passkey_in_use",
+        "This passkey already has an entry in this drop. Use your own passkey, or enter with World ID alone.",
       );
     // The proof or demo identity was checked before this, so the code is the requester's own.
     throw new AppError(
@@ -432,7 +432,7 @@ async function admit(
       { member_code: identity.code },
     );
   }
-  // The same person with another wallet, or none: their first entry stands.
+  // The same person with another passkey, or none: their first entry stands.
   if (held && held !== identity.code)
     throw new AppError(
       409,
@@ -469,8 +469,8 @@ export type EntryReceipt = {
   /** On-chain drops only: 'registered' once on Sui, 'pending' while a retry is due. */
   sui_status?: string;
   sui_tx?: string | null;
-  /** The code comes from a linked wallet, so losses carry to the next drop entered with it. */
-  wallet_linked?: boolean;
+  /** The code comes from the entrant's passkey, so losses carry to their next entry with it. */
+  passkey_linked?: boolean;
 };
 export async function enterDrop(
   db: Database,
@@ -495,7 +495,7 @@ export async function enterDrop(
         tickets,
         losses,
         drop_id: id,
-        ...(identity.wallet ? { wallet_linked: true } : {}),
+        ...(identity.passkey ? { passkey_linked: true } : {}),
       },
       chain: onChain(drop),
     };
@@ -573,16 +573,6 @@ export async function permitEntry(
 ) {
   if (!/^0x[0-9a-fA-F]{64}$/.test(sender))
     throw new AppError(400, "invalid_address", "Connect a valid Sui wallet.");
-  // A linked wallet's code only works for that wallet: the chain checks the permit against the sender.
-  if (
-    identity.wallet &&
-    normalizeSuiAddress(identity.wallet) !== normalizeSuiAddress(sender)
-  )
-    throw new AppError(
-      400,
-      "invalid_address",
-      "Enter with the wallet you connected.",
-    );
   return db.transaction(async (tx) => {
     const { drop, losses } = await admit(tx, id, identity, now, true);
     const permit = await suiChain.issuePermit({
@@ -594,7 +584,7 @@ export async function permitEntry(
       code: identity.code,
       tickets: ticketsFor(losses),
       losses,
-      ...(identity.wallet ? { wallet_linked: true } : {}),
+      ...(identity.passkey ? { passkey_linked: true } : {}),
       permit: {
         package_id: drop.sui_package_id,
         drop_object_id: drop.sui_drop_id,

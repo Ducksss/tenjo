@@ -232,7 +232,7 @@ export default async function Home() {
           </h2>
           <p>
             Follow one fan through the ballots for two nights of a sold-out dome
-            tour: enter with World ID and a Sui wallet, lose Night 1, carry an
+            tour: enter with World ID and a passkey, lose Night 1, carry an
             extra chance into Night 2, win, and collect the seats. Watch it
             first, then click through it yourself.
           </p>

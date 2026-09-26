@@ -73,12 +73,21 @@ CREATE TABLE IF NOT EXISTS identity_policy_modes (
   mode text PRIMARY KEY CHECK (mode IN ('production')),
   fingerprint text NOT NULL
 );
--- A real World ID that links a wallet enters under the wallet's code. Each drop's World ID code stays
--- beside it, so one person still gets one entry per drop, whichever wallet they bring.
+-- A real World ID that brings a passkey enters under the passkey's code. Each drop's World ID code stays
+-- beside it, so one person still gets one entry per drop, whichever passkey they bring.
 CREATE TABLE IF NOT EXISTS entry_identities (
   drop_id text NOT NULL REFERENCES drops(id) ON DELETE CASCADE,
   identity_code text NOT NULL CHECK (identity_code ~ '^[a-f0-9]{32}$'),
   member_code text NOT NULL CHECK (member_code ~ '^[a-f0-9]{32}$'),
   created_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (drop_id, identity_code)
+);
+-- Passkeys that keep a real World ID's extra chances: only the public key and the code its entries use.
+CREATE TABLE IF NOT EXISTS passkeys (
+  credential_id text PRIMARY KEY,
+  public_key text NOT NULL,
+  counter bigint NOT NULL DEFAULT 0 CHECK (counter >= 0),
+  member_code text NOT NULL UNIQUE CHECK (member_code ~ '^[a-f0-9]{32}$'),
+  created_challenge text,
+  created_at timestamptz NOT NULL DEFAULT now()
 )

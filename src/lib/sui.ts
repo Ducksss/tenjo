@@ -10,7 +10,6 @@ import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { normalizeSuiAddress, toHex } from "@mysten/sui/utils";
-import { isValidPersonalMessageSignature } from "@mysten/sui/verify";
 import { AppError } from "./domain";
 import {
   chainDraw,
@@ -620,21 +619,6 @@ export async function drawAndSettleOnChain(input: {
   };
 }
 
-/**
- * Whether `address` signed `message` as a personal message. zkLogin wallets (such as Slush's web
- * sign-in) are checked through the fullnode, so only an unreachable network throws.
- */
-export async function verifyPersonalSignature(
-  message: Uint8Array,
-  signature: string,
-  address: string,
-) {
-  return isValidPersonalMessageSignature(message, signature, {
-    address: normalizeSuiAddress(address),
-    client: suiClient(),
-  });
-}
-
 /** Swappable in tests; production code calls through this object. */
 export const suiChain = {
   ensureSeries,
@@ -644,5 +628,4 @@ export const suiChain = {
   drawAndSettleOnChain,
   readDropState,
   readEntryTx,
-  verifyPersonalSignature,
 };

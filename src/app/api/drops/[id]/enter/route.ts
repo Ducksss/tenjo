@@ -1,7 +1,7 @@
 import { database } from "@/lib/db";
 import { handle, readBody, requireSameOrigin } from "@/lib/http";
+import { linkPasskey, passkeyForEntry } from "@/lib/passkey";
 import { enterDrop } from "@/lib/service";
-import { linkWallet, walletForEntry } from "@/lib/wallet";
 import { verifyWorldProof } from "@/lib/world";
 export const runtime = "nodejs";
 // Sui transactions can take a few seconds each.
@@ -16,15 +16,9 @@ export async function POST(
     const raw = await readBody(request);
     const db = await database();
     const challengeId = request.headers.get("x-tenjo-challenge") || "";
-    // An optional wallet is checked first, so a refusal never spends the World ID proof.
-    const wallet = await walletForEntry(
-      db,
-      id,
-      challengeId,
-      request.headers.get("x-tenjo-sui-address")?.trim() || null,
-      request.headers.get("x-tenjo-wallet-signature")?.trim() || null,
-    );
+    // An optional passkey is checked first, so a refusal never spends the World ID proof.
+    const passkey = await passkeyForEntry(db, request, id, challengeId);
     const identity = await verifyWorldProof(db, raw, challengeId, id, "enter");
-    return enterDrop(db, id, linkWallet(identity, wallet));
+    return enterDrop(db, id, linkPasskey(identity, passkey));
   });
 }

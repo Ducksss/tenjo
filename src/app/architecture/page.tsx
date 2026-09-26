@@ -114,12 +114,13 @@ export default function Architecture() {
               from drop to drop without an account.
             </p>
             <p>
-              <strong>Real World IDs bring a wallet.</strong> A real World ID
+              <strong>Real World IDs bring a passkey.</strong> A real World ID
               can prove each action only once, so every drop gets its own action
-              and a fresh code. Enter with a Sui wallet and the entry uses the
-              wallet’s code instead, so losses follow the wallet. The per-drop
-              proof still decides who gets in: one person, one entry, whichever
-              wallet they bring.
+              and a fresh code. Enter with a passkey and the entry uses the
+              passkey’s code instead, so losses follow it. The passkey signs
+              each entry’s World ID request on the device; Tenjō keeps only its
+              public key. The per-drop proof still decides who gets in: one
+              person, one entry, whichever passkey they bring.
             </p>
             <p className="arch-note">
               Uniqueness is as strong as the credential. Someone holding two

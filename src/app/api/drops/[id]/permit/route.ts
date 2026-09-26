@@ -5,8 +5,8 @@ import {
   requireSameOrigin,
   suiAddressHeader,
 } from "@/lib/http";
+import { linkPasskey, passkeyForEntry } from "@/lib/passkey";
 import { permitEntry, requireDepositDrop } from "@/lib/service";
-import { linkWallet, walletForPermit } from "@/lib/wallet";
 import { verifyWorldProof } from "@/lib/world";
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,10 +21,10 @@ export async function POST(
     const raw = await readBody(request);
     const db = await database();
     const challengeId = request.headers.get("x-tenjo-challenge") || "";
-    // Refuse before World verification, so a free drop or a used wallet never spends a proof here.
+    // Refuse before World verification, so a free drop or a used passkey never spends a proof here.
     await requireDepositDrop(db, id);
-    const wallet = await walletForPermit(db, id, challengeId, sender);
+    const passkey = await passkeyForEntry(db, request, id, challengeId);
     const identity = await verifyWorldProof(db, raw, challengeId, id, "enter");
-    return permitEntry(db, id, linkWallet(identity, wallet), sender);
+    return permitEntry(db, id, linkPasskey(identity, passkey), sender);
   });
 }
