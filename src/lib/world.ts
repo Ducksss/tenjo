@@ -86,6 +86,11 @@ function requireConfig(mode: WorldMode = "primary") {
     );
   return config;
 }
+/** World ID 4 nullifiers are single-use per action, so real World IDs get one action per drop:
+ * World itself then refuses a second entry, and each drop sees a fresh anonymous code.
+ * The primary (simulator) setup keeps one action, so its code and losses carry across drops. */
+const actionFor = (config: WorldConfig, dropId: string) =>
+  config.mode === "production" ? `${config.action}-${dropId}` : config.action;
 const signingKey = (mode: WorldMode) =>
   mode === "production"
     ? process.env.WORLD_PRODUCTION_RP_SIGNING_KEY!
@@ -129,7 +134,7 @@ export async function issueChallenge(
     );
   const signed = signRequest({
     signingKeyHex: signingKey(mode),
-    action: config.action,
+    action: actionFor(config, dropId),
     ttl: 300,
   });
   const id = randomUUID();
@@ -153,7 +158,7 @@ export async function issueChallenge(
     id,
     mode,
     app_id: config.app_id,
-    action: config.action,
+    action: actionFor(config, dropId),
     environment: config.environment,
     credential: config.credential,
     protocol: config.protocol,
@@ -282,7 +287,7 @@ export async function verifyWorldProof(
     const proof = proofResult.data;
     if (
       proof.environment !== config.environment ||
-      proof.action !== config.action ||
+      proof.action !== actionFor(config, dropId) ||
       proof.protocol_version !== config.protocol
     )
       throw new AppError(
@@ -418,7 +423,7 @@ export async function verifyWorldProof(
     );
     if (
       verified.environment !== config.environment ||
-      verified.action !== config.action ||
+      verified.action !== actionFor(config, dropId) ||
       !accepted?.nullifier
     )
       throw new AppError(

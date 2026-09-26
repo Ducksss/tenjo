@@ -7,7 +7,7 @@ import {
   orbLegacy,
   type RpContext,
 } from "@worldcoin/idkit";
-import { api } from "@/lib/client-api";
+import { ApiError, api } from "@/lib/client-api";
 export type Challenge = {
   id: string;
   app_id: `app_${string}`;
@@ -88,6 +88,17 @@ export function WorldWidget<
       onError={(code) => {
         // Host refusals were already reported from handleVerify.
         if (code === "failed_by_host_app") return;
+        // World ID 4 refuses a second proof for the same drop before Tenjō sees it.
+        if (code === "nullifier_replayed") {
+          onError(
+            new ApiError(
+              "Already entered. One person gets one entry per drop.",
+              "already_entered",
+            ),
+          );
+          onOpenChange(false);
+          return;
+        }
         onError(
           new Error(
             code === "user_presence_failed"

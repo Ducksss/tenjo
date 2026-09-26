@@ -268,6 +268,8 @@ test("real World IDs enter beside the staging simulator, each checked against it
     const real = await issueChallenge(db, drop.id, "enter", "production");
     assert.equal(real.environment, "production");
     assert.equal(real.app_id, "app_real");
+    // World ID 4 nullifiers are single-use per action, so each drop has its own.
+    assert.equal(real.action, `tenjo-person-${drop.id}`);
     const proof = (identifier: string) =>
       JSON.stringify({
         protocol_version: "4.0",
@@ -307,6 +309,17 @@ test("real World IDs enter beside the staging simulator, each checked against it
         humanOk,
       ),
       /credential/,
+    );
+    await assert.rejects(
+      verifyWorldProof(
+        db,
+        proof("proof_of_human").replace(real.action, "tenjo-person"),
+        real.id,
+        drop.id,
+        "enter",
+        humanOk,
+      ),
+      /does not match/,
     );
     const person = await verifyWorldProof(
       db,
