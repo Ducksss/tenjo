@@ -56,7 +56,7 @@ export default function Architecture() {
       state: world.pickupAllowed ? "Live · simulator" : "Off",
       tone: world.pickupAllowed ? "live" : "pending",
       detail: world.pickupAllowed
-        ? "off for real IDs until liveness is server-side"
+        ? "real World IDs don’t collect yet"
         : "until liveness is enforced server-side",
     },
     {
@@ -417,8 +417,9 @@ public fun settle<T>(drop: &mut Drop<T>,
           </p>
           <p className="arch-note">
             Simulator winners collect with a fresh proof, and the record labels
-            each pickup <code>untested-staging</code>. Pickup for real World IDs
-            switches on once World can attest liveness to the server.
+            each pickup <code>untested-staging</code>. Real World IDs don’t
+            collect yet: that needs liveness attested on the server and its own
+            World ID action, since entry spends the drop’s.
           </p>
         </div>
       </section>
