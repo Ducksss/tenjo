@@ -451,7 +451,7 @@ function AlreadyEntered({
     <div className="notice notice-error already-entered" role="alert">
       <UserRoundX size={20} aria-hidden="true" />
       <div>
-        <strong>Already entered</strong>
+        <strong>You’ve already entered this draw</strong>
         <p>
           {demo
             ? "This demo identity already has an entry in this drop."

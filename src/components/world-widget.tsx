@@ -77,20 +77,25 @@ export function WorldWidget<
           );
           onVerified(receipt);
         } catch (error) {
+          // Tenjō's own refusal (such as Already entered) says more than IDKit's
+          // generic "declined" screen, so close the modal and show ours.
           onError(error as Error);
+          onOpenChange(false);
           throw error;
         }
       }}
       onSuccess={() => onOpenChange(false)}
-      onError={(code) =>
+      onError={(code) => {
+        // Host refusals were already reported from handleVerify.
+        if (code === "failed_by_host_app") return;
         onError(
           new Error(
             code === "user_presence_failed"
               ? "Pickup refused. The live presence check failed."
               : `Verification was not completed (${code}). Nothing was entered. Try again.`,
           ),
-        )
-      }
+        );
+      }}
     />
   );
 }

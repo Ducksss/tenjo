@@ -35,7 +35,7 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
   await page.getByRole("button", { name: "Enter with demo identity" }).click();
   // A repeat gets its own refusal, with the way back to the first entry.
   const refusal = page.getByRole("main").getByRole("alert");
-  await expect(refusal).toContainText("Already entered");
+  await expect(refusal).toContainText("You’ve already entered this draw");
   await expect(refusal).toContainText("nothing new was saved");
   await expect(
     refusal.getByRole("link", { name: "See your entry" }),
@@ -246,7 +246,7 @@ test("keyboard lookup, identity selection, no-results filter and offline recover
   await context.setOffline(false);
   await page.getByRole("button", { name: "Enter with demo identity" }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Already entered",
+    "You’ve already entered this draw",
   );
   await page.getByLabel("Filter by code").fill("ffffffff");
   await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -339,7 +339,9 @@ test("the flow animation plays only on screen, pauses on request and jumps betwe
   await flow.scrollIntoViewIfNeeded();
   await expect(caption).toContainText("second account", { timeout: 6000 });
   // The second phone says what the drop page says to a repeat entry.
-  await expect(flow.locator(".flow-refusal")).toContainText("Already entered");
+  await expect(flow.locator(".flow-refusal")).toContainText(
+    "You’ve already entered this draw",
+  );
   await flow.getByRole("button", { name: "Pause", exact: true }).click();
   const held = await caption.textContent();
   await page.waitForTimeout(3500);

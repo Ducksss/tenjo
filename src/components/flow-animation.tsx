@@ -915,7 +915,7 @@ export function FlowAnimation({ sui }: { sui: boolean }) {
             >
               <UserRoundX size={15} aria-hidden="true" />
               <span>
-                <strong>Already entered</strong>
+                <strong>You’ve already entered this draw</strong>
                 One person gets one entry.
               </span>
             </p>
