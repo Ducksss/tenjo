@@ -56,3 +56,14 @@ CREATE TABLE IF NOT EXISTS identity_policy (
   singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
   fingerprint text NOT NULL
 );
+ALTER TABLE series ADD COLUMN IF NOT EXISTS sui_series_id text;
+ALTER TABLE series ADD COLUMN IF NOT EXISTS sui_package_id text;
+ALTER TABLE drops ADD COLUMN IF NOT EXISTS price_mist numeric(20,0) NOT NULL DEFAULT 0 CHECK (price_mist >= 0);
+ALTER TABLE drops ADD COLUMN IF NOT EXISTS coin_type text;
+ALTER TABLE drops ADD COLUMN IF NOT EXISTS sui_network text;
+ALTER TABLE drops ADD COLUMN IF NOT EXISTS sui_create_tx text;
+ALTER TABLE drops ADD COLUMN IF NOT EXISTS settle_tx text;
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS sui_status text CHECK (sui_status IN ('pending','registered'));
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS sui_tx text;
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS payer text;
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS paid_mist numeric(20,0) NOT NULL DEFAULT 0 CHECK (paid_mist >= 0)

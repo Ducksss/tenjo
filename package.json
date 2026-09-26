@@ -16,7 +16,11 @@
     "demo:rehearsal": "node --import tsx scripts/rehearsal.ts",
     "format:check": "prettier --check src scripts tests *.ts *.json README.md DESIGN.md UX-CONTRACT.md docs/*.md",
     "format": "prettier --write src scripts tests *.ts *.json README.md DESIGN.md UX-CONTRACT.md docs/*.md",
-    "world:debrief": "node --env-file-if-exists=.env.local --import tsx scripts/debrief.ts"
+    "world:debrief": "node --env-file-if-exists=.env.local --import tsx scripts/debrief.ts",
+    "sui:publish": "node --env-file-if-exists=.env.local --import tsx scripts/sui-publish.ts",
+    "sui:smoke": "node --env-file-if-exists=.env.local --import tsx scripts/sui-smoke.ts",
+    "sui:demo-drop": "node --env-file-if-exists=.env.local --import tsx scripts/sui-demo-drop.ts",
+    "sui:test": "sui move test --path move/tenjo"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

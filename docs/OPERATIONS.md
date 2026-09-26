@@ -4,7 +4,7 @@
 
 A free drop lottery built from scratch for the September 2026 hackathon. World ID gates entry and pickup; each loss adds a ticket to the next drop in the same series, capped at six total. The public record shows anonymous entries, ticket weights, draws and loss changes.
 
-**Current status:** Phase 1 application and a working local demonstration. The World ID request/verification integration is implemented and tested with mocked verifier responses, but **no real simulator proof has been verified yet**: app/RP/signing credentials are missing. Production pickup is deliberately blocked pending server-attested liveness. **Sui Phase 2, deposits, video and submission are not complete.** Hosting is live at [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app); World credentials are still required for real entries. No fabricated World successes, transactions or explorer links.
+**Current status:** Phase 1 application and a working local demonstration. The World ID request/verification integration is implemented and tested with mocked verifier responses, but **no real simulator proof has been verified yet**: app/RP/signing credentials are missing. Production pickup is deliberately blocked pending server-attested liveness. **Sui escrow drops (randomness, loss ledger, deposits and refunds) are implemented and tested locally; the testnet publish is pending funding** (see [Sui](#sui)). Video and submission are not complete. Hosting is live at [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app); World credentials are still required for real entries. No fabricated World successes, transactions or explorer links.
 
 The hosted `/demo` route is an interactive, browser-only walkthrough with scripted outcomes. It makes no lottery API writes and does not verify World ID; real production records remain separate.
 
@@ -86,6 +86,59 @@ On Vercel, configure the World variables, ADMIN_PASSWORD, DATABASE_URL and `APP_
 
 `npm run build` uses supported Next.js Webpack mode because this local tool environment denied Turbopack's CSS worker port. Development still uses Turbopack. There are no network-loaded fonts.
 
+## Sui
+
+**Status:** the `tenjo::ballot` Move package, server integration and paid-entry API are implemented and tested (Move unit tests, mocked-chain service tests and a full run on a local Sui network). **Testnet: not deployed yet** — the organiser address `0x2700344d3b6accedebabda56e819b769be2246be4c438434f37ffb0b81c6783c` is waiting for testnet SUI, so there are no testnet digests or explorer links yet.
+
+On Sui a drop is an escrow vault. A **series** object holds the loss ledger; a **drop** holds each entry's weight and deposit. Free drops: after World ID verification the server registers the entry on-chain and pays the gas. Priced drops: the fan's wallet locks a refundable deposit, admitted by a permit the server signs after verification. After close, `ballot::draw` commits a 32-byte seed from `sui::random`; `ballot::settle` then picks the winners from that seed and, in the same transaction, pays the organiser for the winners' seats, refunds every loser, mints each winner a non-transferable `Ticket` and updates the ledger. The database mirrors the chain's result.
+
+| Variable                   | Purpose                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| `SUI_NETWORK`              | `testnet` (default), `devnet`, `mainnet` or `localnet`                                  |
+| `SUI_RPC_URL`              | Optional gRPC endpoint; defaults to `https://fullnode.<network>.sui.io:443`             |
+| `SUI_PACKAGE_ID`           | Published package, printed by `npm run sui:publish`                                     |
+| `SUI_ORGANISER_CAP_ID`     | `OrganiserCap` owned by the organiser key, printed by `npm run sui:publish`             |
+| `SUI_SECRET_KEY`           | Organiser key, `suiprivkey…` (Ed25519). Server-only; Sensitive on Vercel                |
+| `SUI_REGISTRAR_SECRET_KEY` | Optional Ed25519 key that signs entry permits; defaults to the organiser key            |
+| `SUI_PAYOUT_ADDRESS`       | Optional address that receives the winners' deposits; defaults to the organiser address |
+
+Sui switches on only when the package, the cap and the key are all set. Otherwise every drop uses the server draw exactly as before. Browser tests blank every `SUI_*` variable.
+
+### Publish
+
+```sh
+sui client new-address ed25519 tenjo-organiser   # fund it with ~3 testnet SUI at faucet.sui.io
+# Put SUI_SECRET_KEY=<the suiprivkey… from `sui keytool export --key-identity tenjo-organiser`> in .env.local
+npm run sui:test                                 # Move unit tests
+npm run sui:publish -- --write-env               # publishes; writes SUI_PACKAGE_ID and SUI_ORGANISER_CAP_ID
+npm run sui:smoke                                # end-to-end check: prints every digest and Suiscan link
+```
+
+**Before deploying this version anywhere hosted, run `npm run db:migrate` against that database**, even without Sui: queries read the new, additive Sui columns. To switch Sui on there, add the same variables to Vercel and redeploy.
+
+### Rehearse the paid demo
+
+```sh
+npm run sui:demo-drop -- --live-drop   # stop the dev server first; add --fresh to start new series
+npm run dev:demo
+```
+
+Round 1 of the labelled Capsule Shop demo is entered by six throwaway fan wallets (funded with 0.05 SUI each, keys in the Git-ignored `.data/demo-wallets.json`) and settled at once, so four fans carry an on-chain loss. Round 2 is entered by the same fans with those losses counted, and closes after `--closes-in` seconds (default 180) for a live **Run draw**. `--live-drop` adds a real drop, "Tokyo Dome · Night 2", for entry with World ID and a wallet.
+
+### Verify on the explorer
+
+Every drop on Sui exposes its object IDs and transaction digests through `/api/drops/:id/public` (`sui`) and its draw record (`record.sui`). Open `https://suiscan.xyz/testnet/tx/<digest>` or `https://suiscan.xyz/testnet/object/<id>`. The settle transaction's balance changes show the payout and each refund; its `Settled` event lists the seed, winners in pick order, rolls, pools and every entry's losses before and after. Anyone can recompute the winners from the seed with `chainDraw` in `src/lib/sui-draw.ts`.
+
+### Rules on-chain
+
+- Only a series that starts on Sui joins it, so the chain ledger holds its whole history. Seeded setup history stays off-chain, and a series on Sui refuses new drops while Sui is not configured.
+- The chain accepts entries until 30 seconds after the database closes, so last-second registrations land. The draw opens after that.
+- A free entry is saved first, then registered on-chain. If Sui fails, it stays `pending` and is retried by the next entry and before the draw. An entry that never reaches Sui gets no result and is listed in `record.sui.unregistered`.
+- Organiser transactions run one at a time (a database advisory lock plus an in-process queue), so gas coins never race.
+- Retrying a draw repeats only the missing chain step and never rerolls. A mirror lost after settlement is recovered from the chain.
+- Gas measured on a local network: a six-fan settlement costs about 0.01 SUI. The worst case, 300 entrants and 300 items, fits in one transaction: 0.63 SUI computation and 0.72 SUI storage (0.15 SUI rebate).
+- Testnet SUI only. There are no real-money or mainnet payments.
+
 ## Draw and audit rules
 
 - Tickets = `1 + min(5, series losses)`.
@@ -97,7 +150,7 @@ On Vercel, configure the World variables, ADMIN_PASSWORD, DATABASE_URL and `APP_
 - If entrants are fewer than items, each entrant wins once; unused items are recorded. Empty drops settle with no winners.
 - `/api/drops/:id/public` includes the complete draw record and a page of entries. `/api/codes/:code` returns a page of history and series counts. UI pages contain search and pagination.
 
-A record fingerprint uses SHA-256 over recursively key-sorted JSON (`canonicalJson` in `src/lib/domain.ts`). This survives Postgres jsonb reordering. It is **not proof of independent randomness or tamper-proof storage**. Phase 1 still trusts the server/database operator. Sui is the intended trust reduction, not an existing capability.
+A record fingerprint uses SHA-256 over recursively key-sorted JSON (`canonicalJson` in `src/lib/domain.ts`). This survives Postgres jsonb reordering. It is **not proof of independent randomness or tamper-proof storage**. Phase 1 still trusts the server/database operator. For drops on Sui, the seed, weights, winners and ledger come from the chain instead (see [Sui](#sui)).
 
 See [PRD](PRD.md), [implementation decisions](IMPLEMENTATION.md), [design](../DESIGN.md) and [UX contract](../UX-CONTRACT.md).
 
@@ -134,8 +187,8 @@ Every real verification attempt records only purpose, category, elapsed millisec
 - [ ] Complete real World simulator success and refusal; resolve passport/Orb choice.
 - [ ] Validate liveness or explicitly show the staging fallback.
 - [x] Provision hosted Postgres and deploy to Vercel.
-- [ ] Phase 2: Sui Move package, testnet publish, registration, randomness, settlement and database mirror.
-- [ ] **Sui package ID: not deployed.** Explorer links: not available.
-- [ ] Stretch deposits/refunds and unclaimed handoff only after both phase gates pass.
+- [x] Phase 2: Sui Move package, registration, randomness, settlement, deposits/refunds and database mirror (tested on a local Sui network).
+- [ ] **Sui testnet publish: pending funding.** Package ID and explorer links: not available yet.
+- [ ] Stretch: unclaimed-item handoff, only after both phase gates pass.
 - [ ] Two clean four-minute rehearsals, recording, measured debrief and ETHGlobal submission.
 - [ ] @Chai decides project replacement, series-scoped privacy and prize scope.

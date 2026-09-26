@@ -92,6 +92,15 @@ export type Drop = {
   drawn_at: Date | string | null;
   sui_drop_id: string | null;
   draw_tx: string | null;
+  /** Deposit per entry in MIST, as a decimal string; "0" for a free drop. */
+  price_mist: string;
+  /** Deposit coin type for on-chain drops, e.g. 0x2::sui::SUI; null off-chain. */
+  coin_type: string | null;
+  sui_network: string | null;
+  sui_series_id: string | null;
+  sui_package_id: string | null;
+  sui_create_tx: string | null;
+  settle_tx: string | null;
   entry_count: number;
   ticket_count: number;
   entry_open: boolean;

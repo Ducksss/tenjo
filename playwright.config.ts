@@ -31,6 +31,14 @@ export default defineConfig({
       WORLD_APP_ID: "",
       WORLD_RP_ID: "",
       WORLD_RP_SIGNING_KEY: "",
+      // Browser tests never touch a Sui network.
+      SUI_NETWORK: "",
+      SUI_RPC_URL: "",
+      SUI_PACKAGE_ID: "",
+      SUI_ORGANISER_CAP_ID: "",
+      SUI_SECRET_KEY: "",
+      SUI_REGISTRAR_SECRET_KEY: "",
+      SUI_PAYOUT_ADDRESS: "",
     },
   },
 });

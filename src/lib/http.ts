@@ -105,3 +105,10 @@ export function pageNumber(input: string | undefined | null) {
   const p = Number(input || 1);
   return Number.isSafeInteger(p) && p > 0 ? Math.min(p, 10000) : 1;
 }
+/** The connected Sui wallet, from `x-tenjo-sui-address` (0x + 64 hex). */
+export function suiAddressHeader(request: Request) {
+  const address = (request.headers.get("x-tenjo-sui-address") || "").trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(address))
+    throw new AppError(400, "invalid_address", "Connect a Sui wallet first.");
+  return address.toLowerCase();
+}

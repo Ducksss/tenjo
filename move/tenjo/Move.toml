@@ -1,0 +1,6 @@
+[package]
+name = "tenjo"
+edition = "2024"
+
+# std and sui are implicit dependencies.
+[dependencies]
