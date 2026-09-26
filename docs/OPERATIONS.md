@@ -114,7 +114,7 @@ rg -n 'verification boundary|developer.world.org/api/v4/verify' src/lib/world.ts
 
 A real World ID gets a fresh code in every drop, so a passkey keeps one code for the fan. World ID still decides who may enter; the passkey decides whose losses an entry counts toward.
 
-- **Fan flow.** When the site takes real World IDs and the browser supports passkeys, the entry card shows "Keep my extra chances with a passkey", ticked. The first entry creates a Tenjō passkey behind Face ID or a fingerprint; creating it is that entry's proof, so there is one prompt. Later entries sign the entry's World ID request. A cancelled prompt enters nothing and offers **Confirm passkey** or **Enter with World ID alone**. The simulator never asks for a passkey.
+- **Fan flow.** When the site takes real World IDs and the browser supports passkeys, the entry card shows "Keep my extra chances with a passkey", ticked. A browser that remembers the fan's passkey signs the entry's World ID request with it. A browser that remembers none asks "Entered with a passkey before?": **Use my passkey** finds an existing Tenjō passkey (after cleared browser data, or synced from another device), and **Create a passkey** makes one behind Face ID or a fingerprint, which is that entry's proof. A cancelled or failed prompt enters nothing and offers a retry, the other option, or **Enter with World ID alone**. The simulator never asks for a passkey.
 - **Storage.** `POST /api/passkeys` stores only the passkey's public key, its counter and the code its entries use, in `passkeys`. `entry_identities` keeps each drop's World ID code beside the entry's code, so one person still gets one entry per drop.
 - **Configuration.** No new variables. Passkeys belong to the host name in `APP_ORIGIN`, so they don't carry across domains, preview URLs or `127.0.0.1`.
 - **On a paid drop** the wallet only pays the deposit; the passkey carries the code.
@@ -227,7 +227,7 @@ For a browser check of passkeys, Chrome's DevTools protocol can add a virtual au
 | "Connection failed" after choosing Slush                | Slush's web wallet is blocked in Japan. Use a wallet extension with site access on all sites ([above](#test-a-paid-drop-as-a-fan)) |
 | "Tenjō doesn't know this passkey"                       | The browser remembered a passkey this database never stored. It is forgotten; the next entry creates a new one                     |
 | "This passkey already has an entry in this drop"        | One entry per passkey per drop. Use your own passkey, or untick it to enter with World ID alone                                    |
-| "The passkey step didn't finish"                        | The prompt was cancelled, or the browser wanted a fresh tap. Press **Confirm passkey**                                             |
+| "Your passkey didn't answer" or "wasn't created"        | The prompt was cancelled, or no Tenjō passkey is on this device. Retry, or choose **Create a new passkey instead**                 |
 | Pages return 500 after a deploy                         | New tables or columns missing on Neon: run `npm run db:migrate` against it                                                         |
 | "Module not found: @mysten/sui/…" locally               | Stale install: run `npm ci`                                                                                                        |
 | A script hangs or fails on the local database           | PGlite allows one process: stop the dev server first                                                                               |

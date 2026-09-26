@@ -23,6 +23,7 @@ import {
   passkeyProof,
   passkeysSupported,
   rememberedPasskey,
+  type PasskeyMode,
 } from "./passkey";
 import { useNow } from "./use-now";
 import type { Challenge } from "./world-widget";
@@ -112,14 +113,16 @@ export function DropActions({
   // A real World ID gets a fresh code in every drop; a passkey keeps one code, so losses carry.
   const linkable = realWorld && !demo && now !== null && passkeysSupported();
   const [usePasskey, setUsePasskey] = useState(true);
-  const [discover, setDiscover] = useState(false);
   const [passkey, setPasskey] = useState<string | null>(() =>
     typeof window === "undefined" ? null : rememberedPasskey(),
   );
-  // World ID's request, kept while the passkey step waits for a fresh tap.
+  // World ID's request, kept while the fan answers a passkey question: `choose` when this
+  // browser remembers no passkey (use one or create one), `retry` when a prompt didn't finish.
   const [pendingPasskey, setPendingPasskey] = useState<{
     next: Challenge;
     headers?: Record<string, string>;
+    reason: "choose" | "retry";
+    mode?: PasskeyMode;
   } | null>(null);
   const linkedCode = linkable && passkey ? passkeyCode(passkey) : null;
   const [carried, setCarried] = useState<{
@@ -244,35 +247,36 @@ export function DropActions({
   // Proves the passkey for this World ID request, then opens World ID with it.
   async function withPasskey(
     next: Challenge,
-    headers?: Record<string, string>,
+    headers: Record<string, string> | undefined,
+    mode: PasskeyMode,
   ) {
-    setInfo("Confirm with your passkey to keep your extra chances.");
+    setInfo(
+      mode === "create"
+        ? "Create your passkey to keep your extra chances."
+        : "Confirm with your passkey to keep your extra chances.",
+    );
     try {
-      const proof = await passkeyProof(
-        id,
-        next.id,
-        passkey ? "use" : discover ? "discover" : "create",
-      );
+      const proof = await passkeyProof(id, next.id, mode);
       setPasskey(rememberedPasskey());
-      setDiscover(false);
       setInfo("");
       openWorldId(next, { ...headers, "x-tenjo-passkey": proof });
     } catch (error) {
       setInfo("");
       // Tenjō's own refusal stands. A cancelled prompt, or a browser that wants a fresh tap,
-      // gets a button instead.
+      // gets buttons instead.
       if (error instanceof ApiError) throw error;
-      setPendingPasskey({ next, headers });
+      setPendingPasskey({ next, headers, reason: "retry", mode });
     }
   }
-  async function confirmPasskey() {
+  // Runs from the fan's tap, so browsers that need a fresh gesture for passkeys get one.
+  async function runPasskey(mode: PasskeyMode) {
     const pending = pendingPasskey;
     if (!pending) return;
     setPendingPasskey(null);
     setBusy(true);
     setProblem(null);
     try {
-      await withPasskey(pending.next, pending.headers);
+      await withPasskey(pending.next, pending.headers, mode);
     } catch (error) {
       fail(error);
     } finally {
@@ -324,9 +328,12 @@ export function DropActions({
             ? { "x-tenjo-sui-address": address }
             : undefined;
         setEntryMode(mode);
-        if (entering && mode === "production" && linkable && usePasskey)
-          await withPasskey(next, headers);
-        else openWorldId(next, headers);
+        if (entering && mode === "production" && linkable && usePasskey) {
+          // A browser that forgot its passkey asks first, so a returning fan never
+          // starts over with a new one by accident.
+          if (passkey) await withPasskey(next, headers, "use");
+          else setPendingPasskey({ next, headers, reason: "choose" });
+        } else openWorldId(next, headers);
       }
     } catch (error) {
       fail(error);
@@ -413,28 +420,21 @@ export function DropActions({
                         ? carriedLosses
                           ? `Your passkey carries ${carriedLosses} ${carriedLosses === 1 ? "loss" : "losses"} in ${seriesName}: ${chancesFor(carriedLosses)} chances.`
                           : `Your passkey is ready. Lose this draw and your next entry in ${seriesName} gets 2 chances.`
-                        : discover
-                          ? "You’ll choose your Tenjō passkey when you enter."
-                          : "You’ll create one with Face ID or your fingerprint when you enter."}
+                        : "When you enter, you’ll use your passkey or create one, with Face ID or your fingerprint."}
                     </p>
-                    <button
-                      type="button"
-                      className="text-button"
-                      disabled={busy}
-                      onClick={() => {
-                        if (passkey) {
+                    {passkey ? (
+                      <button
+                        type="button"
+                        className="text-button"
+                        disabled={busy}
+                        onClick={() => {
                           forgetPasskey();
                           setPasskey(null);
-                          setDiscover(false);
-                        } else setDiscover(!discover);
-                      }}
-                    >
-                      {passkey
-                        ? "Use a different passkey"
-                        : discover
-                          ? "Create a new passkey instead"
-                          : "Made one on another device? Use it"}
-                    </button>
+                        }}
+                      >
+                        Use a different passkey
+                      </button>
+                    ) : null}
                   </>
                 ) : null}
               </div>
@@ -474,15 +474,65 @@ export function DropActions({
             </p>
             {pendingPasskey ? (
               <div className="passkey-step" role="status">
-                <p>
-                  The passkey step didn’t finish, so nothing was entered yet.
-                  Confirm it to keep your extra chances.
-                </p>
-                <Button className="full" busy={busy} onClick={confirmPasskey}>
-                  <Fingerprint size={21} />
-                  Confirm passkey
-                  <ArrowRight size={18} />
-                </Button>
+                {pendingPasskey.reason === "choose" ? (
+                  <>
+                    <p>
+                      <strong>Entered with a passkey before?</strong> Use it to
+                      bring your extra chances. First time here? Create one.
+                    </p>
+                    <Button
+                      className="full"
+                      busy={busy}
+                      onClick={() => runPasskey("discover")}
+                    >
+                      <Fingerprint size={21} />
+                      Use my passkey
+                      <ArrowRight size={18} />
+                    </Button>
+                    <Button
+                      className="full secondary"
+                      busy={busy}
+                      onClick={() => runPasskey("create")}
+                    >
+                      Create a passkey
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      {pendingPasskey.mode === "create"
+                        ? "Your passkey wasn’t created, so nothing was entered yet."
+                        : "Your passkey didn’t answer, so nothing was entered yet."}
+                    </p>
+                    <Button
+                      className="full"
+                      busy={busy}
+                      onClick={() => runPasskey(pendingPasskey.mode ?? "use")}
+                    >
+                      <Fingerprint size={21} />
+                      {pendingPasskey.mode === "create"
+                        ? "Create passkey"
+                        : "Confirm passkey"}
+                      <ArrowRight size={18} />
+                    </Button>
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={busy}
+                      onClick={() =>
+                        runPasskey(
+                          pendingPasskey.mode === "create"
+                            ? "discover"
+                            : "create",
+                        )
+                      }
+                    >
+                      {pendingPasskey.mode === "create"
+                        ? "Use a passkey I already have"
+                        : "Create a new passkey instead"}
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   className="text-button"
