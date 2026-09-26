@@ -6,6 +6,7 @@ import { pageNumber } from "@/lib/http";
 import { Lookup } from "@/components/lookup";
 import { Notice } from "@/components/ui";
 import { Capsules } from "@/components/capsules";
+import { entryStatus } from "@/lib/entry-status";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Entry history" };
 export default async function CodePage({
@@ -81,11 +82,13 @@ export default async function CodePage({
                   </td>
                   <td>{e.tickets}</td>
                   <td>
-                    {e.outcome === "won"
-                      ? "Won"
-                      : e.outcome === "lost"
-                        ? "Not this time"
-                        : "Awaiting draw"}
+                    {entryStatus(e)}
+                    {e.sui_status === "pending" &&
+                    e.drop_state === "settled" ? (
+                      <p className="small muted">
+                        This entry did not reach Sui. No loss was added.
+                      </p>
+                    ) : null}
                   </td>
                   <td>
                     {e.losses_before === null
