@@ -23,6 +23,7 @@ export function Navigation() {
         {[
           { href: "/", label: "Discover drops" },
           { href: "/demo", label: "Try the walkthrough" },
+          { href: "/architecture", label: "How it’s built" },
           { href: "/audit", label: "Public record" },
           { href: "/codes", label: "My entries" },
         ].map(({ href, label }) => {

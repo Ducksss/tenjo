@@ -156,7 +156,7 @@ npm run build
 npm run format:check
 ```
 
-The implementation was checked with twelve backend tests, seven browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100. If that port is occupied, run `TENJO_TEST_PORT=3112 npm run test:e2e`.
+The implementation was checked with twelve backend tests, eight browser tests, type checking, lint, formatting and a production build. Tests cover duplicate races, draw timing, settlement, pickup refusal, proof forwarding and replay, dependency failure, keyboard access and mobile layouts. Browser tests start an isolated database and server on port 3100. If that port is occupied, run `TENJO_TEST_PORT=3112 npm run test:e2e`.
 
 Real World credentials, production liveness and Sui require separate integration validation. Deployment instructions and the measured debrief are in the [operations guide](docs/OPERATIONS.md).
 

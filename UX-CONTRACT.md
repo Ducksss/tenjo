@@ -47,3 +47,7 @@ Discovery states the product before the brand line: a free pity system for ticke
 Discovery features drops that are open for entry before newer closed ones. One status vocabulary (Entries open, Opens soon, Awaiting draw, Draw complete) is shared by discovery, drop and record pages. On the drop page the entry card’s copy follows the live phase, and crossing the open or close time refreshes server-rendered status. Draw controls sit in their own step-03 card rather than beside entry. Receipts explain the chance breakdown and when the draw runs.
 
 Fan-facing copy calls draw weight chances; tickets means real event tickets only. See DESIGN.md for the vocabulary.
+
+## How it’s built
+
+/architecture is the technical companion to discovery’s map, linked from the main navigation. It uses the same node language and step numbers (01 request to 05 record, plus 06 publish) in src/components/architecture-diagram.tsx, then walks through the World ID pipeline, the pity ledger, draw integrity and the Sui Phase 2 design, pickup, failure paths and World’s IDKit brief. Its live, pending and planned status comes from worldConfig at request time, so it never claims live proofs without credentials; Sui stays labelled designed and not deployed. Below 700px the detailed map scrolls inside its own region and the page never scrolls sideways.

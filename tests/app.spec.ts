@@ -50,6 +50,11 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
     fullPage: true,
   });
   await page.getByRole("link", { name: "My entries", exact: true }).click();
+  // Discovery has its own lookup form; wait for the lookup page before using it.
+  await expect(page).toHaveURL(/\/codes$/);
+  await expect(
+    page.getByRole("heading", { name: "Find your next chance." }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Look up", exact: true }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "32-character",
@@ -362,4 +367,33 @@ test("unfinished organiser form can be kept or discarded when following navigati
     .click();
   await page.getByRole("button", { name: "Discard and leave" }).click();
   await expect(page).toHaveURL(/\/demo$/);
+});
+
+test("architecture page explains the World ID pipeline with honest live and planned status", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await page.getByRole("link", { name: "How it’s built" }).first().click();
+  await expect(page).toHaveURL(/\/architecture$/);
+  await expect(page).toHaveTitle("How it’s built · Tenjō");
+  const status = page.getByRole("list", { name: "What is live today" });
+  // The browser tests run without World credentials, so nothing may claim a live proof.
+  await expect(status).toContainText("Integrated · awaiting credentials");
+  await expect(status).toContainText("Phase 2");
+  await expect(
+    page.getByRole("img", { name: "Tenjō system architecture" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "One human, one anonymous code." }),
+  ).toBeVisible();
+  await expect(page.getByText("Design sketch · not deployed")).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  expect(errors).toEqual([]);
 });
