@@ -5,6 +5,8 @@ export class AppError extends Error {
     public status: number,
     public code: string,
     message: string,
+    /** Extra response fields the client can act on, such as the code a repeat entry already holds. */
+    public details: Record<string, string> = {},
   ) {
     super(message);
   }

@@ -6,7 +6,33 @@ import type { SQL } from "./db";
 import { anonymousCode, AppError } from "./domain";
 import { getDrop, type VerifiedIdentity } from "./service";
 
-export function worldConfig() {
+/** "primary" is the main World setup (WORLD_*). "production" is an optional second setup
+ * (WORLD_PRODUCTION_*) so real World IDs can enter while the primary one runs the staging simulator. */
+export type WorldMode = "primary" | "production";
+export function worldConfig(mode: WorldMode = "primary") {
+  if (mode === "production")
+    return {
+      mode,
+      app_id: process.env.WORLD_PRODUCTION_APP_ID || "",
+      rp_id: process.env.WORLD_PRODUCTION_RP_ID || "",
+      action:
+        process.env.WORLD_PRODUCTION_ACTION ||
+        process.env.WORLD_ACTION ||
+        "tenjo-person",
+      environment: "production" as const,
+      protocol: "4.0",
+      credential:
+        process.env.WORLD_PRODUCTION_CREDENTIAL === "passport"
+          ? ("passport" as const)
+          : ("orb" as const),
+      ready: !!(
+        process.env.WORLD_PRODUCTION_APP_ID &&
+        process.env.WORLD_PRODUCTION_RP_ID &&
+        process.env.WORLD_PRODUCTION_RP_SIGNING_KEY
+      ),
+      // Same rule as the primary setup: no production pickup until liveness is server-enforced.
+      pickupAllowed: false,
+    };
   const environment =
     process.env.WORLD_ENVIRONMENT === "production"
       ? ("production" as const)
@@ -22,6 +48,7 @@ export function worldConfig() {
       ? ("orb" as const)
       : ("passport" as const);
   return {
+    mode,
     app_id: process.env.WORLD_APP_ID || "",
     rp_id: process.env.WORLD_RP_ID || "",
     action: process.env.WORLD_ACTION || "tenjo-person",
@@ -39,22 +66,37 @@ export function worldConfig() {
       process.env.WORLD_ALLOW_UNTESTED_PICKUP === "true",
   };
 }
-function requireConfig() {
-  const config = worldConfig();
-  if (!config.ready)
+export type WorldConfig = ReturnType<typeof worldConfig>;
+/** Real World IDs beside the simulator: only when the primary setup is staging and production is configured. */
+export function realWorldConfig() {
+  const production = worldConfig("production");
+  return worldConfig().environment === "staging" && production.ready
+    ? production
+    : null;
+}
+function requireConfig(mode: WorldMode = "primary") {
+  const config = mode === "production" ? realWorldConfig() : worldConfig();
+  if (!config?.ready)
     throw new AppError(
       503,
       "world_not_configured",
-      "World ID is not configured yet. The organiser must add the staging app, RP ID and signing key.",
+      mode === "production"
+        ? "Real World ID isn't set up for this site yet. Use the World ID simulator."
+        : "World ID is not configured yet. The organiser must add the staging app, RP ID and signing key.",
     );
   return config;
 }
+const signingKey = (mode: WorldMode) =>
+  mode === "production"
+    ? process.env.WORLD_PRODUCTION_RP_SIGNING_KEY!
+    : process.env.WORLD_RP_SIGNING_KEY!;
 export async function issueChallenge(
   db: SQL,
   dropId: string,
   purpose: "enter" | "collect",
+  mode: WorldMode = "primary",
 ) {
-  const config = requireConfig();
+  const config = requireConfig(mode);
   const drop = await getDrop(db, dropId);
   if (drop.is_demo)
     throw new AppError(
@@ -86,24 +128,30 @@ export async function issueChallenge(
       "Wait until the draw is settled before collecting.",
     );
   const signed = signRequest({
-    signingKeyHex: process.env.WORLD_RP_SIGNING_KEY!,
+    signingKeyHex: signingKey(mode),
     action: config.action,
     ttl: 300,
   });
   const id = randomUUID();
   await db.query("DELETE FROM challenges WHERE expires_at < now()");
+  const values = [
+    id,
+    signed.nonce,
+    dropId,
+    purpose,
+    new Date(signed.expiresAt * 1000).toISOString(),
+  ];
+  // Only a real-World-ID challenge names its mode, so a database not yet migrated
+  // for the second setup keeps working while it is unconfigured.
   await db.query(
-    "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at) VALUES($1,$2,$3,$4,$5)",
-    [
-      id,
-      signed.nonce,
-      dropId,
-      purpose,
-      new Date(signed.expiresAt * 1000).toISOString(),
-    ],
+    mode === "production"
+      ? "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at,mode) VALUES($1,$2,$3,$4,$5,'production')"
+      : "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at) VALUES($1,$2,$3,$4,$5)",
+    values,
   );
   return {
     id,
+    mode,
     app_id: config.app_id,
     action: config.action,
     environment: config.environment,
@@ -176,7 +224,19 @@ export async function verifyWorldProof(
   const start = performance.now();
   let outcome = "rejected";
   try {
-    const config = requireConfig();
+    // The challenge decides which World setup this proof must match. Only read when
+    // real World IDs are configured, so an unmigrated database works without them.
+    const mode: WorldMode =
+      realWorldConfig() &&
+      (
+        await db.query<{ mode: string }>(
+          "SELECT mode FROM challenges WHERE id=$1",
+          [challengeId],
+        )
+      ).rows[0]?.mode === "production"
+        ? "production"
+        : "primary";
+    const config = requireConfig(mode);
     const policy = createHash("sha256")
       .update(
         JSON.stringify([
@@ -191,7 +251,9 @@ export async function verifyWorldProof(
       .digest("hex");
     const registeredPolicy = (
       await db.query<{ fingerprint: string }>(
-        "SELECT fingerprint FROM identity_policy WHERE singleton=true",
+        mode === "production"
+          ? "SELECT fingerprint FROM identity_policy_modes WHERE mode='production'"
+          : "SELECT fingerprint FROM identity_policy WHERE singleton=true",
       )
     ).rows[0];
     if (registeredPolicy && registeredPolicy.fingerprint !== policy)
@@ -369,7 +431,7 @@ export async function verifyWorldProof(
       `${config.app_id}:${config.action}:${config.protocol}`,
     );
     outcome = "verified";
-    return { code, challengeId, policy };
+    return { code, challengeId, policy, mode };
   } catch (error) {
     if (error instanceof AppError && error.status === 503)
       outcome =

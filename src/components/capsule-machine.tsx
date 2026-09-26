@@ -18,7 +18,13 @@ const colors = [
   "#f2b6c9",
 ];
 
-function Capsule({ color, size = 32 }: { color: string; size?: number }) {
+export function Capsule({
+  color,
+  size = 32,
+}: {
+  color: string;
+  size?: number;
+}) {
   return (
     <>
       <path d={`M-${size} 0A${size} ${size} 0 0 0 ${size} 0Z`} fill="#fbf4ec" />

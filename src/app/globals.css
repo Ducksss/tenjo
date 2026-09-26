@@ -775,6 +775,12 @@ main {
 .text-button {
   min-height: 40px;
 }
+.action-panel .simulator-entry {
+  display: flex;
+  min-height: 44px;
+  margin: 0 auto;
+  font-size: 13px;
+}
 .footer {
   max-width: 1188px;
   margin: 40px auto 24px;
@@ -838,6 +844,28 @@ main {
   border-color: #f1c7bd;
   color: var(--danger);
   background: #fff1ec;
+}
+/* A repeat entry's refusal: why, what it means for the first entry, and the way back to it. */
+.already-entered {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.already-entered > svg {
+  flex: none;
+  margin-top: 1px;
+}
+.already-entered strong {
+  display: block;
+  font: 600 16px/1.3 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.already-entered p {
+  margin: 4px 0 8px;
+  color: var(--ink);
+}
+.already-entered .text-link {
+  font-weight: 600;
 }
 .page-heading {
   padding: 16px 0 35px;
@@ -3991,4 +4019,667 @@ mysten-dapp-kit-connect-modal {
 }
 .recompute.mismatch {
   color: var(--danger);
+}
+
+/* How it works, animated (FlowAnimation): one fan's two ballots on a loop.
+   Each beat's resting styles are its end state and animations only move into
+   it, so reduced motion still shows every step, just without the movement. */
+.flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 16px;
+  margin: 0 0 44px;
+}
+.flow-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 18px 18px 10px;
+  border-radius: 28px;
+  background: var(--periwinkle);
+  overflow: hidden;
+  isolation: isolate;
+}
+.flow-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 42%;
+  left: 54%;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--periwinkle-soft);
+  transform: translate(-50%, -50%);
+}
+.flow-stage-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.flow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.flow-pill .capsules {
+  gap: 4px;
+  margin: 0;
+}
+.flow-pill .capsules i {
+  width: 17px;
+  height: 17px;
+}
+.flow-pill strong {
+  font: 600 16px var(--font-display);
+}
+.flow-scene-box {
+  position: relative;
+  margin: auto 0;
+}
+.flow-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+/* The drop page's repeat-entry refusal, said by the second phone in a speech bubble. */
+.flow-refusal {
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: min(34%, 220px);
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid #f1c7bd;
+  border-radius: 14px;
+  background: #fff1ec;
+  box-shadow: var(--shadow-soft);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink);
+  transform-origin: 62% 100%;
+  animation: flow-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s both;
+}
+.flow-refusal::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 62%;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid #f1c7bd;
+  border-bottom: 1px solid #f1c7bd;
+  background: #fff1ec;
+  transform: rotate(45deg);
+}
+.flow-refusal > svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--danger);
+}
+.flow-refusal strong {
+  display: block;
+  font: 600 13px/1.3 var(--font-display);
+  color: var(--danger);
+}
+.flow-refusal.leaving {
+  opacity: 0;
+  animation: flow-leave 0.35s ease-in both;
+}
+.flow-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  padding: 26px 24px 20px;
+  border-radius: 28px;
+  background: var(--surface);
+}
+.flow-caption {
+  display: grid;
+  margin: 0;
+  font: 500 23px/1.3 var(--font-display);
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+.flow-caption > span {
+  display: grid;
+  grid-area: 1 / 1;
+  align-content: start;
+  justify-items: start;
+  gap: 12px;
+  visibility: hidden;
+}
+.flow-caption > .current {
+  visibility: visible;
+}
+.flow-tag {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--cream);
+  font: 600 12px/1.4 var(--font-body);
+  letter-spacing: 0;
+}
+.flow-tag.world {
+  background: var(--lime-soft);
+}
+.flow-tag.sui {
+  background: var(--periwinkle);
+}
+.flow-steps {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 0 30px;
+  list-style: none;
+}
+/* The loop: a dashed return from step 4 to step 1, drawn solid while it's taken. */
+.flow-steps::before {
+  content: "";
+  position: absolute;
+  top: 26px;
+  bottom: 26px;
+  left: 4px;
+  width: 24px;
+  border: 2px dashed var(--dash);
+  border-right: 0;
+  border-radius: 18px 0 0 18px;
+}
+.flow-steps::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 26px;
+  border: 6px solid transparent;
+  border-right: 0;
+  border-left: 8px solid var(--dash);
+}
+.flow[data-loop="true"] .flow-steps::before {
+  border-style: solid;
+  border-color: var(--tangerine-ink);
+}
+.flow[data-loop="true"] .flow-steps::after {
+  border-left-color: var(--tangerine-ink);
+}
+.flow-steps li {
+  position: relative;
+}
+.flow-steps button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 12px 6px 6px;
+  border: 0;
+  border-radius: 18px;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--muted);
+  cursor: pointer;
+}
+.flow-steps button:hover {
+  background: var(--paper);
+}
+.flow-steps .current button {
+  background: var(--cream);
+  color: var(--ink);
+}
+.flow-step-number {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  font: 600 14px var(--font-display);
+  color: var(--ink);
+}
+.flow-steps .done .flow-step-number {
+  border-color: var(--plum);
+  background: var(--tint);
+}
+.flow-steps .current .flow-step-number {
+  border-color: var(--plum);
+  background: var(--plum);
+  color: var(--on-dark);
+}
+.flow-step-text {
+  display: grid;
+  min-width: 0;
+}
+.flow-step-text strong {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.flow-step-text small {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.flow-step-bar {
+  position: absolute;
+  right: 16px;
+  bottom: 5px;
+  left: 52px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--tangerine);
+  transform: scaleX(var(--flow-progress, 0));
+  transform-origin: left;
+}
+.flow-loop-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.flow-loop-note svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--tangerine-ink);
+}
+.flow-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.flow-controls span {
+  font-size: 13px;
+  color: var(--muted);
+}
+/* Off screen or paused, every frame holds where it is. */
+.flow[data-moving="false"] * {
+  animation-play-state: paused !important;
+}
+.flow-scene[data-beat="verify"] {
+  animation: flow-fade-in 0.45s ease-out both;
+}
+.flow[data-ticking="true"] .flow-scene[data-beat="reset"] {
+  animation: flow-fade-out 0.45s ease-in 2.5s both;
+}
+.flow-screen {
+  animation: flow-fade-in 0.3s ease-out both;
+}
+.flow-screen.still,
+.flow-screen.still * {
+  animation: none;
+}
+.flow-scan {
+  opacity: 0;
+  animation: flow-scan 1.2s ease-in-out 0.2s both;
+}
+.flow-check {
+  animation: flow-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 1.35s both;
+}
+.flow-pop {
+  animation: flow-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+.flow-pop.late {
+  animation-delay: 1s;
+}
+.flow-ghost {
+  animation: flow-ghost-in 0.6s cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+.flow-ghost .flow-deny {
+  animation: flow-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.75s both;
+}
+.flow-ghost-body {
+  animation: flow-shake 0.45s ease-in-out 1.1s both;
+}
+.flow-ghost.leaving {
+  opacity: 0;
+  animation: flow-ghost-out 0.5s ease-in both;
+}
+.flow-ghost.leaving * {
+  animation: none;
+}
+.flow-toss {
+  animation: flow-toss 0.95s both;
+  animation-delay: calc(var(--i) * 170ms + 150ms);
+}
+.flow-drop {
+  animation: capsule-drop 0.75s cubic-bezier(0.34, 1.45, 0.5, 1) 0.35s both;
+}
+.flow-ring {
+  opacity: 0;
+  animation: flow-ring 1s ease-out 1s both;
+}
+.flow-tumble {
+  animation: flow-tumble 0.5s ease-in-out 2;
+  animation-delay: var(--t);
+}
+.flow-picked {
+  opacity: 0;
+  animation: flow-picked 0.4s ease-in 1.5s both;
+}
+.flow-picked-ring {
+  opacity: 0;
+  animation: flow-picked-ring 0.35s ease-out 1.1s both;
+}
+.flow-hop {
+  animation: flow-hop 0.55s cubic-bezier(0.3, 1.5, 0.6, 1) both;
+  animation-delay: calc(var(--i) * 110ms + 450ms);
+}
+.flow-fade {
+  opacity: 0;
+  animation: flow-leave 0.5s ease-in both;
+  animation-delay: calc(var(--i) * 90ms + 350ms);
+}
+.flow-crank.turn {
+  animation: flow-crank 1.1s cubic-bezier(0.45, 0.05, 0.4, 1) both;
+}
+.flow-roll {
+  animation: flow-roll 1.35s linear 1.75s both;
+}
+.flow-away {
+  opacity: 0;
+  animation: flow-away 0.9s ease-in 0.25s both;
+}
+.flow-open .flow-lid {
+  opacity: 0;
+  animation: flow-lid 0.55s ease-out 0.15s both;
+}
+.flow-open .flow-cup {
+  opacity: 0;
+  animation: flow-leave 0.35s ease-in 0.5s both;
+}
+.flow-ticket.rise {
+  animation: flow-ticket 0.7s cubic-bezier(0.34, 1.4, 0.6, 1) 0.45s both;
+}
+.flow-stamp {
+  animation: flow-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 1.55s both;
+}
+.flow-badge {
+  animation: flow-badge 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.95s both;
+}
+@keyframes flow-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes flow-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes flow-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+@keyframes flow-scan {
+  0% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(400deg);
+  }
+}
+@keyframes flow-ghost-in {
+  from {
+    opacity: 0;
+    transform: translate(-76px, 22px);
+  }
+}
+@keyframes flow-ghost-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-76px, 22px);
+  }
+}
+@keyframes flow-shake {
+  25% {
+    transform: translateX(-8px);
+  }
+  50% {
+    transform: translateX(7px);
+  }
+  75% {
+    transform: translateX(-4px);
+  }
+}
+@keyframes flow-toss {
+  0% {
+    opacity: 0;
+    transform: translate(var(--fx), var(--fy)) scale(0.35);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.45, 1);
+  }
+  12% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(calc(var(--fx) * 0.15), var(--apex)) scale(0.85);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.75, 0.45);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+@keyframes flow-tumble {
+  25% {
+    transform: translate(3px, -9px) rotate(12deg);
+  }
+  50% {
+    transform: translate(-3px, -4px) rotate(-8deg);
+  }
+  75% {
+    transform: translate(2px, -7px) rotate(6deg);
+  }
+}
+@keyframes flow-picked {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.2);
+  }
+}
+@keyframes flow-picked-ring {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes flow-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+@keyframes flow-hop {
+  40% {
+    transform: translateY(-18px);
+  }
+}
+@keyframes flow-leave {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@keyframes flow-crank {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes flow-roll {
+  0% {
+    opacity: 0;
+    transform: translate(-190px, -38px) rotate(0deg) scale(0.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(-190px, -38px) rotate(0deg) scale(1);
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.6);
+  }
+  30% {
+    transform: translate(-190px, 0) rotate(0deg) scale(1);
+    animation-timing-function: ease-out;
+  }
+  36% {
+    transform: translate(-186px, -9px) rotate(20deg) scale(1);
+    animation-timing-function: ease-in;
+  }
+  42% {
+    transform: translate(-180px, 0) rotate(40deg) scale(1);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(720deg) scale(1);
+  }
+}
+@keyframes flow-away {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: translate(150px, 0) rotate(420deg);
+  }
+}
+@keyframes flow-lid {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(16px, -36px) rotate(40deg);
+  }
+}
+@keyframes flow-ticket {
+  from {
+    opacity: 0;
+    transform: translate(-22px, 206px) scale(0.15);
+  }
+  35% {
+    opacity: 1;
+  }
+}
+@keyframes flow-badge {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.6);
+  }
+}
+@media (max-width: 900px) {
+  .flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flow-caption {
+    font-size: 21px;
+  }
+}
+@media (max-width: 700px) {
+  .flow {
+    margin-bottom: 32px;
+  }
+  .flow-stage {
+    padding: 12px 10px 6px;
+    border-radius: 24px;
+  }
+  .flow-panel {
+    gap: 16px;
+    padding: 20px 16px 16px;
+    border-radius: 24px;
+  }
+  .flow-caption {
+    font-size: 19px;
+  }
+  .flow-pill {
+    min-height: 32px;
+    padding: 5px 11px;
+    font-size: 12px;
+  }
+  .flow-refusal {
+    top: 2%;
+    left: 2%;
+    max-width: 66%;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  .flow-refusal strong {
+    font-size: 12px;
+  }
+  .flow-refusal::after {
+    left: 32%;
+  }
+}
+@media (forced-colors: active) {
+  .flow-stage,
+  .flow-panel {
+    border: 1px solid CanvasText;
+  }
+  .flow-step-bar {
+    background: Highlight;
+  }
+  .flow-steps::before {
+    border-color: CanvasText;
+  }
+  .flow-steps::after {
+    border-left-color: CanvasText;
+  }
 }

@@ -10,8 +10,14 @@ export async function POST(request: Request) {
       .object({
         drop_id: z.string().min(1).max(100),
         purpose: z.enum(["enter", "collect"]),
+        mode: z.enum(["primary", "production"]).default("primary"),
       })
       .parse(await readJson(request));
-    return issueChallenge(await database(), data.drop_id, data.purpose);
+    return issueChallenge(
+      await database(),
+      data.drop_id,
+      data.purpose,
+      data.mode,
+    );
   });
 }

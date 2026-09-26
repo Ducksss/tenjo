@@ -85,7 +85,7 @@ The page is 80rem at most, with 18–46px responsive gutters. Discovery is a sta
 1. **Hero:** a split panel, forest copy on the left and the periwinkle capsule machine on the right, with floating fact pills. It stacks below 900px.
 2. **Drops:** the featured drop card, then the list, so visitors can act before the explanation.
 3. **Problem:** three tilted pastel stat cards (peach, lime, periwinkle), sourced.
-4. **How it works:** the interactive walkthrough on an oat panel: a numbered four-step progress row, the story and a live example ticket.
+4. **How it works:** on an oat panel, first the flow animation (a periwinkle stage beside the four-step flow), then the interactive walkthrough: a numbered four-step progress row, the story and a live example ticket.
 5. **Under the hood:** the World + Sui map on a periwinkle panel. It gives way to step cards below 1100px.
 6. **Why Sui:** a plum panel with four reasons and a sourced "Sui right now" strip.
 7. **Lookup:** on a lime panel.
@@ -108,15 +108,17 @@ Pills (999px) for buttons, chips and status. Cards are 24px, panels 36px, fields
 - **Chip:** a sentence-case label pill with a capsule dot; it replaces eyebrows on marketing sections.
 - **Capsule / chance row** (`.capsules`): n filled capsules plus dashed empty slots up to six. It always has a text equivalent ("4 of 6").
 - **Capsule machine** (`CapsuleMachine`): an SVG with a dome of six slots, a body plate, crank, coin slot and chute. It's decorative, but has an accessible label stating the arithmetic.
+- **Flow animation** (`FlowAnimation`): the fan's flow as a 32-second loop, told as the walkthrough's two ballots. A phone proves one person with World ID and a second account is refused, your capsules drop into a mirrored machine among other fans' plain ones, the crank turns and one capsule rolls out. A loss adds a capsule and a win opens into a ticket. Beside the stage, the four steps form a flow diagram whose dashed return from step 4 to step 1 turns solid when a loss sends you round again. The stage is decorative; captions, step buttons and a screen-reader transcript carry the story.
 - **Evidence row** (`.evidence`): a mono ID with a link to Suiscan or the public record and a status dot. It is only rendered for real IDs and digests from the server; there are no placeholders.
 - **Choice pills** (`.choice-group`): native radios drawn as pills for presets, such as the organiser's entry window. The checked pill is plum; focus shows the standard plum ring.
+- **Repeat-entry refusal** (`AlreadyEntered` in drop-actions.tsx): the one refusal with its own layout, because the fan is already in rather than locked out. It uses the error tint, a person-with-cross icon, a "You’ve already entered this draw" title in danger red, plain ink text on what the first entry means, and a "See your entry" link. The flow animation's second phone shows it as a speech bubble.
 - **Forms, tables and notices:** unchanged behaviour (see UX-CONTRACT.md), re-themed. Native selects and date inputs stay platform-owned. IDKit owns its modal; the Sui wallet owns its approval prompt.
 
 Lucide outlined icons at 16–22px always have text labels or accessible names.
 
 ## Motion
 
-One orchestrated moment: on first paint the hero's capsules drop into the dome one after another, 90ms apart, with a small settle. Buttons get small hover feedback (the arrow nudges). There's a pending spinner. That's all. `prefers-reduced-motion` renders everything already settled.
+Two orchestrated moments. On first paint the hero's capsules drop into the dome one after another, 90ms apart, with a small settle. In How it works, the flow animation plays its loop, but only while at least a third of it is on screen and the tab is visible, so a visitor always meets it from the first step. Its Pause button freezes the frame; a step button jumps to that step and plays it through once, even while paused. Buttons get small hover feedback (the arrow nudges). There's a pending spinner. That's all. `prefers-reduced-motion` renders everything already settled, and the flow animation starts paused on a still frame, stepping without movement if asked to play.
 
 ## Voice and vocabulary
 

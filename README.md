@@ -62,6 +62,8 @@ Nothing on the site says “live on Sui” until the configured package exists. 
 3. **The draw.** After close, anyone can start it. `draw` commits 32 random bytes from `sui::random`, and `settle` picks winners deterministically from them, weighted by chances, without replacement.
 4. **Win, or try again.** Winners pay for their seat from the deposit, receive a non-transferable Ticket object and claim with a fresh World ID check. Losers are refunded in the same transaction and start the next draw with one more chance.
 
+The home page’s [How it works](https://tenjo-azure.vercel.app/#how) section plays these four steps as a 32-second animation of one fan’s two ballots, then lets you click through the same story.
+
 ![Flowchart: a fan enters with World ID, and a repeat entry is refused. An entry is saved with 1 plus past losses as chances. A weighted draw runs, losers gain one public loss count, and winners prove with World ID again at pickup.](docs/assets/diagram-flow.svg)
 
 <details>

@@ -9,8 +9,9 @@ import {
   Fingerprint,
   Check,
   Copy,
+  UserRoundX,
 } from "lucide-react";
-import { api } from "@/lib/client-api";
+import { ApiError, api } from "@/lib/client-api";
 import type { DropStatus } from "@/lib/format";
 import { shortId, suiscan } from "@/lib/sui-status";
 import { Button, Notice } from "./ui";
@@ -51,6 +52,7 @@ export function DropActions({
   demo,
   demoEnabled,
   worldReady,
+  realWorld = false,
   pickupAllowed,
   paid,
   suiNetwork,
@@ -64,6 +66,8 @@ export function DropActions({
   demo: boolean;
   demoEnabled: boolean;
   worldReady: boolean;
+  /** Real World IDs (production) can enter beside the staging simulator. */
+  realWorld?: boolean;
   pickupAllowed: boolean;
   /** A priced drop on Sui: entry locks a refundable deposit from the fan's wallet. */
   paid?: { priceLabel: string } | null;
@@ -74,7 +78,11 @@ export function DropActions({
   const now = useNow();
   const [identity, setIdentity] = useState("fan-a");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  // A repeat entry gets its own message; anything else is shown as it came.
+  const [problem, setProblem] = useState<{
+    message: string;
+    repeat?: { code?: string };
+  } | null>(null);
   const [info, setInfo] = useState("");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [purpose, setPurpose] = useState<"enter" | "collect">("enter");
@@ -149,14 +157,33 @@ export function DropActions({
             ? `Entry saved and deposit held on Sui. Lose, and it comes back in the settlement transaction after ${closesLabel}.`
             : `Entry saved. The draw runs after entries close (${closesLabel}). Keep your code to check your result.`,
     );
-    setError("");
+    setProblem(null);
     router.refresh();
   }
-  async function verify(nextPurpose: "enter" | "collect") {
+  function fail(error: unknown) {
+    const repeat =
+      error instanceof ApiError && error.code === "already_entered";
+    const code = repeat ? error.details.member_code : undefined;
+    // A repeat is a final answer, so closing World ID after it shouldn't suggest verifying again.
+    if (repeat) completedFlow.current = true;
+    setProblem({
+      message: (error as Error).message,
+      repeat: repeat
+        ? { code: typeof code === "string" ? code : undefined }
+        : undefined,
+    });
+  }
+  // Entry uses a real World ID when the site takes them; pickup stays on the primary setup.
+  async function verify(
+    nextPurpose: "enter" | "collect",
+    mode: "primary" | "production" = realWorld && nextPurpose === "enter"
+      ? "production"
+      : "primary",
+  ) {
     completedFlow.current = false;
     setPurpose(nextPurpose);
     setBusy(true);
-    setError("");
+    setProblem(null);
     setInfo("");
     try {
       if (demo && paid && nextPurpose === "enter") {
@@ -183,12 +210,12 @@ export function DropActions({
           await api<Challenge>("/api/rp-signature", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ drop_id: id, purpose: nextPurpose }),
+            body: JSON.stringify({ drop_id: id, purpose: nextPurpose, mode }),
           }),
         );
       }
     } catch (error) {
-      setError((error as Error).message);
+      fail(error);
     } finally {
       setBusy(false);
     }
@@ -214,7 +241,7 @@ export function DropActions({
                     setIdentity(e.target.value);
                     setReceipt(null);
                     setInfo("");
-                    setError("");
+                    setProblem(null);
                   }}
                 >
                   {["a", "b", "c", "d", "e"].map((i) => (
@@ -280,6 +307,22 @@ export function DropActions({
                 ? `Refundable deposit · ${paid.priceLabel} · One entry per person`
                 : "Free entry · One entry per person"}
             </p>
+            {realWorld && !demo ? (
+              <button
+                type="button"
+                className="text-button simulator-entry"
+                disabled={
+                  now === null ||
+                  busy ||
+                  closed ||
+                  notOpen ||
+                  (!!paid && !address)
+                }
+                onClick={() => verify("enter", "primary")}
+              >
+                No World ID? Use the World ID simulator
+              </button>
+            ) : null}
             {!demo && !worldReady ? (
               <Notice>
                 The organiser is finishing World ID setup. You can explore the
@@ -358,9 +401,10 @@ export function DropActions({
                     await navigator.clipboard.writeText(receipt.code);
                     setInfo("Code copied.");
                   } catch {
-                    setError(
-                      "Copy is unavailable. Select the code above to copy it.",
-                    );
+                    setProblem({
+                      message:
+                        "Copy is unavailable. Select the code above to copy it.",
+                    });
                   }
                 }}
               >
@@ -370,7 +414,15 @@ export function DropActions({
             </div>
           </div>
         ) : null}
-        {error ? <Notice error>{error}</Notice> : null}
+        {problem?.repeat ? (
+          <AlreadyEntered
+            code={problem.repeat.code}
+            demo={demo}
+            paid={!!paid}
+          />
+        ) : problem ? (
+          <Notice error>{problem.message}</Notice>
+        ) : null}
         {info ? <Notice>{info}</Notice> : null}
         {challenge ? (
           <WorldWidget
@@ -389,12 +441,10 @@ export function DropActions({
             }
             onVerified={(value) => {
               if (paid && purpose === "enter")
-                deposit(value as unknown as PermitResponse).catch((error) =>
-                  setError((error as Error).message),
-                );
+                deposit(value as unknown as PermitResponse).catch(fail);
               else verified(value as Receipt);
             }}
-            onError={setError}
+            onError={fail}
             onOpenChange={(open) => {
               if (!open) {
                 setChallenge(null);
@@ -410,5 +460,37 @@ export function DropActions({
         ) : null}
       </div>
     </>
+  );
+}
+/** A repeat entry is refused on its own terms: why, what it means for the first entry, and the way back to it. */
+function AlreadyEntered({
+  code,
+  demo,
+  paid,
+}: {
+  code?: string;
+  demo: boolean;
+  paid: boolean;
+}) {
+  return (
+    <div className="notice notice-error already-entered" role="alert">
+      <UserRoundX size={20} aria-hidden="true" />
+      <div>
+        <strong>You’ve already entered this draw</strong>
+        <p>
+          {demo
+            ? "This demo identity already has an entry in this drop."
+            : "World ID matched you to an entry already in this drop, whichever phone or account you use."}{" "}
+          One person gets one entry, so nothing new was saved
+          {paid ? " and no deposit moved" : ""}. Your first entry still counts.
+        </p>
+        {code ? (
+          <Link className="text-link" href={`/codes/${code}`}>
+            See your entry
+            <ArrowRight size={14} />
+          </Link>
+        ) : null}
+      </div>
+    </div>
   );
 }

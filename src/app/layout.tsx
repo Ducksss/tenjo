@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import { Navigation } from "@/components/navigation";
-import { worldConfig } from "@/lib/world";
+import { realWorldConfig, worldConfig } from "@/lib/world";
 import { shortId, suiStatus, suiscan } from "@/lib/sui-status";
 import "./globals.css";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -47,7 +47,11 @@ export default function RootLayout({
                   className={`status-dot ${world.ready ? "live" : "pending"}`}
                 />
                 World ID ·{" "}
-                {world.ready ? world.environment : "awaiting credentials"}
+                {world.ready
+                  ? realWorldConfig()
+                    ? "production + simulator"
+                    : world.environment
+                  : "awaiting credentials"}
               </li>
               <li className="environment-badge">
                 <span

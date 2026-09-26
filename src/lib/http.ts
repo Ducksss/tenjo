@@ -8,7 +8,10 @@ export async function handle(work: () => Promise<unknown>) {
     return json(await work());
   } catch (error) {
     if (error instanceof AppError)
-      return json({ error: error.message, code: error.code }, error.status);
+      return json(
+        { ...error.details, error: error.message, code: error.code },
+        error.status,
+      );
     if (error instanceof ZodError)
       return json(
         {
