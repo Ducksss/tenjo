@@ -83,12 +83,14 @@ Labels are sentence case. The old uppercase, letter-spaced eyebrows are gone: se
 The page is 80rem at most, with 18–46px responsive gutters. Discovery is a stack of rounded colour panels rather than hairline-ruled sections:
 
 1. **Hero:** a split panel, forest copy on the left and the periwinkle capsule machine on the right, with floating fact pills. It stacks below 900px.
-2. **Problem:** three tilted pastel stat cards (peach, lime, periwinkle), sourced.
-3. **Under the hood:** the World + Sui map on a periwinkle panel. It gives way to step cards below 1100px.
-4. **How it works:** four real sequential steps, so they are numbered.
-5. **Why Sui:** a plum panel with four reasons and a sourced "Sui right now" strip.
-6. **Drops:** the featured drop card, then the list.
+2. **Drops:** the featured drop card, then the list, so visitors can act before the explanation.
+3. **Problem:** three tilted pastel stat cards (peach, lime, periwinkle), sourced.
+4. **How it works:** the interactive walkthrough on an oat panel: a numbered four-step progress row, the story and a live example ticket.
+5. **Under the hood:** the World + Sui map on a periwinkle panel. It gives way to step cards below 1100px.
+6. **Why Sui:** a plum panel with four reasons and a sourced "Sui right now" strip.
 7. **Lookup:** on a lime panel.
+
+The organiser page pairs the form (at most 720px) with a sticky aside: a live preview card and "What happens after you publish" on an oat card. Below 1100px the aside follows the form and the preview is dropped, because the form's inline summaries already say the same thing.
 
 Panels use `.panel` with `--panel-bg`. The document owns vertical scrolling; tables and the detailed map own their own horizontal overflow. Action targets are at least 44px. Nothing may cause horizontal page scroll at 390px.
 
@@ -107,6 +109,7 @@ Pills (999px) for buttons, chips and status. Cards are 24px, panels 36px, fields
 - **Capsule / chance row** (`.capsules`): n filled capsules plus dashed empty slots up to six. It always has a text equivalent ("4 of 6").
 - **Capsule machine** (`CapsuleMachine`): an SVG with a dome of six slots, a body plate, crank, coin slot and chute. It's decorative, but has an accessible label stating the arithmetic.
 - **Evidence row** (`.evidence`): a mono ID with a link to Suiscan or the public record and a status dot. It is only rendered for real IDs and digests from the server; there are no placeholders.
+- **Choice pills** (`.choice-group`): native radios drawn as pills for presets, such as the organiser's entry window. The checked pill is plum; focus shows the standard plum ring.
 - **Forms, tables and notices:** unchanged behaviour (see UX-CONTRACT.md), re-themed. Native selects and date inputs stay platform-owned. IDKit owns its modal; the Sui wallet owns its approval prompt.
 
 Lucide outlined icons at 16–22px always have text labels or accessible names.

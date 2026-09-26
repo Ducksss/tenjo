@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://tenjo-azure.vercel.app">Live site</a> ·
-  <a href="https://tenjo-azure.vercel.app/demo">Try the walkthrough</a> ·
+  <a href="https://tenjo-azure.vercel.app/#how">Try the walkthrough</a> ·
   <a href="https://tenjo-azure.vercel.app/architecture">How it’s built</a> ·
   <a href="move/tenjo/sources/ballot.move">Move package</a> ·
   <a href="#getting-started">Run it locally</a> ·

@@ -557,7 +557,7 @@ public fun settle<T>(drop: &mut Drop<T>,
             <li key={t}>{t}</li>
           ))}
         </ul>
-        <Link className="text-link" href="/demo">
+        <Link className="text-link" href="/#how">
           See it in the walkthrough <ArrowRight size={15} />
         </Link>
       </section>

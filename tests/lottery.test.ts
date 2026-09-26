@@ -16,6 +16,7 @@ import {
   collectDrop,
   codeHistory,
   listDrops,
+  listSeries,
   publicDrop,
 } from "../src/lib/service";
 import { dropStatus } from "../src/lib/format";
@@ -199,6 +200,60 @@ test("discovery leads with the drop fans can enter and counts every chance in th
     ]);
     assert.equal(discovery[0].entry_count, 2);
     assert.equal(discovery[0].ticket_count, 3);
+  } finally {
+    await db.close();
+  }
+});
+test("organisers name a series: the same name continues it, and new names get their own IDs", async () => {
+  const db = await setup();
+  try {
+    const named = (series_name: string) => ({
+      title: "Named series drop",
+      series_name,
+      items: 1,
+      opens_at: new Date(t - 1000).toISOString(),
+      closes_at: new Date(t + 1000).toISOString(),
+    });
+    const night1 = await createDrop(db, named("Dome tour 2026"), {
+      demo: true,
+    });
+    assert.equal(night1.series_id, "dome-tour-2026");
+    // Any casing is the same series, so its unsettled drop still blocks the next one.
+    await assert.rejects(
+      createDrop(db, named("dome TOUR 2026"), { demo: true }),
+      /Settle/,
+    );
+    assert.deepEqual(await listSeries(db), [
+      { id: "dome-tour-2026", name: "Dome tour 2026", drops: 1, busy: true },
+    ]);
+    await drawDrop(db, night1.id, new Date(t + 2000));
+    const night2 = await createDrop(db, named("DOME TOUR 2026"), {
+      demo: true,
+    });
+    assert.equal(night2.series_id, "dome-tour-2026");
+    assert.equal(night2.series_name, "Dome tour 2026");
+    // A name without Latin letters still gets a stable ID of its own.
+    const tokyo = await createDrop(db, named("東京ドーム公演"), { demo: true });
+    assert.match(tokyo.series_id, /^series-[0-9a-f]{8}$/);
+    // Accents fold into a readable slug.
+    const cafe = await createDrop(db, named("Café tour"), { demo: true });
+    assert.equal(cafe.series_id, "cafe-tour");
+    // A different name whose slug is taken gets a suffix instead of joining that series.
+    const clash = await createDrop(db, named("Dome-Tour 2026!"), {
+      demo: true,
+    });
+    assert.equal(clash.series_id, "dome-tour-2026-2");
+    // Scripts and the demo seed may still pass an explicit ID.
+    const scripted = await createDrop(db, input("weekend-tech"), {
+      demo: true,
+    });
+    assert.equal(scripted.series_id, "weekend-tech");
+    const listed = await listSeries(db);
+    assert.equal(listed.length, 5);
+    assert.deepEqual(
+      listed.find((s) => s.id === "dome-tour-2026"),
+      { id: "dome-tour-2026", name: "Dome tour 2026", drops: 2, busy: true },
+    );
   } finally {
     await db.close();
   }

@@ -50,7 +50,11 @@ export const createDropSchema = z
   .object({
     title: z.string().trim().min(3).max(120),
     description: z.string().trim().max(1000).default(""),
-    series_id: z.string().regex(/^[a-z0-9-]{1,64}$/),
+    /** Optional: without it, the series is found or created by name (seriesIdFor). */
+    series_id: z
+      .string()
+      .regex(/^[a-z0-9-]{1,64}$/)
+      .optional(),
     series_name: z.string().trim().min(2).max(100),
     items: z.number().int().min(1).max(300),
     opens_at: z.iso.datetime({ offset: true }),
@@ -113,6 +117,57 @@ async function lockSeries(db: SQL, dropId: string) {
   await db.query("SELECT id FROM drops WHERE id=$1 FOR UPDATE", [dropId]);
   return getDrop(db, dropId);
 }
+/**
+ * Organisers name a series; they never type its ID. The same name, in any case, continues the
+ * most recently used series with that name. A new name gets a readable slug, or a hash when the
+ * name has no Latin letters (a Japanese tour name), with a suffix if another series holds it.
+ */
+async function seriesIdFor(tx: SQL, name: string) {
+  const existing = await tx.query<{ id: string }>(
+    "SELECT s.id FROM series s LEFT JOIN drops d ON d.series_id=s.id WHERE lower(s.name)=lower($1) GROUP BY s.id ORDER BY max(d.opens_at) DESC NULLS LAST, s.id LIMIT 1",
+    [name],
+  );
+  if (existing.rows[0]) return existing.rows[0].id;
+  const base =
+    name
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+/, "")
+      .slice(0, 48)
+      .replace(/-+$/, "") ||
+    `series-${createHash("sha256").update(name).digest("hex").slice(0, 8)}`;
+  let id = base;
+  for (let n = 2; ; n++) {
+    const taken = await tx.query("SELECT 1 FROM series WHERE id=$1", [id]);
+    if (!taken.rows.length) return id;
+    id = `${base}-${n}`;
+  }
+}
+export type SeriesOption = {
+  id: string;
+  name: string;
+  drops: number;
+  /** A drop that hasn't settled yet: the series can't take another until it does. */
+  busy: boolean;
+};
+/** Recently active series for the organiser form, one per name (the one seriesIdFor would pick). */
+export async function listSeries(db: SQL, limit = 8): Promise<SeriesOption[]> {
+  const { rows } = await db.query<SeriesOption & { last: string | null }>(
+    "SELECT s.id, s.name, count(d.id)::int AS drops, coalesce(bool_or(d.state<>'settled'),false) AS busy, max(d.opens_at) AS last FROM series s LEFT JOIN drops d ON d.series_id=s.id GROUP BY s.id, s.name ORDER BY max(d.opens_at) DESC NULLS LAST, s.id",
+  );
+  const seen = new Set<string>();
+  return rows
+    .filter((s) => {
+      const key = s.name.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, limit)
+    .map(({ id, name, drops, busy }) => ({ id, name, drops, busy }));
+}
 /** Serialises organiser-signed Sui transactions across processes, so gas coins never race. */
 const chainLock = (tx: SQL) =>
   tx.query("SELECT pg_advisory_xact_lock(hashtext('tenjo:sui'))");
@@ -135,9 +190,11 @@ export async function createDrop(
       "Priced drops hold refundable deposits on Sui, which is not configured here.",
     );
   return db.transaction(async (tx) => {
+    const seriesKey =
+      data.series_id ?? (await seriesIdFor(tx, data.series_name));
     await tx.query(
       "INSERT INTO series(id,name) VALUES($1,$2) ON CONFLICT DO NOTHING",
-      [data.series_id, data.series_name],
+      [seriesKey, data.series_name],
     );
     const series = (
       await tx.query<{
@@ -146,12 +203,12 @@ export async function createDrop(
         sui_package_id: string | null;
       }>(
         "SELECT name,sui_series_id,sui_package_id FROM series WHERE id=$1 FOR UPDATE",
-        [data.series_id],
+        [seriesKey],
       )
     ).rows[0];
     const pending = await tx.query(
       "SELECT id FROM drops WHERE series_id=$1 AND state<>'settled' LIMIT 1",
-      [data.series_id],
+      [seriesKey],
     );
     if (pending.rows.length)
       throw new AppError(
@@ -180,7 +237,7 @@ export async function createDrop(
         !(
           await tx.query<{ n: number }>(
             "SELECT count(*)::int AS n FROM drops WHERE series_id=$1",
-            [data.series_id],
+            [seriesKey],
           )
         ).rows[0].n);
     if (priceMist !== "0" && !chain)
@@ -201,7 +258,7 @@ export async function createDrop(
       `INSERT INTO drops(id,series_id,title,description,items,opens_at,closes_at,is_demo,is_setup,price_mist) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         id,
-        data.series_id,
+        seriesKey,
         data.title,
         data.description,
         data.items,
@@ -221,7 +278,7 @@ export async function createDrop(
       if (!series.sui_series_id)
         await tx.query(
           "UPDATE series SET sui_series_id=$2,sui_package_id=$3 WHERE id=$1",
-          [data.series_id, seriesId, packageId],
+          [seriesKey, seriesId, packageId],
         );
       const created = await suiChain.createDropOnChain({
         seriesId,

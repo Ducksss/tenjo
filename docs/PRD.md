@@ -100,13 +100,13 @@ Real-money entry, mainnet payments, organiser billing, native mobile apps, comme
 
 | Journey          | Screens and behavior                                                                                                                                       | Completion                                               |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Discover         | `/` shows available drops, quantities and schedules. Empty state explains availability and links to the walkthrough.                                       | Fan opens a drop or starts the explanation               |
-| Learn            | `/demo` takes Fan A through four tickets, a loss, five tickets, a win and pickup; includes duplicate and wrong-identity refusals.                          | Fan understands the rule and can restart or browse drops |
+| Discover         | `/` shows available drops, quantities and schedules, with the walkthrough inline. Empty state explains availability.                                       | Fan opens a drop or starts the explanation               |
+| Learn            | `/#how` (`/demo` redirects) takes Fan A through four tickets, a loss, five tickets, a win and pickup; includes duplicate and wrong-identity refusals.      | Fan understands the rule and can restart or enter a drop |
 | Enter            | `/drops/[id]` explains item, series, entry window, ticket rule and verification availability; successful server commit displays a code and ticket receipt. | One durable entry exists                                 |
-| Check history    | `/codes` accepts a full code; `/codes/[code]` shows entries, results and per-series loss counts.                                                           | Fan can explain their current count and next weight      |
-| Draw and inspect | Drop page confirms finality before drawing; `/audit` and drop records expose entries, weights and results.                                                 | One settled draw and matching public history exist       |
+| Check history    | `/results` accepts a full code; `/codes/[code]` shows entries, results and per-series loss counts.                                                         | Fan can explain their current count and next weight      |
+| Draw and inspect | Drop page confirms finality before drawing; `/results` and drop records expose entries, weights and results.                                               | One settled draw and matching public history exist       |
 | Collect          | Winning fan starts a fresh identity check on the drop page.                                                                                                | One pickup is saved and confirmed                        |
-| Organise         | `/admin` collects title, description, quantity, series and opening/closing times; publishing requires the organiser password.                              | Validated drop is created and its page opens             |
+| Organise         | `/admin` collects title, description, quantity, a series name (reusing a name continues that series) and the entry window; publishing needs the password.  | Validated drop is created and its page opens             |
 
 The hosted walkthrough must say that outcomes are scripted and no World check, real prize or saved entry exists. Refresh or restart clears its state. It must not call mutation APIs or fabricate public records. The separate local demo uses labelled test identities and real local database mutations; neither mode is evidence of real World verification.
 

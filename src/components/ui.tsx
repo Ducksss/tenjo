@@ -2,6 +2,7 @@ import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  TextareaHTMLAttributes,
 } from "react";
 import { LoaderCircle } from "lucide-react";
 export function Button({
@@ -40,17 +41,37 @@ export function Notice({
     </div>
   );
 }
+type FieldProps = { label: string; hint?: string; error?: string };
+function describedBy(
+  id: string | undefined,
+  { hint, error }: FieldProps,
+  extra?: string,
+) {
+  return (
+    [hint ? `${id}-hint` : "", error ? `${id}-error` : "", extra || ""]
+      .filter(Boolean)
+      .join(" ") || undefined
+  );
+}
+function FieldNotes({ id, hint, error }: FieldProps & { id?: string }) {
+  return (
+    <>
+      {hint ? <small id={`${id}-hint`}>{hint}</small> : null}
+      {error ? (
+        <small className="field-error" id={`${id}-error`}>
+          {error}
+        </small>
+      ) : null}
+    </>
+  );
+}
 export function Field({
   label,
   hint,
   error,
   id,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & {
-  label: string;
-  hint?: string;
-  error?: string;
-}) {
+}: InputHTMLAttributes<HTMLInputElement> & FieldProps) {
   return (
     <div className="form-field">
       <label htmlFor={id}>{label}</label>
@@ -58,22 +79,37 @@ export function Field({
         id={id}
         {...props}
         aria-invalid={error ? true : undefined}
-        aria-describedby={
-          [
-            hint ? `${id}-hint` : "",
-            error ? `${id}-error` : "",
-            props["aria-describedby"] || "",
-          ]
-            .filter(Boolean)
-            .join(" ") || undefined
-        }
+        aria-describedby={describedBy(
+          id,
+          { label, hint, error },
+          props["aria-describedby"],
+        )}
       />
-      {hint ? <small id={`${id}-hint`}>{hint}</small> : null}
-      {error ? (
-        <small className="field-error" id={`${id}-error`}>
-          {error}
-        </small>
-      ) : null}
+      <FieldNotes id={id} label={label} hint={hint} error={error} />
+    </div>
+  );
+}
+export function TextAreaField({
+  label,
+  hint,
+  error,
+  id,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & FieldProps) {
+  return (
+    <div className="form-field">
+      <label htmlFor={id}>{label}</label>
+      <textarea
+        id={id}
+        {...props}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(
+          id,
+          { label, hint, error },
+          props["aria-describedby"],
+        )}
+      />
+      <FieldNotes id={id} label={label} hint={hint} error={error} />
     </div>
   );
 }

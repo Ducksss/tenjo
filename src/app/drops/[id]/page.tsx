@@ -70,9 +70,9 @@ export default async function DropPage({
   const suiRecord = (record?.record as { sui?: unknown } | undefined)?.sui;
   return (
     <>
-      <Link className="back-link" href="/">
+      <Link className="back-link" href="/#drops">
         <ArrowLeft size={16} />
-        Discover drops
+        All drops
       </Link>
       <section className="detail-header">
         <span className="eyebrow">

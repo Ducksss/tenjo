@@ -57,7 +57,14 @@ const stages = {
   },
 } as const;
 
-export function Walkthrough() {
+/** The browser-only story on discovery. `next` is where it hands over: the real open drop, or the list. */
+export function Walkthrough({
+  next,
+  credential = "passport",
+}: {
+  next: { href: string; label: string };
+  credential?: "passport" | "orb";
+}) {
   const [stage, setStage] = useState<Stage>("ready");
   const [refusal, setRefusal] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
@@ -111,14 +118,27 @@ export function Walkthrough() {
             {second ? "Example ballot 2" : "Example ballot 1"} · Dome tour ·
             Tokyo Dome, Night {second ? "2" : "1"}
           </span>
-          <h2 id="walkthrough-title" ref={heading} tabIndex={-1}>
+          <h3 id="walkthrough-title" ref={heading} tabIndex={-1}>
             {current.title}
-          </h2>
+          </h3>
           <p className="walkthrough-copy">{current.copy}</p>
           <div className="walkthrough-actions">
-            <Button onClick={() => advance(current.next)}>
+            {stage === "collected" ? (
+              <Link className="button pop" href={next.href}>
+                Now for real: {next.label}
+                <ArrowRight size={18} />
+              </Link>
+            ) : null}
+            <Button
+              className={stage === "collected" ? "secondary" : ""}
+              onClick={() => advance(current.next)}
+            >
               {current.action}
-              <ArrowRight size={18} />
+              {stage === "collected" ? (
+                <RotateCcw size={18} />
+              ) : (
+                <ArrowRight size={18} />
+              )}
             </Button>
             {stage === "entered" || stage === "next" ? (
               <button
@@ -146,11 +166,6 @@ export function Walkthrough() {
                 Try another identity
               </button>
             ) : null}
-            {stage === "collected" ? (
-              <Link className="text-link" href="/">
-                Back to drops <ArrowRight size={16} />
-              </Link>
-            ) : null}
           </div>
           <div className="walkthrough-feedback" aria-live="polite">
             {refusal ? <Notice>{refusal}</Notice> : null}
@@ -162,7 +177,7 @@ export function Walkthrough() {
                 ? "A win resets your count even if you don’t collect. You can’t bank a winning streak’s extra chances."
                 : stage === "lost"
                   ? "On a paid drop, a losing deposit comes straight back in the same Sui transaction that ran the draw, and your loss is written to the series’ ledger on-chain."
-                  : "In the real flow, the server verifies World ID before accepting an entry. A browser’s claim alone never counts."}
+                  : `In the real flow, World ID’s ${credential === "orb" ? "Orb-verified Proof of Human" : "passport credential"} shows you’re one unique person, and Tenjō’s server checks that proof before accepting an entry. A browser’s claim alone never counts.`}
             </p>
           </div>
         </section>
@@ -206,7 +221,7 @@ export function Walkthrough() {
         aria-labelledby="example-record-title"
       >
         <div className="section-header">
-          <h2 id="example-record-title">Follow the example record</h2>
+          <h3 id="example-record-title">Follow the example record</h3>
           {stage !== "ready" ? (
             <button
               type="button"
@@ -264,10 +279,9 @@ export function Walkthrough() {
           </table>
         </div>
         <p className="small muted">
-          These rows explain the rules. Real entries and draw results live in
-          the{" "}
-          <Link className="text-link" href="/audit">
-            public record
+          These rows only explain the rules. Real entries and winners are on{" "}
+          <Link className="text-link" href="/results">
+            Results
           </Link>
           .
         </p>

@@ -1228,7 +1228,7 @@ main {
 .record-list > a:hover {
   border-color: var(--primary);
 }
-.record-list h2 {
+.record-list h3 {
   font: 25px var(--font-display);
   margin: 8px 0;
 }
@@ -1244,16 +1244,6 @@ main {
 .standalone-lookup {
   margin-top: 40px;
   max-width: 650px;
-}
-.code-panel {
-  padding: 30px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background: var(--surface);
-  max-width: 720px;
-}
-.code-panel > p {
-  margin-top: 20px;
 }
 .full-code {
   display: block;
@@ -1296,7 +1286,7 @@ main {
   color: var(--muted);
 }
 .admin-panel {
-  max-width: 720px;
+  min-width: 0;
   background: var(--surface);
   padding: 32px;
   border: 1px solid var(--border);
@@ -1315,7 +1305,8 @@ main {
   font-size: 13px;
   font-weight: 600;
 }
-.form-field input {
+.form-field input,
+.form-field textarea {
   border: 1.5px solid var(--border);
   border-radius: 14px;
   min-height: 48px;
@@ -1325,7 +1316,8 @@ main {
   background: var(--surface);
   color: var(--ink);
 }
-.form-field input:focus-visible {
+.form-field input:focus-visible,
+.form-field textarea:focus-visible {
   border-color: var(--plum);
   outline-offset: 2px;
 }
@@ -1352,7 +1344,7 @@ main {
   margin: 0 auto 20px;
   color: var(--primary);
 }
-.empty-state h2 {
+.empty-state h3 {
   font: 30px var(--font-display);
 }
 .empty-state p {
@@ -1577,7 +1569,7 @@ main {
     flex-direction: column;
     align-items: flex-end;
   }
-  .record-list h2 {
+  .record-list h3 {
     font-size: 22px;
   }
   .page-heading h1 {
@@ -1586,8 +1578,7 @@ main {
   .form-columns {
     grid-template-columns: 1fr;
   }
-  .admin-panel,
-  .code-panel {
+  .admin-panel {
     padding: 22px;
   }
   .lookup-row {
@@ -1799,62 +1790,6 @@ main {
 }
 
 /* First visit and guided example share the app’s ticket language. */
-.demo-invitation {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(200px, 0.8fr);
-  align-items: center;
-  gap: 40px;
-  background: var(--tint);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 38px;
-  overflow: hidden;
-}
-.demo-invitation h2 {
-  font: 40px/1.13 var(--font-display);
-  letter-spacing: -1px;
-  margin: 14px 0;
-}
-.demo-invitation p {
-  max-width: 440px;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-.demo-invitation-note {
-  display: block;
-  color: var(--muted);
-  font-size: 11px;
-  margin-top: 12px;
-}
-.invitation-ticket {
-  background: var(--accent);
-  color: var(--primary);
-  padding: 28px;
-  border-radius: 16px;
-  transform: rotate(5deg);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 255px;
-  justify-self: center;
-  width: 100%;
-}
-.invitation-ticket > span {
-  font-size: 10px;
-  letter-spacing: 1.4px;
-}
-.invitation-ticket strong {
-  font: 86px/1 var(--font-display);
-}
-.invitation-ticket strong span {
-  font-size: 28px;
-  margin-left: 10px;
-}
-.invitation-ticket-rule {
-  border-top: 1px dashed var(--primary);
-  opacity: 0.4;
-  margin: 6px -28px;
-}
 .availability-note {
   display: flex;
   gap: 12px;
@@ -1871,28 +1806,6 @@ main {
   gap: 8px;
   color: var(--primary);
   min-height: 44px;
-}
-.lookup-help {
-  display: flex;
-  gap: 16px;
-  padding: 28px 0;
-  max-width: 590px;
-  border-top: 1px solid var(--border);
-  margin-top: 28px;
-}
-.lookup-help > svg {
-  flex-shrink: 0;
-  color: var(--primary);
-}
-.lookup-help h2 {
-  font-size: 16px;
-}
-.lookup-help p {
-  font-size: 13px;
-  margin: 9px 0;
-}
-.walkthrough-heading {
-  padding-bottom: 20px;
 }
 .walkthrough-disclaimer {
   display: flex;
@@ -1952,13 +1865,13 @@ main {
   align-items: start;
   padding: 26px 0;
 }
-.walkthrough-story h2 {
+.walkthrough-story h3 {
   font: 43px/1.12 var(--font-display);
   letter-spacing: -1px;
   margin: 16px 0;
   min-height: 96px;
 }
-.walkthrough-story h2:focus {
+.walkthrough-story h3:focus {
   outline: none;
 }
 .walkthrough-copy {
@@ -2055,7 +1968,11 @@ main {
   font: 18px var(--font-code);
 }
 .example-record {
-  margin: 24px 0;
+  margin: 24px 0 0;
+}
+.example-record .section-header h3 {
+  font: 500 clamp(22px, 2.4vw, 28px)/1.15 var(--font-display);
+  letter-spacing: -0.03em;
 }
 .example-record > p {
   margin-top: 14px;
@@ -2089,21 +2006,12 @@ main {
   height: 32px;
   margin-right: 10px;
 }
-.form-field input[aria-invalid="true"] {
+.form-field input[aria-invalid="true"],
+.form-field textarea[aria-invalid="true"] {
   border-color: var(--danger);
 }
 .form-field .field-error {
   color: var(--danger);
-}
-.schedule-hint {
-  display: grid;
-  gap: 6px;
-}
-.schedule-hint p {
-  font-size: 13px;
-}
-.schedule-hint .text-button {
-  justify-self: start;
 }
 .password-field {
   position: relative;
@@ -2140,30 +2048,279 @@ main {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* Organiser form: plain-language steps on the left, a live preview and the drop's lifecycle on the right. */
+.organiser-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 720px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.form-field textarea {
+  min-height: 96px;
+  line-height: 1.55;
+  resize: vertical;
+}
+.form-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin: -8px -8px 4px;
+  padding: 16px 16px 16px 20px;
+  border-radius: 20px;
+  background: var(--lime-soft);
+  font-size: 14px;
+}
+.form-intro p {
+  flex: 1 1 260px;
+}
+.form-intro .button {
+  min-height: 44px;
+}
+.form-lede {
+  margin-top: -8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.form-section .choice-group {
+  display: grid;
+  gap: 10px;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.form-section .choice-group legend {
+  padding: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.choice-group > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.choice {
+  position: relative;
+  display: inline-flex;
+}
+.choice input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.choice span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+.choice:hover span {
+  border-color: var(--dash);
+  background: var(--cream);
+}
+.choice input:checked + span {
+  border-color: var(--plum);
+  background: var(--plum);
+  color: var(--on-dark);
+  font-weight: 600;
+}
+.choice input:focus-visible + span {
+  outline: 3px solid var(--plum);
+  outline-offset: 3px;
+}
+.choice input:disabled + span {
+  opacity: 0.5;
+}
+.series-status,
+.schedule-summary {
+  margin-top: -8px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--cream);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.schedule-summary {
+  margin-top: 0;
+  font-weight: 500;
+}
+.schedule-summary:empty {
+  display: none;
+}
+.series-status.warn,
+.schedule-summary.warn {
+  background: #fff1ec;
+  color: var(--danger);
+}
+.series-picks {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.series-picks ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.series-pick {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1.5px dashed var(--dash);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.series-pick small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.series-pick:hover:not(:disabled) {
+  border-color: var(--plum);
+  background: var(--cream);
+}
+.series-pick[aria-pressed="true"] {
+  border-style: solid;
+  border-color: var(--plum);
+  background: var(--lime-soft);
+}
+.organiser-aside {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.drop-preview {
+  display: grid;
+  gap: 10px;
+}
+.drop-preview-card {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+.drop-preview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tangerine-ink);
+}
+.drop-preview-top > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drop-preview-title {
+  font: 500 26px/1.15 var(--font-display);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.drop-preview-card p {
+  font-size: 14px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.drop-preview-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  margin: 4px 0 0;
+  padding: 14px 0;
+  border-block: 1px dashed var(--dash);
+}
+.drop-preview-card dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.drop-preview-card dd {
+  margin: 2px 0 0;
+  font: 500 20px/1.2 var(--font-display);
+}
+.drop-preview-card .drop-preview-foot {
+  font-size: 13px;
+}
+.drop-lifecycle {
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--oat);
+}
+.drop-lifecycle h2 {
+  font: 500 20px/1.2 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.drop-lifecycle ol {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding-left: 20px;
+  list-style: decimal;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.drop-lifecycle li::marker {
+  color: var(--tangerine-ink);
+  font-weight: 600;
+}
+.drop-lifecycle strong {
+  color: var(--ink);
+}
+.drop-lifecycle em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+}
 @media (max-width: 1100px) {
-  .demo-invitation {
-    gap: 20px;
-    padding: 28px;
+  .organiser-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .demo-invitation h2 {
-    font-size: 34px;
+  .organiser-aside {
+    position: static;
   }
+  /* The live preview earns its space beside the form; stacked, the inline summaries do its job. */
+  .drop-preview {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
   .walkthrough-grid {
     gap: 24px;
     grid-template-columns: minmax(0, 1fr) 260px;
   }
 }
 @media (max-width: 700px) {
-  .demo-invitation {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 26px;
-  }
-  .demo-invitation h2 {
-    font-size: 33px;
-  }
-  .invitation-ticket {
-    display: none;
-  }
   .availability-note {
     flex-wrap: wrap;
   }
@@ -2192,7 +2349,7 @@ main {
     padding-top: 10px;
     gap: 16px;
   }
-  .walkthrough-story h2 {
+  .walkthrough-story h3 {
     font-size: 36px;
     min-height: 81px;
   }
@@ -2254,23 +2411,11 @@ main {
     width: 100%;
   }
 }
-@media (max-width: 520px) {
-}
 @media (max-width: 700px) {
-  .walkthrough-heading {
-    padding: 0 0 18px;
-  }
-  .walkthrough-heading h1 {
-    font-size: 34px;
-    margin: 10px 0 12px;
-  }
-  .walkthrough-heading p {
-    font-size: 13px;
-  }
   .walkthrough-steps {
     margin: 20px 0;
   }
-  .walkthrough-story h2 {
+  .walkthrough-story h3 {
     font-size: 32px;
     min-height: 72px;
     margin: 12px 0;
@@ -2754,76 +2899,6 @@ main {
 }
 
 /* How it works: a real four-step sequence. */
-.steps {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.steps > li {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-  padding: 26px 24px;
-  border-radius: 28px;
-  background: var(--surface);
-}
-.step-number {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 6px;
-  border-radius: 50%;
-  background: var(--plum);
-  font: 600 18px var(--font-display);
-  color: var(--on-dark);
-}
-.steps h3 {
-  font-size: 21px;
-  line-height: 1.2;
-}
-.steps p {
-  font-size: 14px;
-  line-height: 1.65;
-}
-.steps strong {
-  color: var(--ink);
-}
-.step-tag {
-  align-self: flex-start;
-  margin-top: auto;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: var(--cream);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.step-tag.sui {
-  background: var(--periwinkle);
-}
-.step-tag.world {
-  background: var(--lime-soft);
-}
-.loop-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 22px;
-  font-size: 15px;
-  font-weight: 500;
-}
-.panel .loop-note {
-  color: var(--ink);
-}
-.loop-note svg {
-  flex: none;
-  color: var(--tangerine-ink);
-}
 
 /* Why Sui: four jobs on a plum panel, with sourced network facts. */
 .sui-grid {
@@ -2979,7 +3054,7 @@ main {
   color: var(--tangerine-ink);
 }
 .drops-section {
-  margin: 72px 0 0;
+  margin: 72px 0;
 }
 .other-drops > a {
   border-radius: 20px;
@@ -3000,62 +3075,6 @@ main {
 .availability-note a {
   font-weight: 600;
   color: var(--ink);
-}
-.trust-section {
-  margin: 72px 0;
-}
-.trust-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-.trust-grid > article {
-  padding: 30px;
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  background: var(--surface);
-}
-.trust-grid > article:nth-child(2) {
-  background: var(--cream);
-  border-color: transparent;
-}
-.trust-grid h3 {
-  margin: 14px 0 10px;
-  font-size: 24px;
-  line-height: 1.15;
-}
-.trust-grid p {
-  font-size: 15px;
-  line-height: 1.65;
-}
-.trust-grid em {
-  font-style: normal;
-  font-weight: 600;
-  color: var(--ink);
-}
-.trust-grid ul {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0 0;
-  padding: 16px 0 0 18px;
-  border-top: 1px solid var(--border);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--muted);
-}
-.trust-grid li strong {
-  color: var(--ink);
-}
-.name-seal {
-  display: inline-grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--tangerine);
-  color: #fff;
-  font-size: 20px;
-  transform: rotate(-8deg);
 }
 .lookup-section {
   display: grid;
@@ -3080,25 +3099,13 @@ main {
 .lookup-section .chip {
   border-color: transparent;
 }
-.demo-invitation {
-  grid-template-columns: minmax(0, 1fr) auto;
-  border: 0;
-  border-radius: 36px;
-  background: var(--cream);
+.lookup-section .lookup-note {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.55;
 }
-.demo-invitation h2 {
-  font-weight: 500;
-  font-size: 40px;
-  letter-spacing: -0.04em;
-}
-.invitation-ticket {
-  border: 2px solid var(--plum);
-  background: var(--surface);
-  color: var(--plum);
-  transform: rotate(5deg);
-}
-.invitation-ticket-rule {
-  border-top-color: var(--plum);
+.results-drops {
+  margin: 56px 0 0;
 }
 .example-ticket {
   border-radius: 28px;
@@ -3120,9 +3127,6 @@ main {
   }
   .hero-copy h1 {
     font-size: clamp(46px, 6.2vw, 64px);
-  }
-  .steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .sui-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3206,9 +3210,7 @@ main {
   .stat-card:nth-child(even) {
     transform: rotate(1deg);
   }
-  .steps,
-  .sui-grid,
-  .trust-grid {
+  .sui-grid {
     grid-template-columns: 1fr;
   }
   .sui-facts {
@@ -3220,15 +3222,6 @@ main {
   .lookup-section {
     grid-template-columns: 1fr;
     border-radius: 28px;
-  }
-  .demo-invitation {
-    grid-template-columns: 1fr;
-  }
-  .demo-invitation h2 {
-    font-size: 32px;
-  }
-  .demo-invitation .invitation-ticket {
-    display: none;
   }
   .footer {
     grid-template-columns: 1fr;
@@ -3245,8 +3238,6 @@ main {
     padding: 16px 18px 8px;
   }
   .site-navigation nav {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 4px;
   }
   .site-nav-link {

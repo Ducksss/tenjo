@@ -81,7 +81,7 @@ export default function RootLayout({
                 <Link href="/architecture">How it’s built</Link>
               </li>
               <li>
-                <Link href="/audit">Public record</Link>
+                <Link href="/results">Results</Link>
               </li>
               <li>
                 <a href="https://github.com/Ducksss/tenjo">Source on GitHub</a>
