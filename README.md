@@ -199,7 +199,7 @@ Built during ETHGlobal Tokyo 2026 with Claude Code as a pair programmer. Commits
 
 ## License and contact
 
-No project license has been selected yet; public visibility does not grant an open-source licence. Dependency licences remain their own. Maintained by [Chai / Ducksss](https://github.com/Ducksss); use [repository issues](https://github.com/Ducksss/tenjo/issues) for questions.
+Tenjō is released under the [MIT License](LICENSE). Dependency licences remain their own. Maintained by [Chai / Ducksss](https://github.com/Ducksss); use [repository issues](https://github.com/Ducksss/tenjo/issues) for questions.
 
 ## Acknowledgments
 
