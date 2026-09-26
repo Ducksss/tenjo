@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { worldConfig } from "@/lib/world";
+import { realWorldConfig, worldConfig } from "@/lib/world";
 import { shortId, suiStatus, suiscan } from "@/lib/sui-status";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
 export const dynamic = "force-dynamic";
@@ -12,17 +12,24 @@ export const metadata = {
 const repo = "https://github.com/Ducksss/tenjo";
 export default function Architecture() {
   const world = worldConfig();
+  const realWorld = realWorldConfig();
   const sui = suiStatus();
   const credential =
     world.credential === "orb" ? "Proof of Human (Orb)" : "Passport";
+  // Real World IDs, when configured, are the entry credential that matters; the primary setup is then the simulator.
+  const entryCredential = realWorld?.credential ?? world.credential;
   const status = [
     {
       name: "World ID · IDKit 4",
       state: world.ready
-        ? `Live · ${world.environment}`
+        ? realWorld
+          ? "Live · production + staging"
+          : `Live · ${world.environment}`
         : "Integrated · awaiting credentials",
       tone: world.ready ? "live" : "pending",
-      detail: `${credential} credential · protocol ${world.protocol}`,
+      detail: realWorld
+        ? `${realWorld.credential === "orb" ? "Proof of Human" : "Passport"} (real IDs) · ${world.credential === "orb" ? "Proof of Human" : "passport"} (simulator)`
+        : `${credential} credential · protocol ${world.protocol}`,
     },
     {
       name: "One entry per person",
@@ -46,10 +53,10 @@ export default function Architecture() {
     },
     {
       name: "Winner pickup",
-      state: world.pickupAllowed ? "Staging fallback" : "Off",
-      tone: "pending",
+      state: world.pickupAllowed ? "Live · simulator" : "Off",
+      tone: world.pickupAllowed ? "live" : "pending",
       detail: world.pickupAllowed
-        ? "fresh proof, recorded untested-staging"
+        ? "off for real IDs until liveness is server-side"
         : "until liveness is enforced server-side",
     },
     {
@@ -83,7 +90,10 @@ export default function Architecture() {
           </li>
         ))}
       </ul>
-      <ArchitectureDiagram credential={credential} sui={sui} />
+      <ArchitectureDiagram
+        credential={realWorld ? "Proof of Human" : credential}
+        sui={sui}
+      />
 
       <section className="arch-section" aria-labelledby="arch-identity">
         <div className="arch-section-head">
@@ -102,10 +112,21 @@ export default function Architecture() {
               and nothing more.
             </p>
             <p>
-              <strong>Why {credential}.</strong> Entry needs uniqueness, not
-              just a live face, so the PRD chose a document credential: one
-              passport, one entrant. Orb Proof of Human is the configured
-              fallback. The choice is pinned at the first real entry.
+              <strong>
+                Why {entryCredential === "orb" ? "Proof of Human" : "Passport"}.
+              </strong>{" "}
+              Entry needs uniqueness and nothing else: every extra account would
+              be an extra entry and an extra pity counter, which is exactly
+              where a bot farm attacks. Tenjō asks for no name, age, nationality
+              or document data.{" "}
+              {entryCredential === "orb"
+                ? "Real World IDs enter with Orb-verified Proof of Human, World’s strongest one-person-one-ID guarantee."
+                : "Fans enter with the passport credential: one passport, one entrant, with no Orb visit needed."}{" "}
+              {realWorld && world.credential === "passport"
+                ? "World’s simulator runs the passport credential on staging, the document path for fans who haven’t visited an Orb. "
+                : ""}
+              Selfie Check alone lacks the uniqueness a ballot needs. The choice
+              is pinned at the first real entry.
             </p>
             <p>
               <strong>Why it enables pity.</strong> World derives the nullifier
@@ -124,8 +145,8 @@ export default function Architecture() {
             </p>
             <p className="arch-note">
               Uniqueness is as strong as the credential. Someone holding two
-              different identity documents could hold two World IDs; the PRD
-              accepts this for the demo.
+              identity documents could hold two passport-based World IDs; Orb
+              Proof of Human closes that gap.
             </p>
           </div>
           <ol className="arch-pipeline">
@@ -395,9 +416,9 @@ public fun settle<T>(drop: &mut Drop<T>,
             collects once. A public code alone can’t claim anything.
           </p>
           <p className="arch-note">
-            Production pickup stays off until liveness is enforced on the
-            server. The staging fallback still checks a fresh proof, and records
-            every pickup as <code>untested-staging</code>.
+            Simulator winners collect with a fresh proof, and the record labels
+            each pickup <code>untested-staging</code>. Pickup for real World IDs
+            switches on once World can attest liveness to the server.
           </p>
         </div>
       </section>

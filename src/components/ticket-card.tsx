@@ -99,7 +99,9 @@ export function TicketCard({ drop }: { drop: Drop }) {
               <span key={n}>◎</span>
             ))}
           </div>
-          <strong>{drop.entry_count} entries</strong>
+          <strong>
+            {drop.entry_count} {drop.entry_count === 1 ? "entry" : "entries"}
+          </strong>
           <span>One per person</span>
         </div>
         <div className="barcode" aria-hidden="true" />
