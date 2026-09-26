@@ -9,6 +9,7 @@ import { TicketCard } from "@/components/ticket-card";
 import { Lookup } from "@/components/lookup";
 import { Architecture } from "@/components/architecture";
 import { CapsuleMachine } from "@/components/capsule-machine";
+import { FlowAnimation } from "@/components/flow-animation";
 import { Walkthrough } from "@/components/walkthrough";
 import { WhySui } from "@/components/why-sui";
 export const dynamic = "force-dynamic";
@@ -223,16 +224,18 @@ export default async function Home() {
 
       <section id="how" className="panel how" aria-labelledby="how-heading">
         <div className="section-intro">
-          <span className="chip">How Tenjō works · a one-minute example</span>
+          <span className="chip">How Tenjō works</span>
           <h2 id="how-heading">
             One real person. One entry. Every loss counts.
           </h2>
           <p>
             Follow one fan through the ballots for two nights of a sold-out dome
-            tour. Click through: verify once with World ID, lose Night 1, carry
-            an extra chance into Night 2, win, and collect the seats.
+            tour: verify once with World ID, lose Night 1, carry an extra chance
+            into Night 2, win, and collect the seats. Watch it first, then click
+            through it yourself.
           </p>
         </div>
+        <FlowAnimation sui={sui.ready} />
         <Walkthrough next={enter} credential={world.credential} />
       </section>
 

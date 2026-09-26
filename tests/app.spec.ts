@@ -323,6 +323,53 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
   expect(writes).toEqual([]);
 });
 
+test("the flow animation plays only on screen, pauses on request and jumps between steps", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const flow = page.getByRole("figure", { name: /one fan’s two ballots/ });
+  const caption = flow.locator(".flow-caption .current");
+  // Below the fold it waits, so a visitor sees the story from its start.
+  await page.waitForTimeout(3500);
+  await expect(caption).toContainText("one unique person");
+  await flow.scrollIntoViewIfNeeded();
+  await expect(caption).toContainText("second account", { timeout: 6000 });
+  await flow.getByRole("button", { name: "Pause", exact: true }).click();
+  const held = await caption.textContent();
+  await page.waitForTimeout(3500);
+  await expect(caption).toHaveText(held ?? "");
+  const draw = flow.getByRole("button", { name: "Step 3: The draw" });
+  await draw.click();
+  await expect(draw).toHaveAttribute("aria-current", "step");
+  await expect(caption).toContainText("weighted by chances");
+  await page.waitForTimeout(3500);
+  await expect(caption).toContainText("weighted by chances");
+  await flow.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(caption).toContainText("Another fan wins Night 1", {
+    timeout: 6000,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("the flow animation stays still for reduced motion until asked to play", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const flow = page.getByRole("figure", { name: /one fan’s two ballots/ });
+  await flow.scrollIntoViewIfNeeded();
+  const caption = flow.locator(".flow-caption .current");
+  await page.waitForTimeout(3500);
+  await expect(caption).toContainText("one unique person");
+  await flow.getByRole("button", { name: "Play", exact: true }).click();
+  await expect(caption).toContainText("second account", { timeout: 6000 });
+});
+
 test("organiser errors focus the right field and scheduling stays JST in a different timezone", async ({
   browser,
   baseURL,
