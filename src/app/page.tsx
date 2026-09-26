@@ -165,7 +165,7 @@ export default async function Home() {
                     </span>
                     {status === "open"
                       ? `Closes ${fromNow(drop.closes_at)}`
-                      : `${drop.items} items · ${drop.entry_count} entries`}
+                      : `${drop.items} ${drop.items === 1 ? "item" : "items"} · ${drop.entry_count} ${drop.entry_count === 1 ? "entry" : "entries"}`}
                     <ArrowRight size={17} />
                   </span>
                 </Link>
@@ -238,7 +238,10 @@ export default async function Home() {
           </p>
         </div>
         <FlowAnimation sui={sui.ready} />
-        <Walkthrough next={enter} credential={world.credential} />
+        <Walkthrough
+          next={enter}
+          credential={(realWorldConfig() ?? world).credential}
+        />
       </section>
 
       <Architecture sui={sui} />

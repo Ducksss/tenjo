@@ -115,7 +115,8 @@ export default async function CodePage({
       </div>
       <div className="pagination">
         <span>
-          {history.total} entries · Page {page}
+          {history.total} {history.total === 1 ? "entry" : "entries"} · Page{" "}
+          {page}
         </span>
         <div>
           {page > 1 ? <Link href={`?page=${page - 1}`}>Previous</Link> : null}

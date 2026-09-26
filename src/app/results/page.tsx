@@ -67,7 +67,8 @@ export default async function Results({
                   </span>
                   <h3>{drop.title}</h3>
                   <span>
-                    {formatJST(drop.closes_at)} · {drop.entry_count} entries
+                    {formatJST(drop.closes_at)} · {drop.entry_count}{" "}
+                    {drop.entry_count === 1 ? "entry" : "entries"}
                   </span>
                 </div>
                 <span className="record-list-end">

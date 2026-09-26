@@ -333,7 +333,7 @@ export default async function DropPage({
         </div>
         <div className="pagination">
           <span>
-            {total} entries
+            {total} {total === 1 ? "entry" : "entries"}
             {total
               ? ` · Page ${page} of ${Math.max(1, Math.ceil(total / 20))}`
               : ""}
