@@ -296,7 +296,12 @@ export async function createDrop(
   });
 }
 export type VerifiedIdentity = {
+  /** The code the entry is recorded under: its pity, receipt and on-chain ledger key. */
   code: string;
+  /** This drop's World ID code, when `code` comes from a passkey instead. */
+  person?: string;
+  /** The passkey (credential ID) whose code this entry uses (real World IDs only). */
+  passkey?: string;
   challengeId?: string;
   policy?: string;
   /** Which World setup verified it; the second setup keeps its own identity lock. */
@@ -393,6 +398,18 @@ async function admit(
       "deposit_required",
       "This drop takes a refundable deposit. Enter with a Sui wallet.",
     );
+  // A real World ID may enter under its passkey's code, so this drop's World ID code is checked
+  // too: the code this person already holds here, if any.
+  const person = identity.person ?? identity.code;
+  const real = identity.mode === "production";
+  const held = real
+    ? ((
+        await tx.query<{ member_code: string }>(
+          "SELECT member_code FROM entry_identities WHERE drop_id=$1 AND identity_code=$2 UNION ALL SELECT member_code FROM entries WHERE drop_id=$1 AND member_code=$2 LIMIT 1",
+          [id, person],
+        )
+      ).rows[0]?.member_code ?? null)
+    : null;
   if (
     (
       await tx.query(
@@ -400,13 +417,28 @@ async function admit(
         [id, identity.code],
       )
     ).rows.length
-  )
+  ) {
+    if (identity.passkey && held !== identity.code)
+      throw new AppError(
+        409,
+        "passkey_in_use",
+        "This passkey already has an entry in this drop. Use your own passkey, or enter with World ID alone.",
+      );
     // The proof or demo identity was checked before this, so the code is the requester's own.
     throw new AppError(
       409,
       "already_entered",
       "Already entered. One person gets one entry per drop.",
       { member_code: identity.code },
+    );
+  }
+  // The same person with another passkey, or none: their first entry stands.
+  if (held && held !== identity.code)
+    throw new AppError(
+      409,
+      "already_entered",
+      "Already entered. One person gets one entry per drop.",
+      { member_code: held },
     );
   if (drop.entry_count >= MAX_ENTRANTS)
     throw new AppError(
@@ -415,6 +447,11 @@ async function admit(
       "This demo drop has reached its 300-person limit.",
     );
   await consumeChallenge(tx, identity, id, "enter");
+  if (real)
+    await tx.query(
+      "INSERT INTO entry_identities(drop_id,identity_code,member_code) VALUES($1,$2,$3) ON CONFLICT DO NOTHING",
+      [id, person, identity.code],
+    );
   const losses =
     (
       await tx.query<{ losses: number }>(
@@ -432,6 +469,8 @@ export type EntryReceipt = {
   /** On-chain drops only: 'registered' once on Sui, 'pending' while a retry is due. */
   sui_status?: string;
   sui_tx?: string | null;
+  /** The code comes from the entrant's passkey, so losses carry to their next entry with it. */
+  passkey_linked?: boolean;
 };
 export async function enterDrop(
   db: Database,
@@ -451,7 +490,13 @@ export async function enterDrop(
       [id, identity.code, tickets, onChain(drop) ? "pending" : null],
     );
     return {
-      entry: { code: identity.code, tickets, losses, drop_id: id },
+      entry: {
+        code: identity.code,
+        tickets,
+        losses,
+        drop_id: id,
+        ...(identity.passkey ? { passkey_linked: true } : {}),
+      },
       chain: onChain(drop),
     };
   });
@@ -539,6 +584,7 @@ export async function permitEntry(
       code: identity.code,
       tickets: ticketsFor(losses),
       losses,
+      ...(identity.passkey ? { passkey_linked: true } : {}),
       permit: {
         package_id: drop.sui_package_id,
         drop_object_id: drop.sui_drop_id,

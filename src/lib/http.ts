@@ -58,15 +58,18 @@ export async function readJson(request: Request) {
     throw new AppError(400, "invalid_json", "Invalid request body.");
   }
 }
+/** This site's origin. Next may normalize the internal URL to localhost, so it uses the actual
+ * Host authority; APP_ORIGIN pins the deployed origin. */
+export function expectedOrigin(request: Request) {
+  const url = new URL(request.url);
+  return (
+    process.env.APP_ORIGIN ||
+    `${url.protocol}//${request.headers.get("host") || url.host}`
+  );
+}
 export function requireSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  // Next may normalize the internal URL to localhost. Compare the browser's
-  // Origin with the actual Host authority; APP_ORIGIN pins the deployed origin.
-  const url = new URL(request.url);
-  const expected =
-    process.env.APP_ORIGIN ||
-    `${url.protocol}//${request.headers.get("host") || url.host}`;
-  if (origin && origin !== expected)
+  if (origin && origin !== expectedOrigin(request))
     throw new AppError(403, "origin", "Use this app to submit the request.");
 }
 export function requireAdmin(request: Request) {

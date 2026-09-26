@@ -15,8 +15,8 @@ The source PRD is docs/PRD.md. This file records implementation decisions; it do
 1. **One active drop per series.** Create refuses a new drop until the previous one settles. This prevents stale entry weights and out-of-order loss updates. Cross-series drops are independent.
 2. **Under-subscription.** Select min(items, entrants); record unallocated items. With zero entrants, settle an empty draw. Never invent winners.
 3. **Concurrent requests.** Mutations lock series then drop, re-read state, and check database wall-clock time after locking. Unique constraints back up duplicate refusal. Drawing/settlement is atomic; retrying a draw returns the existing record. An entry challenge is consumed inside the same transaction as its entry; rejected/rolled-back operations do not consume it.
-4. **Privacy scope.** Follow R4: one 128-bit anonymous code across drops, with losses scoped to series. UI says history is publicly linkable. The proposed series-scoped code is still an open product decision.
-5. **Code derivation.** Canonicalize the verified nullifier as a padded 256-bit integer before hashing, avoiding case/leading-zero duplicate bypasses. Hash includes app, fixed action, protocol and Tenjo version. No nullifiers stored.
+4. **Privacy scope.** Follow R4: one 128-bit anonymous code across drops, with losses scoped to series. A real World ID gets a fresh code in every drop unless a passkey links its entries (below). UI says history is publicly linkable. The proposed series-scoped code is still an open product decision.
+5. **Code derivation.** Canonicalize the verified nullifier as a padded 256-bit integer before hashing, avoiding case/leading-zero duplicate bypasses. Hash includes app, fixed action, protocol and Tenjo version. No nullifiers stored. A passkey-linked entry uses `sha256("tenjo:v1:passkey:" + credential ID)` instead.
 6. **Identity migration.** Pin one protocol and credential family, with a stored policy fingerprint after the first accepted entry. Changing app/RP/action/environment/protocol/credential afterwards fails closed; it needs an explicit migration or a new database. Staging defaults to v3 document legacy; production pins v4. Do not accept both versions without an identity-linking migration.
 7. **Replay resistance.** Signal extends the PRD format to `purpose:drop_id:challenge_id`. Nonce, purpose, drop, signal, expiry, configured action and environment must match. An expired/consumed challenge cannot create an entry or pickup.
 8. **Verification result.** HTTP 200 or an overall success bit is insufficient. The configured credential's individual verification result must succeed with a matching canonical nullifier. Failed/mismatched proofs create no member or entry. World 429/5xx/network failures are unavailable, not rejections.
@@ -33,7 +33,7 @@ Deployment requires DATABASE_URL and World app configuration. PGlite is not a Ve
 
 ## Phase 2: Sui escrow drops
 
-Implemented in `move/tenjo` (`tenjo::ballot`, Move 2024, Sui CLI 1.80.1), `src/lib/sui.ts` (server-only gRPC client), `src/lib/sui-draw.ts` (pure recomputation) and `src/lib/service.ts`. Tested with 22 Move unit tests, mocked-chain service tests and a full run on a local Sui network (protocol 137). **The testnet publish is pending funding**; no testnet digest exists yet. The UI never fabricates explorer links, and links are omitted for localnet.
+Implemented in `move/tenjo` (`tenjo::ballot`, Move 2024, Sui CLI 1.80.1), `src/lib/sui.ts` (server-only gRPC client), `src/lib/sui-draw.ts` (pure recomputation) and `src/lib/service.ts`. Tested with 22 Move unit tests, mocked-chain service tests and a full run on a local Sui network (protocol 137). Published on Sui testnet on 26 September 2026 as `0x0d0f…3a65` and smoke-tested end to end there with a free and a paid drop (see [OPERATIONS](OPERATIONS.md#sui)). The UI never fabricates explorer links, and links are omitted for localnet.
 
 1. **Objects.** `OrganiserCap` (key, store) is minted to the publisher. A shared `Series` holds the name, the registrar's Ed25519 public key, the loss ledger (`Table<code, u64>`, absent means 0) and `active_drop`. A shared `Drop<T>` is an escrow vault over any coin type: entries `{code, chances, payer, paid}`, a duplicate table, `Balance<T>`, the seed, winners and a settled flag. `Ticket` has `key` only, so it cannot be transferred; a legacy `sui::display` gives it a name.
 2. **Weights on-chain.** Both entry paths compute `chances = 1 + min(5, losses)` from the series ledger, refuse duplicates, entries at or after close and a 301st entrant. `register` (organiser, free drops only) follows server-side World verification. `enter` (fan-signed) needs a deposit equal to the price and a permit.
@@ -50,15 +50,29 @@ Implemented in `move/tenjo` (`tenjo::ballot`, Move 2024, Sui CLI 1.80.1), `src/l
 
 Known limits: no cancellation or pre-draw refund path (anyone may draw and settle after close, so deposits cannot be stranded by the organiser alone); one organiser cap; no registrar rotation; only SUI deposits are wired although `Drop<T>` is generic; digest recovery scans the latest 50 events; codes on-chain are the same public, linkable codes as the database.
 
+## Real World IDs: pity through a passkey
+
+1. **Why.** World ID 4 nullifiers are single-use per action, so real World IDs get one action per drop (`<action>-<drop id>`) and a fresh code each time. No computation on Tenjō's side can link two per-drop proofs; that is World's privacy guarantee. Continuity has to come from something the fan carries.
+2. **Split roles.** The per-drop World ID proof stays the only gate for entry. A passkey (WebAuthn) only chooses the code an entry uses, so extra passkeys split a fan's own pity and never add entries.
+3. **Registration.** `registerPasskey` needs an open, unused real-World-ID challenge for the drop. The WebAuthn challenge is `sha256("tenjo:passkey:create:v1:<drop>:<challenge>")`; attestation is `none`, so only the public key (COSE), counter and code are stored, with the challenge it was created for (`created_challenge`). That lets the first entry count its creation as proof: one prompt.
+4. **Entry.** `passkeyForEntry` runs before `verifyWorldProof` and accepts either `{created}` for the same challenge or an assertion over `sha256("tenjo:passkey:get:v1:<drop>:<challenge>")`, verified against the site's origin and host name. It refuses an unknown passkey, a bad signature and a passkey that already entered the drop, without spending the World ID proof.
+5. **One person, one entry.** `entry_identities` stores each drop's World ID code beside the code the entry uses. `admit` refuses the same person with another passkey (`already_entered`, pointing to the first entry) and another person with the same passkey (`passkey_in_use`), inside the entry transaction.
+6. **Library.** `@simplewebauthn/server` 14 and `@simplewebauthn/browser` 14. The browser helper remembers the credential ID in `localStorage` and offers a passkey from another device (discoverable credentials).
+7. **Rejected.** A wallet link (Slush's web wallet is blocked in Japan, and a wallet is easy to hand over); World ID session proofs (server verification undocumented, a second World App prompt, simulator support unknown); a browser-only key (lost with site data); blind-signed loss tokens and an own ZK group (days of work, and the on-chain ledger model would change).
+
+Known limits: a shared passkey hands over pity; a lost passkey starts fresh; passkeys are bound to the host name; some in-app browsers lack WebAuthn; not yet tried with a real phone and a real World ID together.
+
 ## Unresolved gates
 
-Remaining evidence: first World simulator proof, legacy document identifier/availability, My Number Card preset behavior, production v4 behavior, server-attested pickup presence, public Postgres deployment, the Sui testnet publish and a testnet settlement, two live rehearsals and video. Team/project priority and prize decisions remain @Chai's.
+Remaining evidence: legacy document identifier/availability, My Number Card preset behavior, server-attested pickup presence, a real phone passkey with a real World ID entry, two live rehearsals and the submission. Team/project priority and prize decisions remain @Chai's.
 
 ## Sources checked during implementation
 
 - https://docs.world.org/world-id/idkit/integrate — fixed-action nullifiers, server verification and staging.
 - https://docs.world.org/api-reference/developer-portal/verify — per-credential results and expected environment.
 - https://docs.world.org/world-id/idkit/credentials — credential presets and user-presence request.
+- https://docs.world.org/world-id/idkit/session-proofs — session proofs, considered for cross-drop identity.
+- Installed `@simplewebauthn/server` and `@simplewebauthn/browser` 14 type definitions — registration and authentication verification.
 - Installed IDKit 4.3.0 type definitions and signing/hashing exports — actual package interface and legacy migration warning.
 - Installed Next docs under node_modules/next/dist/docs — route handlers, server/client boundaries, async params and Webpack CLI support.
 

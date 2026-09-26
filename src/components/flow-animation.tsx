@@ -92,7 +92,7 @@ const beats: Beat[] = [
     chances: 5,
     tag: () => "world",
     caption: () =>
-      "Night 2. You prove it again, and your losses carry over without an account.",
+      "Night 2. You prove it again, and your passkey carries your losses over.",
   },
   {
     id: "enter2",

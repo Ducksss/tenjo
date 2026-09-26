@@ -68,7 +68,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
    Rerun with `--fresh` for each rehearsal.
 
 3. **Yui’s history (optional):** enter a Night 1 drop in rehearsal with your simulator identity and a few other simulator identities, then draw it. If Yui wins, the story still works (“she won, so she’s back to one chance”), or start a fresh series.
-4. **Wallet:** Slush is on testnet with ≥ 0.05 SUI. Simulator tab open. Suiscan tabs pre-loaded for the package and the settlement.
+4. **Wallet:** the Slush **browser extension**, not Slush's web wallet, which is blocked in Japan. It is on testnet with ≥ 0.05 SUI. Simulator tab open. Suiscan tabs pre-loaded for the package and the settlement. If the local app also takes real World IDs (`WORLD_PRODUCTION_*`), the entry card shows the passkey step; use **No World ID? Use the World ID simulator** for the simulator entry, which never asks for a passkey.
 5. **Screen:** browser zoom 110%, bookmarks bar hidden, notifications off, the local server already warm (visit every page once).
 6. **Timing:** the chain closes entries 30 seconds after the page does, so the last deposits can land. Pressing **Run draw** inside that window returns “try again in a few seconds”. Stage the console lottery so it closed at least a minute before you go on.
 7. **Rehearsal:** two clean runs, timed. Record one as the fallback video.
@@ -81,6 +81,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 - _Can the organiser rig the draw?_ No. `draw` is permissionless after close and its gas doesn’t depend on the outcome, so an unlucky result can’t be aborted and retried. `settle` is deterministic, and the page re-runs it from the seed.
 - _Why two transactions?_ Commit, then use. It’s Sui’s recommended pattern for randomness, so a result can’t be seen and then rejected.
 - _What stops bots?_ Entry needs a World ID proof verified on our server, and the nullifier becomes an anonymous code. The Move contract also refuses a repeat code, so a second wallet can’t enter the same human twice.
+- _Real World IDs get a fresh code every drop. How do their losses carry?_ A passkey on the fan’s phone keeps one code for them. World ID lets them in once per drop; the passkey remembers their losses. Tenjō stores only its public key, and a second passkey never buys a second entry.
 - _Two passports?_ It’s a known limit of document credentials, and we disclose it. Orb Proof of Human is the configured fallback.
 - _Scalping?_ The winner’s `Ticket` has `key` but not `store`, so only our module could move it, and it has no transfer function. Pickup also needs a fresh World ID proof from the winner.
 - _Does it scale?_ The demo caps a drop at 300 entrants. Settlement is one atomic transaction, and Sui batches up to 1,024 payments in one. Big ballots would shard into several drops, or refunds would become claimable instead of pushed.
@@ -91,7 +92,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 - _Why would an organiser give losers better odds?_ The seats sell either way. What changes is who gets them: repeat fans instead of bots, which means fewer complaints and fans who stay.
 - _Have you talked to organisers?_ Answer honestly. The evidence we have is public: Nintendo’s lottery rules show the demand. The first pilot to look for is small: a venue, fan club, merch drop or conference with more applicants than seats.
 - _Isn’t this gambling?_ Chances can’t be bought: only losses add them, and there’s one entry per person. The deposit is the item’s price, fully refunded on a loss, so nothing is staked or lost.
-- _What about fans without wallets?_ Free drops need no wallet at all today. The roadmap is a web wallet with social sign-in, sponsored gas and stablecoin deposits.
+- _What about fans without wallets?_ Free drops need no wallet at all today, and real World IDs keep their pity with a passkey, not a wallet. The roadmap is a web wallet with social sign-in, sponsored gas and stablecoin deposits.
 - _Mainnet in Japan?_ `Drop<T>` takes any coin, so deposits would move to a regulated stablecoin through a licensed partner. Alternatively, the organiser keeps its normal checkout and Sui runs only the draw and ledger (a free drop).
 
 ## Partner booths: the 60-second versions

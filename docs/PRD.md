@@ -1,6 +1,6 @@
 # Tenjō (天井) — Product Requirements Document
 
-Version 1.1 · September 26, 2026 · Product owner: Chai · Status: draft for review
+Version 1.2 · September 27, 2026 · Product owner: Chai · Status: draft for review
 
 **One person, one entry, and every loss counts.**
 
@@ -54,10 +54,11 @@ Initial context is a small, English-language hackathon demonstration of Japanese
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | Phase 1 core            | Discovery, organiser creation, entries, weighted draw, settlement, pickup checks, public records and code lookup | Implemented with local test identities and automated test coverage                            |
 | First-visit explanation | Browser-only walkthrough of loss, win, duplicate refusal and pickup                                              | Present in current working tree; scripted, ephemeral and separate from real entries           |
-| World integration       | Signed requests, server verification, stable codes and replay protection                                         | Implemented and mock-tested; first real simulator success remains pending in project docs     |
+| World integration       | Signed requests, server verification, stable codes and replay protection                                         | Live on production: 14 server-verified entries on 26 September, simulator and real World IDs  |
 | Production pickup       | Fresh winning identity plus server-attested liveness                                                             | Blocked pending liveness validation and implementation of a supported enforcement path        |
-| Hosting                 | Vercel application with hosted Postgres                                                                          | Reported deployed in operations docs; deployment was not revalidated for this PRD             |
-| Phase 2                 | Sui registration, randomness, ledger, settlement and explorer evidence                                           | `tenjo::ballot` Move package implemented with unit tests; testnet publish and mirror pending  |
+| Hosting                 | Vercel application with hosted Postgres                                                                          | Deployed at tenjo-azure.vercel.app with Neon Postgres                                         |
+| Phase 2                 | Sui registration, randomness, ledger, settlement and explorer evidence                                           | Published on Sui testnet (`0x0d0f…3a65`); free and paid drops smoke-tested end to end         |
+| Real-World-ID pity      | A passkey carries a real World ID's losses across drops                                                          | Implemented and tested; not yet tried with a real phone passkey                               |
 | Deposits (R13)          | Testnet deposits into a per-drop escrow, refunded to losers at settlement                                        | Promoted for the Sui DeFi & Payments track: in the Move package and wallet flow; testnet-only |
 | Stretch                 | Unclaimed-item handoff                                                                                           | Planned only after both phase gates pass                                                      |
 
@@ -91,6 +92,7 @@ Real-money entry, mainnet payments, organiser billing, native mobile apps, comme
 ### Identity and pickup
 
 - A stable 32-character anonymous code represents an identity across drops; loss counts remain series-specific.
+- A real World ID gets a fresh code in every drop, because World ID 4 nullifiers are single-use per action. With a passkey, its entries use the passkey's code, so losses carry; World ID still admits one entry per person per drop.
 - Entry and pickup require separately issued, fresh challenges bound to purpose and drop. The code itself is a public lookup key, not a credential for claiming an item.
 - Only a settled drop’s winner may collect, once. A failed or wrong-identity attempt leaves the item uncollected.
 - The selected credential and identity configuration are pinned after the first accepted real entry. Changes require an explicit migration or a fresh database.
@@ -227,25 +229,26 @@ Set baselines and targets after the first observed pilot. Any additional analyti
 
 The original plan targets **September 27, 2026, 07:00 JST** for submission. This is the inherited team target, not an independently verified event deadline. The original detailed schedule and submission checklist remain in [PRD-ORIGINAL.md](PRD-ORIGINAL.md).
 
-1. **Phase 1 gate:** complete the server-backed lifecycle, validate real World entry/refusal and stable codes, demonstrate safe pickup behavior, and retain an inspectable record. The local implementation exists; real World evidence is outstanding in project docs.
-2. **Phase 2 gate:** only after Phase 1 passes, publish and validate Sui registration, weighted randomness, ledger settlement and database reconciliation. Design for an interrupted draw/settlement sequence and bounded work at the demo scale. If this gate misses the cut line, ship Phase 1 with its server-trust disclosure.
+1. **Phase 1 gate:** complete the server-backed lifecycle, validate real World entry/refusal and stable codes, demonstrate safe pickup behavior, and retain an inspectable record. Passed: real World entries and refusals are on production (see the [debrief](OPERATIONS.md#world-integration-debrief)).
+2. **Phase 2 gate:** only after Phase 1 passes, publish and validate Sui registration, weighted randomness, ledger settlement and database reconciliation. Design for an interrupted draw/settlement sequence and bounded work at the demo scale. If this gate misses the cut line, ship Phase 1 with its server-trust disclosure. Passed on Sui testnet.
 3. **Stretch gate:** consider test deposits/refunds, then unclaimed handoff, only after both prior gates pass and their unresolved rules are approved.
 4. **Submission gate:** complete two rehearsals, video, setup instructions, honest integration debrief and real evidence links for every claimed integration.
 
 ## 12. Risks and open decisions
 
-| Risk or decision                                  | Current position                                                                                               | Owner / resolution gate                                 |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Real document proofs and repeated-action identity | Mocked behavior is insufficient; verify simulator and device behavior                                          | Integration owner + Chai, before Phase 1 acceptance     |
-| Passport, My Number Card and Orb choice           | Compatibility and dual-document uniqueness remain unresolved; do not switch after accepting entries            | Chai + World support, before first real entry           |
-| Pickup presence                                   | Production blocked; staging fallback must remain labelled untested                                             | Integration owner, before production collection         |
-| Public cross-series history                       | Current code is globally stable; series-scoped privacy would change R4 behavior                                | Chai, before identity migration or broader launch       |
-| Operator influence over Phase 1                   | Records and fingerprints do not remove server/database trust                                                   | Disclose for Phase 1; reassess after Phase 2 validation |
-| Sui implementation and time budget                | Move package and tests exist; testnet publish needs a funded organiser address; Phase 1 still ships standalone | Chai, at Phase 2 cut line                               |
-| Unclaimed items                                   | Wins reset losses even without pickup; no automatic reassignment                                               | Chai, before R12 implementation                         |
-| Deposits, fees and prize scope                    | Testnet-only deposits built for the Sui DeFi & Payments track; no fees; prize targets World IDKit and Sui      | Chai, before any mainnet or real-money use              |
-| Production operations                             | Retention, abuse protection, capacity, support and recovery expectations remain unspecified                    | Product and engineering owners, before broader rollout  |
-| Team/project positioning                          | Original project-replacement, naming, demo-item and prize decisions remain owner decisions                     | Chai, before submission                                 |
+| Risk or decision                                  | Current position                                                                                            | Owner / resolution gate                                 |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Real document proofs and repeated-action identity | Simulator and real World IDs verified on production; real World IDs need a passkey for cross-drop identity  | Integration owner + Chai, before Phase 1 acceptance     |
+| Passport, My Number Card and Orb choice           | Compatibility and dual-document uniqueness remain unresolved; do not switch after accepting entries         | Chai + World support, before first real entry           |
+| Pickup presence                                   | Production blocked; staging fallback must remain labelled untested                                          | Integration owner, before production collection         |
+| Public cross-series history                       | Current code is globally stable; series-scoped privacy would change R4 behavior                             | Chai, before identity migration or broader launch       |
+| Operator influence over Phase 1                   | Records and fingerprints do not remove server/database trust                                                | Disclose for Phase 1; reassess after Phase 2 validation |
+| Sui implementation and time budget                | Published on testnet and smoke-tested; Phase 1 still ships standalone                                       | Chai, at Phase 2 cut line                               |
+| Wallet access in Japan                            | Slush's web wallet is blocked in Japan; paid-drop testers need a wallet extension or a wallet app's browser | Chai, before inviting judges to paid drops              |
+| Unclaimed items                                   | Wins reset losses even without pickup; no automatic reassignment                                            | Chai, before R12 implementation                         |
+| Deposits, fees and prize scope                    | Testnet-only deposits built for the Sui DeFi & Payments track; no fees; prize targets World IDKit and Sui   | Chai, before any mainnet or real-money use              |
+| Production operations                             | Retention, abuse protection, capacity, support and recovery expectations remain unspecified                 | Product and engineering owners, before broader rollout  |
+| Team/project positioning                          | Original project-replacement, naming, demo-item and prize decisions remain owner decisions                  | Chai, before submission                                 |
 
 ## 13. Repository evidence
 

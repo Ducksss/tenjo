@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
@@ -17,6 +17,8 @@ import {
 } from "../src/lib/service";
 import { suiChain, type Settlement } from "../src/lib/sui";
 import { chainDraw } from "../src/lib/sui-draw";
+import { linkPasskey } from "../src/lib/passkey";
+import { passkeyCode } from "../src/lib/passkey-code";
 
 process.env.SUI_NETWORK = "localnet";
 process.env.SUI_PACKAGE_ID = normalizeSuiAddress("0xabc");
@@ -354,6 +356,88 @@ test("priced drops take deposits only through permits and a confirmed Sui entry"
     assert.equal(loser.refunded_mist, "10000000");
     const audit = await publicDrop(db, drop.id);
     assert.ok(audit.entries.every((e) => e.paid_mist === "10000000"));
+  } finally {
+    await db.close();
+  }
+});
+
+test("a real World ID's paid entries use its passkey's code, so its losses carry on-chain", async () => {
+  const db = await setup();
+  // A verified real World ID with a passkey: `person` stands in for that drop's World ID code.
+  const realFan = async (
+    dropId: string,
+    person: string,
+    credentialId: string,
+  ) => {
+    const challengeId = randomUUID();
+    await db.query(
+      "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at,mode) VALUES($1,$1,$2,'enter',now()+interval '5 minutes','production')",
+      [challengeId, dropId],
+    );
+    return linkPasskey(
+      {
+        code: demoCode(person),
+        mode: "production",
+        policy: "real",
+        challengeId,
+      },
+      { code: passkeyCode(credentialId), credentialId },
+    );
+  };
+  const deposit = async (dropId: string, sender: string, code: string) => {
+    const drop = (await publicDrop(db, dropId)).drop;
+    const tx = digest();
+    deposits.set(tx, { sender, dropId: drop.sui_drop_id!, code });
+    return confirmEntry(db, dropId, tx);
+  };
+  try {
+    const fans = [
+      { passkey: "passkey-a", wallet: normalizeSuiAddress("0xa1") },
+      { passkey: "passkey-b", wallet: normalizeSuiAddress("0xa2") },
+    ];
+    const first = await createDrop(
+      db,
+      input("passkey-paid", { price: "0.01" }),
+    );
+    for (const [i, fan] of fans.entries()) {
+      const permit = await permitEntry(
+        db,
+        first.id,
+        await realFan(first.id, `drop-1-fan-${i}`, fan.passkey),
+        fan.wallet,
+        new Date(t),
+      );
+      // The permit carries the passkey's code; the wallet only pays.
+      assert.equal(permit.permit.code_hex, passkeyCode(fan.passkey));
+      assert.equal(permit.passkey_linked, true);
+      await deposit(first.id, fan.wallet, permit.permit.code_hex);
+    }
+    const record = (await drawDrop(db, first.id, afterGrace)) as {
+      entries: { member_code: string; outcome: string }[];
+    };
+    const loser = fans.find(
+      (f) =>
+        record.entries.find((e) => e.member_code === passkeyCode(f.passkey))!
+          .outcome === "lost",
+    )!;
+    const next = await createDrop(
+      db,
+      input("passkey-paid", { price: "0.01", title: "Chain console drop 2" }),
+    );
+    // A new drop means a new World ID code, and here another wallet pays: the passkey brings the loss.
+    const payer = normalizeSuiAddress("0xa3");
+    const permit = await permitEntry(
+      db,
+      next.id,
+      await realFan(next.id, "drop-2-loser", loser.passkey),
+      payer,
+      new Date(t),
+    );
+    assert.equal(permit.permit.code_hex, passkeyCode(loser.passkey));
+    assert.equal(permit.losses, 1);
+    assert.equal(permit.tickets, 2);
+    const confirmed = await deposit(next.id, payer, permit.permit.code_hex);
+    assert.equal(confirmed.tickets, 2);
   } finally {
     await db.close();
   }

@@ -13,9 +13,17 @@ import {
 } from "lucide-react";
 import { ApiError, api } from "@/lib/client-api";
 import type { DropStatus } from "@/lib/format";
+import { chancesFor } from "@/lib/sui-draw";
 import { shortId, suiscan } from "@/lib/sui-status";
+import { passkeyCode } from "@/lib/passkey-code";
 import { Button, Notice } from "./ui";
 import { Capsules } from "./capsules";
+import {
+  forgetPasskey,
+  passkeyProof,
+  passkeysSupported,
+  rememberedPasskey,
+} from "./passkey";
 import { useNow } from "./use-now";
 import type { Challenge } from "./world-widget";
 import type { EntryPermit, SuiWalletApi } from "./sui-wallet";
@@ -36,14 +44,19 @@ type Receipt = {
   collected?: boolean;
   digest?: string;
   sui_status?: string;
+  /** The code comes from the entrant's passkey, so losses carry to their next entry with it. */
+  passkey_linked?: boolean;
 };
 type PermitResponse = {
   code: string;
   tickets: number;
   permit: EntryPermit;
+  passkey_linked?: boolean;
 };
 export function DropActions({
   id,
+  seriesId,
+  seriesName,
   status,
   closesAt,
   opensAt,
@@ -58,6 +71,8 @@ export function DropActions({
   suiNetwork,
 }: {
   id: string;
+  seriesId: string;
+  seriesName: string;
   status: DropStatus;
   closesAt: string;
   opensAt: string;
@@ -89,6 +104,49 @@ export function DropActions({
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [wallet, setWallet] = useState<SuiWalletApi | null>(null);
   const address = wallet?.address ?? null;
+  // Sent with the World ID proof: the paying wallet and the entrant's passkey, if any.
+  const [entryHeaders, setEntryHeaders] = useState<Record<string, string>>();
+  const [entryMode, setEntryMode] = useState<"primary" | "production">(
+    "primary",
+  );
+  // A real World ID gets a fresh code in every drop; a passkey keeps one code, so losses carry.
+  const linkable = realWorld && !demo && now !== null && passkeysSupported();
+  const [usePasskey, setUsePasskey] = useState(true);
+  const [discover, setDiscover] = useState(false);
+  const [passkey, setPasskey] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : rememberedPasskey(),
+  );
+  // World ID's request, kept while the passkey step waits for a fresh tap.
+  const [pendingPasskey, setPendingPasskey] = useState<{
+    next: Challenge;
+    headers?: Record<string, string>;
+  } | null>(null);
+  const linkedCode = linkable && passkey ? passkeyCode(passkey) : null;
+  const [carried, setCarried] = useState<{
+    code: string;
+    losses: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!linkedCode) return;
+    let live = true;
+    api<{ pity: { series_id: string; losses: number }[] }>(
+      `/api/codes/${linkedCode}`,
+    )
+      .then((history) => {
+        if (live)
+          setCarried({
+            code: linkedCode,
+            losses:
+              history.pity.find((p) => p.series_id === seriesId)?.losses ?? 0,
+          });
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [linkedCode, seriesId]);
+  const carriedLosses =
+    carried && carried.code === linkedCode ? carried.losses : null;
   const settled = status === "settled";
   const closed = now !== null && now >= Date.parse(closesAt);
   const notOpen = now !== null && now < Date.parse(opensAt);
@@ -137,13 +195,14 @@ export function DropActions({
     setInfo(`Confirm the ${paid?.priceLabel} deposit in your wallet.`);
     const digest = await wallet.enter(value.permit);
     setInfo("Deposit locked on Sui. Recording your entry…");
-    verified(
-      await api<Receipt>(`/api/drops/${id}/confirm`, {
+    verified({
+      ...(await api<Receipt>(`/api/drops/${id}/confirm`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ digest }),
-      }),
-    );
+      })),
+      passkey_linked: value.passkey_linked,
+    });
   }
   function verified(value: Receipt | null) {
     completedFlow.current = true;
@@ -161,6 +220,11 @@ export function DropActions({
     router.refresh();
   }
   function fail(error: unknown) {
+    // A passkey this site no longer knows is forgotten, so the next entry creates a new one.
+    if (error instanceof ApiError && error.code === "passkey_unknown") {
+      forgetPasskey();
+      setPasskey(null);
+    }
     const repeat =
       error instanceof ApiError && error.code === "already_entered";
     const code = repeat ? error.details.member_code : undefined;
@@ -173,6 +237,48 @@ export function DropActions({
         : undefined,
     });
   }
+  function openWorldId(next: Challenge, headers?: Record<string, string>) {
+    setEntryHeaders(headers);
+    setChallenge(next);
+  }
+  // Proves the passkey for this World ID request, then opens World ID with it.
+  async function withPasskey(
+    next: Challenge,
+    headers?: Record<string, string>,
+  ) {
+    setInfo("Confirm with your passkey to keep your extra chances.");
+    try {
+      const proof = await passkeyProof(
+        id,
+        next.id,
+        passkey ? "use" : discover ? "discover" : "create",
+      );
+      setPasskey(rememberedPasskey());
+      setDiscover(false);
+      setInfo("");
+      openWorldId(next, { ...headers, "x-tenjo-passkey": proof });
+    } catch (error) {
+      setInfo("");
+      // Tenjō's own refusal stands. A cancelled prompt, or a browser that wants a fresh tap,
+      // gets a button instead.
+      if (error instanceof ApiError) throw error;
+      setPendingPasskey({ next, headers });
+    }
+  }
+  async function confirmPasskey() {
+    const pending = pendingPasskey;
+    if (!pending) return;
+    setPendingPasskey(null);
+    setBusy(true);
+    setProblem(null);
+    try {
+      await withPasskey(pending.next, pending.headers);
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy(false);
+    }
+  }
   // Entry uses a real World ID when the site takes them; pickup stays on the primary setup.
   async function verify(
     nextPurpose: "enter" | "collect",
@@ -181,6 +287,7 @@ export function DropActions({
       : "primary",
   ) {
     completedFlow.current = false;
+    setPendingPasskey(null);
     setPurpose(nextPurpose);
     setBusy(true);
     setProblem(null);
@@ -206,13 +313,20 @@ export function DropActions({
           }),
         );
       } else {
-        setChallenge(
-          await api<Challenge>("/api/rp-signature", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ drop_id: id, purpose: nextPurpose, mode }),
-          }),
-        );
+        const next = await api<Challenge>("/api/rp-signature", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ drop_id: id, purpose: nextPurpose, mode }),
+        });
+        const entering = nextPurpose === "enter";
+        const headers =
+          paid && entering && address
+            ? { "x-tenjo-sui-address": address }
+            : undefined;
+        setEntryMode(mode);
+        if (entering && mode === "production" && linkable && usePasskey)
+          await withPasskey(next, headers);
+        else openWorldId(next, headers);
       }
     } catch (error) {
       fail(error);
@@ -274,6 +388,57 @@ export function DropActions({
                 <SuiWallet network={suiNetwork} onChange={setWallet} />
               </div>
             ) : null}
+            {linkable && !closed && !notOpen ? (
+              <div className="passkey-step">
+                <span className="eyebrow">Keep your extra chances</span>
+                <p>
+                  World ID gives you a fresh code in every drop. A passkey keeps
+                  one code for you, so each loss in this series adds a chance
+                  next time. It stays on your device, behind Face ID or your
+                  fingerprint.
+                </p>
+                <label className="choice">
+                  <input
+                    type="checkbox"
+                    checked={usePasskey}
+                    disabled={busy}
+                    onChange={(e) => setUsePasskey(e.target.checked)}
+                  />
+                  <span>Keep my extra chances with a passkey</span>
+                </label>
+                {usePasskey ? (
+                  <>
+                    <p className="action-hint">
+                      {passkey
+                        ? carriedLosses
+                          ? `Your passkey carries ${carriedLosses} ${carriedLosses === 1 ? "loss" : "losses"} in ${seriesName}: ${chancesFor(carriedLosses)} chances.`
+                          : `Your passkey is ready. Lose this draw and your next entry in ${seriesName} gets 2 chances.`
+                        : discover
+                          ? "You’ll choose your Tenjō passkey when you enter."
+                          : "You’ll create one with Face ID or your fingerprint when you enter."}
+                    </p>
+                    <button
+                      type="button"
+                      className="text-button"
+                      disabled={busy}
+                      onClick={() => {
+                        if (passkey) {
+                          forgetPasskey();
+                          setPasskey(null);
+                          setDiscover(false);
+                        } else setDiscover(!discover);
+                      }}
+                    >
+                      {passkey
+                        ? "Use a different passkey"
+                        : discover
+                          ? "Create a new passkey instead"
+                          : "Made one on another device? Use it"}
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
             <Button
               className="full"
               busy={busy}
@@ -307,6 +472,30 @@ export function DropActions({
                 ? `Refundable deposit · ${paid.priceLabel} · One entry per person`
                 : "Free entry · One entry per person"}
             </p>
+            {pendingPasskey ? (
+              <div className="passkey-step" role="status">
+                <p>
+                  The passkey step didn’t finish, so nothing was entered yet.
+                  Confirm it to keep your extra chances.
+                </p>
+                <Button className="full" busy={busy} onClick={confirmPasskey}>
+                  <Fingerprint size={21} />
+                  Confirm passkey
+                  <ArrowRight size={18} />
+                </Button>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    setPendingPasskey(null);
+                    openWorldId(pendingPasskey.next, pendingPasskey.headers);
+                  }}
+                >
+                  Enter with World ID alone
+                </button>
+              </div>
+            ) : null}
             {realWorld && !demo ? (
               <button
                 type="button"
@@ -368,9 +557,17 @@ export function DropActions({
             {receipt.tickets ? <Capsules count={receipt.tickets} /> : null}
             {receipt.tickets ? (
               <p className="receipt-breakdown">
-                {receipt.tickets === 1
-                  ? "1 base chance. If you don’t win, your next entry in this series gets one more."
-                  : `1 base + ${receipt.tickets - 1} for past losses in this series${receipt.tickets === 6 ? ": the maximum" : ""}.`}
+                {receipt.tickets > 1
+                  ? `1 base + ${receipt.tickets - 1} for past losses in this series${receipt.tickets === 6 ? ": the maximum" : ""}.`
+                  : demo || entryMode === "primary" || receipt.passkey_linked
+                    ? "1 base chance. If you don’t win, your next entry in this series gets one more."
+                    : "1 base chance. A real World ID starts fresh in every drop, so keep a passkey to carry your losses."}
+              </p>
+            ) : null}
+            {receipt.passkey_linked ? (
+              <p className="receipt-breakdown">
+                This code comes from your passkey. Enter the next drop in{" "}
+                {seriesName} with it to keep your extra chances.
               </p>
             ) : null}
             {receipt.digest && suiNetwork ? (
@@ -386,7 +583,11 @@ export function DropActions({
                 </a>
               </p>
             ) : null}
-            <span className="eyebrow">Your anonymous code</span>
+            <span className="eyebrow">
+              {receipt.passkey_linked
+                ? "Your code · from your passkey"
+                : "Your anonymous code"}
+            </span>
             <code>{receipt.code}</code>
             <div className="receipt-links">
               <Link href={`/codes/${receipt.code}`}>
@@ -434,11 +635,7 @@ export function DropActions({
                 ? `/api/drops/${id}/permit`
                 : undefined
             }
-            headers={
-              paid && purpose === "enter" && address
-                ? { "x-tenjo-sui-address": address }
-                : undefined
-            }
+            headers={entryHeaders}
             onVerified={(value) => {
               if (paid && purpose === "enter")
                 deposit(value as unknown as PermitResponse).catch(fail);
@@ -480,7 +677,7 @@ function AlreadyEntered({
         <p>
           {demo
             ? "This demo identity already has an entry in this drop."
-            : "World ID matched you to an entry already in this drop, whichever phone or account you use."}{" "}
+            : "World ID matched you to an entry already in this drop, whichever phone, account or passkey you use."}{" "}
           One person gets one entry, so nothing new was saved
           {paid ? " and no deposit moved" : ""}. Your first entry still counts.
         </p>
