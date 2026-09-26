@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tenjō — website & architecture review map</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f4ef;
+        --paper: #fff;
+        --ink: #202522;
+        --muted: #58625c;
+        --line: #b7c0b9;
+        --soft: #e8ece8;
+        --accent: #185a44;
+        --tint: #def0e5;
+        --warn: #7d4b09;
+        --warnbg: #fff0d3;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.55 system-ui,
+          sans-serif;
+      }
+      header,
+      main,
+      footer {
+        max-width: 1200px;
+        margin: auto;
+        padding: 24px;
+      }
+      header {
+        padding-top: 40px;
+      }
+      h1 {
+        font-size: clamp(30px, 5vw, 52px);
+        letter-spacing: -2px;
+        line-height: 1.1;
+        margin: 12px 0;
+      }
+      h2 {
+        font-size: 27px;
+        letter-spacing: -0.7px;
+      }
+      h3 {
+        font-size: 17px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 8px 0 16px;
+      }
+      .eyebrow,
+      small {
+        color: var(--muted);
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 12px;
+      }
+      nav,
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      button,
+      select {
+        font: inherit;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        color: var(--ink);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      button:focus-visible,
+      select:focus-visible,
+      a:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+      a {
+        color: var(--accent);
+      }
+      .lede {
+        max-width: 800px;
+      }
+      .badge {
+        display: inline-block;
+        background: var(--soft);
+        padding: 3px 9px;
+        font-size: 12px;
+        border-radius: 4px;
+        margin-right: 5px;
+      }
+      .warn {
+        background: var(--warnbg);
+        color: var(--warn);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 28px;
+      }
+      .pages {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 0;
+      }
+      .pages button {
+        text-align: left;
+      }
+      .window {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .bar {
+        padding: 10px 16px;
+        background: var(--soft);
+        color: var(--muted);
+        font:
+          12px ui-monospace,
+          monospace;
+        overflow-wrap: anywhere;
+      }
+      .shell {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+      }
+      .skeleton {
+        padding: 20px;
+        display: grid;
+        gap: 12px;
+      }
+      .box {
+        border: 1px solid var(--line);
+        padding: 18px;
+        background: var(--paper);
+        min-width: 0;
+      }
+      .box strong {
+        display: block;
+      }
+      .box small {
+        display: block;
+        margin-top: 5px;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 14px;
+      }
+      .illustration {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+        background: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 9px,
+          var(--soft) 9px,
+          var(--soft) 10px
+        );
+        border: 1px dashed var(--line);
+        text-align: center;
+        color: var(--muted);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 12px;
+      }
+      .stack {
+        display: grid;
+        gap: 12px;
+      }
+      .cta {
+        display: inline-block;
+        margin: 10px 5px 0 0;
+        border: 1px solid var(--ink);
+        padding: 5px 12px;
+        font-size: 12px;
+      }
+      .line {
+        height: 7px;
+        background: var(--soft);
+        margin-top: 9px;
+        width: 85%;
+      }
+      .line.short {
+        width: 55%;
+      }
+      .note {
+        padding: 14px 18px;
+        border-left: 3px solid var(--accent);
+        background: var(--tint);
+        margin: 16px 0;
+      }
+      .notes {
+        margin-top: 20px;
+      }
+      .flow {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .node {
+        border: 1px solid var(--line);
+        padding: 14px;
+        background: var(--paper);
+        flex: 1;
+        min-width: 140px;
+      }
+      .arrow {
+        align-self: center;
+        color: var(--muted);
+      }
+      .diagram {
+        display: grid;
+        gap: 16px;
+        margin: 20px 0;
+      }
+      .layer {
+        padding: 18px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+      }
+      .layer-title {
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        color: var(--muted);
+        margin-bottom: 12px;
+      }
+      .chain {
+        border-style: dashed;
+      }
+      .edges {
+        text-align: center;
+        font:
+          13px ui-monospace,
+          monospace;
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      .active {
+        border-color: var(--accent);
+        background: var(--tint);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        font-size: 13px;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 10px 8px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      code {
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin: 7px 0;
+      }
+      .table-wrap {
+        overflow: auto;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .comment {
+        width: 100%;
+        min-height: 85px;
+        padding: 12px;
+        font: inherit;
+        background: var(--paper);
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      footer {
+        font-size: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+      }
+      .print-only {
+        display: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #171b19;
+          --paper: #202623;
+          --ink: #eef3ef;
+          --muted: #bbc6be;
+          --line: #59665d;
+          --soft: #343e37;
+          --accent: #90d7b4;
+          --tint: #263d31;
+          --warn: #f7cf89;
+          --warnbg: #443623;
+        }
+        button[aria-pressed="true"] {
+          color: #142219;
+        }
+      }
+      @media (max-width: 700px) {
+        header,
+        main,
+        footer {
+          padding: 18px;
+        }
+        .layout,
+        .split,
+        .grid,
+        .hero {
+          grid-template-columns: 1fr;
+        }
+        .pages {
+          flex-direction: row;
+          flex-wrap: wrap;
+        }
+        .pages button {
+          font-size: 13px;
+        }
+        .row {
+          grid-template-columns: 1fr;
+        }
+        .shell {
+          flex-wrap: wrap;
+        }
+        .arrow {
+          display: none;
+        }
+        .node {
+          min-width: 180px;
+        }
+        .skeleton {
+          padding: 12px;
+        }
+      }
+      @media print {
+        body {
+          background: white;
+          color: black;
+        }
+        header,
+        main,
+        footer {
+          max-width: none;
+          padding: 10px;
+        }
+        nav,
+        .controls,
+        .pages,
+        .notes {
+          display: none !important;
+        }
+        [data-view][hidden] {
+          display: block !important;
+        }
+        .layout {
+          display: block;
+        }
+        .window,
+        .layer,
+        .box,
+        .node {
+          break-inside: avoid;
+        }
+        .print-only {
+          display: block;
+        }
+        .screen-title {
+          margin-top: 28px;
+        }
+        .print-page {
+          break-before: page;
+        }
+        .bar {
+          color: black;
+        }
+        .box,
+        .window,
+        .layer,
+        .node {
+          background: white;
+        }
+        .note {
+          background: #eee;
+        }
+        a {
+          color: black;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">
+        Tenjō · developer discussion companion · 26 Sept 2026
+      </div>
+      <h1>See the flow.<br />See what holds it together.</h1>
+      <p class="lede">
+        A map of the inspected website and source, with the changes from this
+        review marked. Use the page skeletons to discuss structure; use the
+        architecture views to distinguish today's server draw from the optional
+        Sui paths.
+      </p>
+      <span class="badge">8 page templates</span
+      ><span class="badge">10 API routes</span
+      ><span class="badge warn"
+        >Live inspection: World staging · Sui unpublished</span
+      >
+      <nav aria-label="Review views">
+        <button type="button" data-view-button="wireframes" aria-pressed="true">
+          01 · Website wireframes
+        </button>
+        <button type="button" data-view-button="journey" aria-pressed="false">
+          02 · User journeys
+        </button>
+        <button
+          type="button"
+          data-view-button="architecture"
+          aria-pressed="false"
+        >
+          03 · Tech architecture
+        </button>
+        <button
+          type="button"
+          data-view-button="priorities"
+          aria-pressed="false"
+        >
+          04 · Improvements
+        </button>
+      </nav>
+    </header>
+    <main>
+      <section data-view="wireframes" id="wireframes">
+        <h2>Website structure</h2>
+        <p class="muted">
+          Boxes represent content sections, not a visual redesign. The controls
+          below change only this diagram.
+        </p>
+        <div class="layout">
+          <div class="pages" role="group" aria-label="Page skeletons">
+            <button type="button" data-page="home" aria-pressed="true">
+              Discover · /
+            </button>
+            <button type="button" data-page="drop" aria-pressed="false">
+              Drop · /drops/[id]
+            </button>
+            <button type="button" data-page="demo" aria-pressed="false">
+              Walkthrough · /demo
+            </button>
+            <button type="button" data-page="codes" aria-pressed="false">
+              My entries · /codes
+            </button>
+            <button type="button" data-page="history" aria-pressed="false">
+              History · /codes/[code]
+            </button>
+            <button type="button" data-page="audit" aria-pressed="false">
+              Public record · /audit
+            </button>
+            <button type="button" data-page="technical" aria-pressed="false">
+              How it's built · /architecture
+            </button>
+            <button type="button" data-page="admin" aria-pressed="false">
+              Organiser · /admin
+            </button>
+          </div>
+          <div>
+            <div class="controls">
+              <label
+                >Homepage order
+                <select id="order">
+                  <option value="revised">Revised in this review</option>
+                  <option value="original">Original inspected site</option>
+                </select></label
+              ><label
+                >Drop state
+                <select id="phase">
+                  <option value="open">Entries open</option>
+                  <option value="upcoming">Upcoming</option>
+                  <option value="closed">Awaiting draw</option>
+                  <option value="settled">Draw complete</option>
+                </select></label
+              >
+            </div>
+            <h3 class="screen-title" id="page-title">Discover</h3>
+            <div class="window">
+              <div class="bar" id="address">tenjo-azure.vercel.app/</div>
+              <div class="shell">
+                <strong>tenjō.</strong
+                ><span
+                  >Discover · Walkthrough · Architecture · Public record · My
+                  entries</span
+                ><span>Create a drop ↗</span>
+              </div>
+              <div class="shell">
+                <span>Fair drops for real people</span
+                ><span>World ID staging · Sui not published yet</span>
+              </div>
+              <div class="skeleton" id="skeleton"></div>
+              <div class="shell">
+                <span>Every loss counts.</span
+                ><span>Architecture · Public record · GitHub</span>
+              </div>
+            </div>
+            <div class="note" id="page-note"></div>
+            <div class="notes">
+              <label for="comment"
+                ><strong>Notes for your developer</strong>
+                <small
+                  >Temporary; this page does not save or send notes.</small
+                ></label
+              ><textarea
+                class="comment"
+                id="comment"
+                placeholder="For example: can we put my receipt above the public results?"
+              ></textarea
+              ><button type="button" id="download">
+                Download notes as text
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="print-pages" class="print-only"></div>
+      </section>
+      <section data-view="journey" id="journey" hidden>
+        <h2>The fan's main loop</h2>
+        <div class="flow" aria-label="Main user journey">
+          <div class="node">
+            <strong>1. Discover</strong>
+            <p>Browse a drop or learn through the walkthrough.</p>
+            <code>/</code>
+          </div>
+          <span class="arrow">→</span>
+          <div class="node">
+            <strong>2. Check the rules</strong>
+            <p>Items, series, deadline, cost and chance weights.</p>
+            <code>/drops/[id]</code>
+          </div>
+          <span class="arrow">→</span>
+          <div class="node">
+            <strong>3. Verify & enter</strong>
+            <p>World proof. Paid path also needs a wallet and deposit.</p>
+          </div>
+          <span class="arrow">→</span>
+          <div class="node">
+            <strong>4. Keep receipt</strong>
+            <p>
+              Anonymous code → public history. Sui registration may still be
+              pending.
+            </p>
+          </div>
+        </div>
+        <div class="edges">↓ entries close → anyone can trigger the draw ↓</div>
+        <div class="grid">
+          <div class="layer">
+            <h3>Win → collect → reset</h3>
+            <p>
+              Fresh proof from the winning identity → one pickup → next entry
+              starts with one chance.
+            </p>
+            <small
+              >Production pickup is gated pending liveness validation. A win
+              resets losses even without pickup.</small
+            >
+          </div>
+          <div class="layer">
+            <h3>Lose → one more chance</h3>
+            <p>
+              Next drop in the same series uses one extra chance, capped at six.
+              A different series has its own counter.
+            </p>
+            <small
+              >On-chain loser deposits refund in settlement. A pending entry
+              that missed the chain is not a loss.</small
+            >
+          </div>
+        </div>
+        <h2>Other entrances</h2>
+        <div class="flow">
+          <div class="node">
+            <strong>Returning fan</strong>
+            <p>/codes → paste code → history → drop → result/pickup</p>
+          </div>
+          <div class="node">
+            <strong>Judge / observer</strong>
+            <p>/demo → /architecture → /audit → per-drop JSON/evidence</p>
+          </div>
+          <div class="node">
+            <strong>Organiser</strong>
+            <p>/admin → details + JST schedule + password → create → drop</p>
+          </div>
+        </div>
+        <h2>Recovery branches to discuss</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Current behavior</th>
+                <th>Next improvement</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>World proof rejected, cancelled or unavailable</td>
+                <td>
+                  Inline feedback; no accepted entry from a rejected proof
+                </td>
+                <td>Real staging/production evidence for each path</td>
+              </tr>
+              <tr>
+                <td>Free entry cannot reach Sui</td>
+                <td>
+                  Saved as pending; retried on later entry/draw calls; can miss
+                  cutoff
+                </td>
+                <td>Durable worker and an explicit missed-entry remedy</td>
+              </tr>
+              <tr>
+                <td>Wallet deposit succeeds; confirmation fails</td>
+                <td>Chain entry exists and can be mirrored at settlement</td>
+                <td>Keep digest; retry confirmation without another deposit</td>
+              </tr>
+              <tr>
+                <td>Receipt lost after refresh</td>
+                <td>Manual code lookup; no saved receipt dashboard</td>
+                <td>Downloadable receipt and optional device-local recall</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section data-view="architecture" id="architecture" hidden>
+        <h2>One app, three execution paths</h2>
+        <div class="controls">
+          <label
+            >Inspect path
+            <select id="mode">
+              <option value="server">
+                Current hosted · free / server draw
+              </option>
+              <option value="sui-free">Implemented · free / Sui draw</option>
+              <option value="sui-paid">Implemented · paid / Sui escrow</option>
+            </select></label
+          >
+        </div>
+        <p class="note" id="mode-note"></p>
+        <div
+          class="diagram"
+          aria-label="System architecture with trust boundaries"
+        >
+          <div class="layer">
+            <div class="layer-title">User device · untrusted input</div>
+            <div class="row">
+              <div class="box">
+                <strong>React 19 browser UI</strong
+                ><small
+                  >DropActions · Lookup · DrawControls · AdminForm ·
+                  Walkthrough</small
+                >
+              </div>
+              <div class="box">
+                <strong>World App / simulator</strong
+                ><small
+                  >IDKit 4 widget · configured passport/document or Orb
+                  credential</small
+                >
+              </div>
+              <div class="box" id="wallet-node">
+                <strong>Sui wallet</strong
+                ><small>Only paid path · user's signature · deposit</small>
+              </div>
+            </div>
+          </div>
+          <div class="edges">
+            Browser ↔ Next.js: HTML/RSC + JSON/proofs · World App → IDKit: proof
+          </div>
+          <div class="layer">
+            <div class="layer-title">
+              Vercel · Next.js 16.3.6 · Node runtime · sin1 configured
+            </div>
+            <div class="row">
+              <div class="box">
+                <strong>Server pages + layout</strong
+                ><small
+                  >Read database directly; render discovery, drop, history,
+                  audit and architecture.</small
+                >
+              </div>
+              <div class="box">
+                <strong>HTTP boundary</strong
+                ><small
+                  >10 routes · body limit · origin check · Zod · organiser
+                  password</small
+                >
+              </div>
+              <div class="box">
+                <strong>World verification</strong
+                ><small
+                  >world.ts · signed 5-minute challenge ·
+                  nonce/purpose/signal/policy checks</small
+                >
+              </div>
+            </div>
+            <div class="edges">↓ reads and mutations ↓</div>
+            <div class="row">
+              <div class="box active">
+                <strong>Application service</strong
+                ><small
+                  >service.ts · create / enter / permit / confirm / draw /
+                  collect / mirror</small
+                >
+              </div>
+              <div class="box" id="draw-node">
+                <strong>Server draw</strong
+                ><small
+                  >domain.ts · crypto.randomInt · weighted selection without
+                  replacement</small
+                >
+              </div>
+              <div class="box" id="sui-node">
+                <strong>Sui adapter + replay</strong
+                ><small
+                  >sui.ts · gRPC · server signing; sui-draw.ts · independent
+                  recomputation</small
+                >
+              </div>
+            </div>
+          </div>
+          <div class="edges">
+            World verifier ↔ World API · service ↔ SQL · optional Sui adapter ↔
+            fullnode
+          </div>
+          <div class="grid">
+            <div class="layer">
+              <div class="layer-title">Hosted persistence</div>
+              <h3>Neon Postgres</h3>
+              <p>
+                Series, drops, entries, outcomes, pity, pickups, draw records,
+                challenges, policy, proof metrics.
+              </p>
+              <small
+                >Neon hosting per project docs. SQL row locks and unique keys
+                protect ordering. Local alternative: single-process
+                PGlite.</small
+              >
+            </div>
+            <div class="layer">
+              <div class="layer-title">External identity authority</div>
+              <h3>World verify API</h3>
+              <p>
+                Receives exact proof bytes. The server checks the configured
+                credential's verified nullifier and context.
+              </p>
+              <small
+                >No raw proof or nullifier retained. Public codes still link
+                activity across series.</small
+              >
+            </div>
+          </div>
+          <div class="layer chain" id="chain-node">
+            <div class="layer-title">
+              Sui network · optional / not published on inspected site
+            </div>
+            <div class="row">
+              <div class="box">
+                <strong>OrganiserCap → Series</strong
+                ><small
+                  >Admission authority · registrar key · loss table · one active
+                  drop</small
+                >
+              </div>
+              <div class="box">
+                <strong>Drop&lt;T&gt; escrow</strong
+                ><small
+                  >Entries · chances · payers · balance · deadline · seed ·
+                  winners</small
+                >
+              </div>
+              <div class="box">
+                <strong>draw → settle</strong
+                ><small
+                  >sui::random seed → deterministic picks → refunds/payout +
+                  loss ledger + paid-winner Tickets</small
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 id="sequence-title">Current hosted sequence</h3>
+        <ol id="sequence"></ol>
+        <div class="note">
+          Trust boundary: World verification ends at Tenjō's server. Move
+          verifies the server's admission authority; it does not independently
+          verify World proofs or prove that every eligible person was admitted.
+        </div>
+        <h2>Database relationships</h2>
+        <div class="flow">
+          <div class="node">
+            <strong>Series</strong
+            ><small>1 → many drops<br />1 → many pity rows</small>
+          </div>
+          <span class="arrow">→</span>
+          <div class="node">
+            <strong>Drop</strong
+            ><small
+              >1 → many entries/challenges<br />1 → at most 1 draw record</small
+            >
+          </div>
+          <span class="arrow">→</span>
+          <div class="node">
+            <strong>Entry</strong
+            ><small>Unique drop + member<br />0 or 1 result</small>
+          </div>
+          <span class="arrow">→</span>
+          <div class="node">
+            <strong>Result → pickup</strong
+            ><small>Winning identity<br />At most one collection</small>
+          </div>
+        </div>
+        <p class="muted">
+          Members link to entries and per-series pity. Independent tables:
+          identity_policy (singleton fingerprint) and proof_log (purpose,
+          outcome, duration, timestamp). Paid entries additionally hold payer,
+          amount and transaction digest.
+        </p>
+        <h2>API and module map</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>API route</th>
+                <th>Module/function</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>POST /api/admin/drops</td>
+                <td>service.createDrop</td>
+                <td>Organiser-authenticated creation</td>
+              </tr>
+              <tr>
+                <td>POST /api/rp-signature</td>
+                <td>world.issueChallenge</td>
+                <td>Fresh RP-signed challenge</td>
+              </tr>
+              <tr>
+                <td>POST /api/drops/[id]/enter</td>
+                <td>world.verifyWorldProof → service.enterDrop</td>
+                <td>Free admission, optional chain registration</td>
+              </tr>
+              <tr>
+                <td>POST /api/drops/[id]/permit</td>
+                <td>world.verifyWorldProof → service.permitEntry</td>
+                <td>Wallet-bound paid admission permit</td>
+              </tr>
+              <tr>
+                <td>POST /api/drops/[id]/confirm</td>
+                <td>service.confirmEntry → sui.readEntryTx</td>
+                <td>Mirror a paid chain entry</td>
+              </tr>
+              <tr>
+                <td>POST /api/drops/[id]/draw</td>
+                <td>service.drawDrop</td>
+                <td>Idempotent server or Sui settlement</td>
+              </tr>
+              <tr>
+                <td>POST /api/drops/[id]/collect</td>
+                <td>world.verifyWorldProof → service.collectDrop</td>
+                <td>Fresh winner proof + one pickup</td>
+              </tr>
+              <tr>
+                <td>GET /api/drops/[id]/public</td>
+                <td>service.publicDrop</td>
+                <td>Entries/results/chain evidence</td>
+              </tr>
+              <tr>
+                <td>GET /api/codes/[code]</td>
+                <td>service.codeHistory</td>
+                <td>Public cross-series history</td>
+              </tr>
+              <tr>
+                <td>POST /api/demo/[id]</td>
+                <td>http.requireLocalDemo → service</td>
+                <td>Local test identities only</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <h2>Build and operations</h2>
+        <div class="grid">
+          <div class="layer">
+            <h3>Current</h3>
+            <p>
+              GitHub source → Next build → Vercel. Explicit hosted SQL
+              migrations. No durable job worker is present. Draw and
+              registration retries are request-triggered.
+            </p>
+          </div>
+          <div class="layer">
+            <h3>Added in this review</h3>
+            <p>
+              Pull request/main CI: npm ci → typecheck → lint → unit/service
+              tests → build. Browser tests remain a local verification command.
+              Move/testnet evidence is separate.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section data-view="priorities" id="priorities" hidden>
+        <h2>What to discuss next</h2>
+        <div class="grid">
+          <div class="layer">
+            <span class="badge">Implemented</span>
+            <h3>Make the current product clearer</h3>
+            <ul>
+              <li>Put browseable drops below the introduction.</li>
+              <li>
+                Show the featured deposit instead of a blanket free-entry claim.
+              </li>
+              <li>Separate saved, registered and excluded entries.</li>
+              <li>Add regression coverage and application CI.</li>
+            </ul>
+          </div>
+          <div class="layer">
+            <span class="badge warn">Before an on-chain pilot</span>
+            <h3>Make recovery dependable</h3>
+            <ul>
+              <li>Durable registration queue with deadline monitoring.</li>
+              <li>Reconcile chain commits after database failure.</li>
+              <li>
+                Retain paid transaction digests and retry confirmation only.
+              </li>
+              <li>Record real World and Sui evidence.</li>
+            </ul>
+          </div>
+          <div class="layer">
+            <span class="badge">Product decisions</span>
+            <h3>Make returning easier</h3>
+            <ul>
+              <li>Downloadable receipt; opt-in local history.</li>
+              <li>Explain public code/wallet linkability before entry.</li>
+              <li>
+                Define missed-entry, cancellation and unclaimed-seat policy.
+              </li>
+              <li>
+                Choose credential eligibility and production pickup assurance.
+              </li>
+            </ul>
+          </div>
+          <div class="layer">
+            <span class="badge">Pilot readiness</span>
+            <h3>Measure what is actually live</h3>
+            <ul>
+              <li>Configured ≠ reachable ≠ end-to-end verified.</li>
+              <li>Show per-drop server/chain authority.</li>
+              <li>Protect expensive routes and add safe operational alerts.</li>
+              <li>
+                Use the actual 300-entrant limit; validate judge access to the
+                private repository.
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p>
+          Full rationale, source references and acceptance criteria:
+          <a href="REVIEW-2026-09-26.md">written review</a>.
+        </p>
+      </section>
+    </main>
+    <footer>
+      Source snapshot: 9da2fa8 · Live site inspected 26 September 2026 · Diagram
+      controls and notes run locally; no network requests or persistent storage.
+      No live financial or draw action was performed.
+    </footer>
+    <script>
+      const box = (title, sub = "") =>
+        `<div class="box"><strong>${title}</strong>${sub ? `<small>${sub}</small>` : ""}<div class="line"></div><div class="line short"></div></div>`;
+      const action = (t) => `<span class="cta">${t}</span>`;
+      const drops = () =>
+        box(
+          "Browse drops · up to six",
+          "Featured opportunity: series, title, deadline, item count, entry count, verification and price",
+        ) +
+        box(
+          "Other drops + walkthrough invitation",
+          "Open first; empty state offers the example",
+        );
+      const hero = () =>
+        `<div class="hero">${box("Lose a ballot, gain a chance.", "Product introduction · current integration status · entry cost")}${'<div class="illustration">Capsule illustration<br>4 of 6 chances</div>'}</div><div>${action("See open drop →")}${action("Try walkthrough →")}</div>`;
+      const educational = () =>
+        box("Why ballots feel unfair", "Three sourced problem cards") +
+        box(
+          "How it works",
+          "1 Verify → 2 Enter → 3 Draw → 4 Win or try again",
+        ) +
+        box(
+          "Under the hood",
+          "Browser → World → server → database; optional Sui",
+        ) +
+        box("Why Sui", "Randomness · settlement · loss ledger · deposits");
+      const pages = {
+        home: {
+          title: "Discover",
+          path: "/",
+          render: () =>
+            hero() +
+            (document.getElementById("order").value === "revised"
+              ? drops() + educational()
+              : educational() + drops()) +
+            box("Why it works", "Identity trust + the meaning of tenjō") +
+            box("Kept your code?", "Code input → history"),
+          note: "Changed: browsing comes immediately after the hero. All explanatory sections remain. The hero now respects the featured drop’s deposit.",
+        },
+        drop: {
+          title: "Drop detail",
+          path: "/drops/[id]",
+          render: () => {
+            const phase = document.getElementById("phase").value;
+            const titles = {
+              open: "Verify → enter → receipt",
+              upcoming: "Opening time · entry disabled",
+              closed: "Entries closed · check your code",
+              settled: "Winner pickup · fresh proof",
+            };
+            return (
+              box(
+                "← Discover · series · title · description",
+                `Phase: ${phase} · deadline (JST) · World credential/environment`,
+              ) +
+              `<div class="split"><div class="stack">${box("Facts", "Items available · entrants/chances · deadline")}${box("Chance rules", "One base + past losses, capped at six")}${box(phase === "settled" ? "Winners + draw record" : "Draw control", phase === "closed" ? "Run draw → final confirmation" : phase === "settled" ? "Winning codes · JSON · fingerprint" : "Disabled until closing time")}${box("Sui evidence, if applicable", "Object/transaction links · recompute check")}</div><div class="stack">${box(titles[phase], "Free: World ID. Paid: wallet + World ID + deposit.")}${box("Receipt / feedback", "Anonymous code · chance breakdown · copy/history link · pending status")}</div></div>` +
+              box(
+                "Public entry record",
+                "Filter by code · chances · result · loss count · pickup · pagination",
+              )
+            );
+          },
+          note: "A single route covers four lifecycle states. Receipt and pickup are in the right column; mobile stacks them. Added: explicit pending registration and “Not included in draw” results.",
+        },
+        demo: {
+          title: "Scripted walkthrough",
+          path: "/demo",
+          render: () =>
+            box(
+              "Your next try is different.",
+              "Scripted example; no real proof, ticket or saved entry",
+            ) +
+            box("Progress", "Verify & enter → draw → next chance → collect") +
+            `<div class="split">${box("Current scenario + primary action", "Duplicate/wrong-identity examples; focus follows the story")}${box("Example receipt", "Capsules · chance breakdown · fan label")}</div>` +
+            box(
+              "Example record table",
+              "Night 1 loss → Night 2 win → reset; restart action",
+            ),
+          note: "This is a safe explanation, not an integration test. It has no World verification or API mutations.",
+        },
+        codes: {
+          title: "My entries",
+          path: "/codes",
+          render: () =>
+            box("Find your next chance.", "No account, email or password") +
+            box(
+              "Anonymous code input",
+              "32-character full code → Look up; invalid input focuses field",
+            ) +
+            box(
+              "Privacy explanation",
+              "Anyone with the code can view history across series",
+            ) +
+            box("Haven’t entered yet?", "Explore an example → /demo"),
+          note: "Returning users need their code. A downloadable receipt or opt-in device-local recall would reduce friction; neither is added by this review.",
+        },
+        history: {
+          title: "Entry history",
+          path: "/codes/[code]",
+          render: () =>
+            box("Every try, accounted for.", "Full public code") +
+            `<div class="row">${box("Series A", "Past losses · next chance count")}${box("Series B", "Independent loss ledger")}${box("Other series", "One chance after a win")}</div>` +
+            box(
+              "Entry history table",
+              "Drop link · chances · outcome · loss before/after",
+            ) +
+            box(
+              "Pagination + lookup another code",
+              "Empty/invalid code recovery",
+            ),
+          note: "Changed: history includes registration and drop state. A missed Sui registration after settlement is not labelled “Awaiting draw” and does not earn a loss.",
+        },
+        audit: {
+          title: "Public record",
+          path: "/audit",
+          render: () =>
+            box("The public record.", "Server-trust explanation") +
+            box(
+              "Drop list · twenty per page",
+              "Series, title, close time, entries and phase → drop #record",
+            ) +
+            box("Pagination", "Previous / next") +
+            box("Anonymous code lookup", "Code → cross-series history"),
+          note: "The current Phase 1 introduction is hardcoded. Future work: show server/chain authority per drop when both coexist.",
+        },
+        technical: {
+          title: "How it’s built",
+          path: "/architecture",
+          render: () =>
+            box(
+              "Technical introduction + integration status",
+              "World configured/staging · Sui tested/not published",
+            ) +
+            box(
+              "System map",
+              "Browser, World App, server, verify API, Postgres, Sui",
+            ) +
+            box(
+              "World pipeline + pity ledger",
+              "Identity checks, anonymous code and same-series loss counts",
+            ) +
+            box(
+              "Draw integrity + Move excerpt",
+              "Seed commitment → deterministic settlement",
+            ) +
+            box(
+              "Money flow + pickup",
+              "Permit → deposit → refund/payout; fresh winner proof",
+            ) +
+            box(
+              "Failure paths + partner briefs",
+              "Refusals, outages, World IDKit and Sui Payments roles",
+            ),
+          note: "This existing page is a partner-oriented explanation. The architecture view in this companion adds HTTP, data relationships and operational trust boundaries.",
+        },
+        admin: {
+          title: "Create a drop",
+          path: "/admin",
+          render: () =>
+            box("Organiser introduction", "Creating publishes the details") +
+            box(
+              "01 · Drop details",
+              "Title · description · series name/ID · items · optional Sui deposit",
+            ) +
+            box("02 · Entry window", "Opens/closes in JST · one-hour preset") +
+            box(
+              "03 · Publish",
+              "Organiser password + reveal control → Create drop",
+            ) +
+            box(
+              "Validation / leave guard",
+              "Focus first invalid field; keep editing or discard",
+            ),
+          note: "Creation uses one server-side organiser password, not accounts or roles. No live drop was created during this review.",
+        },
+      };
+      let selectedPage = "home";
+      function renderPage() {
+        const p = pages[selectedPage];
+        document.getElementById("page-title").textContent = p.title;
+        document.getElementById("address").textContent =
+          "tenjo-azure.vercel.app" + p.path;
+        document.getElementById("skeleton").innerHTML = p.render();
+        document.getElementById("page-note").textContent = p.note;
+        document.getElementById("order").disabled = selectedPage !== "home";
+        document.getElementById("phase").disabled = selectedPage !== "drop";
+      }
+      document.querySelectorAll("[data-page]").forEach((b) =>
+        b.addEventListener("click", () => {
+          selectedPage = b.dataset.page;
+          document
+            .querySelectorAll("[data-page]")
+            .forEach((n) => n.setAttribute("aria-pressed", String(n === b)));
+          renderPage();
+        }),
+      );
+      document.querySelectorAll("[data-view-button]").forEach((b) =>
+        b.addEventListener("click", () => {
+          document
+            .querySelectorAll("[data-view]")
+            .forEach(
+              (s) => (s.hidden = s.dataset.view !== b.dataset.viewButton),
+            );
+          document
+            .querySelectorAll("[data-view-button]")
+            .forEach((n) => n.setAttribute("aria-pressed", String(n === b)));
+        }),
+      );
+      document.getElementById("order").addEventListener("change", renderPage);
+      document.getElementById("phase").addEventListener("change", renderPage);
+      const sequences = {
+        server: [
+          "Browser requests a five-minute challenge for entry.",
+          "World proof returns through IDKit; server forwards exact bytes to the verify API and checks context.",
+          "SQL locks series/drop, consumes challenge, saves one entry with its chance weight.",
+          "After close, server samples weighted winners without replacement.",
+          "SQL atomically saves outcomes, pity updates and the canonical draw record.",
+          "Winner pickup requires a fresh World proof; production presence remains gated.",
+        ],
+        "sui-free": [
+          "World verification and SQL admission happen as above; the entry is saved pending.",
+          "Organiser registers the code on Sui; chances are read from the Series loss ledger.",
+          "Later entry/draw requests retry pending registrations in batches of up to ten. Chain closes 30 seconds after app close.",
+          "Sui draw commits a seed from system randomness. settle chooses winners and updates the ledger.",
+          "Server independently recomputes and mirrors the chain record into Postgres.",
+          "An entry that never reached Sui is excluded: no win, no loss increment.",
+        ],
+        "sui-paid": [
+          "Fan connects a wallet, then completes World verification.",
+          "Server consumes the challenge and signs a permit bound to drop, code and wallet.",
+          "The fan’s wallet calls ballot::enter with the permit and exact SUI deposit.",
+          "/confirm checks the transaction event and mirrors the accepted entry.",
+          "draw commits randomness; settle pays the organiser for winners and refunds losers atomically.",
+          "Paid winners receive non-transferable Ticket objects; pickup still uses the app’s World/SQL path.",
+        ],
+      };
+      function renderMode() {
+        const mode = document.getElementById("mode").value;
+        document.getElementById("mode-note").textContent =
+          mode === "server"
+            ? "Observed deployment: server randomness and Postgres are authoritative; Sui is not published."
+            : mode === "sui-free"
+              ? "Implemented optional path, not demonstrated on the inspected live site. Registration delivery remains a pilot-readiness gap."
+              : "Implemented optional path, not demonstrated on the inspected live site. The current app wires SUI; stablecoins and sponsored gas are planned.";
+        document
+          .getElementById("wallet-node")
+          .classList.toggle("active", mode === "sui-paid");
+        document
+          .getElementById("draw-node")
+          .classList.toggle("active", mode === "server");
+        document
+          .getElementById("sui-node")
+          .classList.toggle("active", mode !== "server");
+        document
+          .getElementById("chain-node")
+          .classList.toggle("active", mode !== "server");
+        document.getElementById("sequence-title").textContent =
+          mode === "server"
+            ? "Current hosted sequence"
+            : mode === "sui-free"
+              ? "Free Sui sequence"
+              : "Paid Sui sequence";
+        document.getElementById("sequence").replaceChildren(
+          ...sequences[mode].map((t) => {
+            const li = document.createElement("li");
+            li.textContent = t;
+            return li;
+          }),
+        );
+      }
+      document.getElementById("mode").addEventListener("change", renderMode);
+      document.getElementById("download").addEventListener("click", () => {
+        const blob = new Blob(
+          [
+            "Tenjō review notes\nPage: " +
+              pages[selectedPage].path +
+              "\n\n" +
+              document.getElementById("comment").value,
+          ],
+          { type: "text/plain" },
+        );
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "tenjo-review-notes.txt";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      window.addEventListener("beforeprint", () => {
+        document.getElementById("print-pages").innerHTML = Object.values(pages)
+          .map(
+            (p) =>
+              `<section class="print-page"><h2>${p.title} · ${p.path}</h2><div class="skeleton">${p.render()}</div><p>${p.note}</p></section>`,
+          )
+          .join("");
+      });
+      renderPage();
+      renderMode();
+    </script>
+  </body>
+</html>

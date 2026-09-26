@@ -4,7 +4,7 @@ import { database } from "@/lib/db";
 import { listDrops } from "@/lib/service";
 import { dropStatus, formatJST, fromNow, statusLabel } from "@/lib/format";
 import { worldConfig } from "@/lib/world";
-import { suiStatus } from "@/lib/sui-status";
+import { formatSui, suiStatus } from "@/lib/sui-status";
 import { TicketCard } from "@/components/ticket-card";
 import { DemoInvitation } from "@/components/demo-invitation";
 import { Lookup } from "@/components/lookup";
@@ -117,8 +117,8 @@ export default async function Home() {
             </li>
             <li>
               {open.length === 1
-                ? `Free to enter · closes ${formatJST(open[0].closes_at)}`
-                : "Free to enter"}
+                ? `${open[0].price_mist === "0" ? "Free to enter" : `${formatSui(open[0].price_mist)} refundable deposit`} · closes ${formatJST(open[0].closes_at)}`
+                : "Each drop lists its entry cost"}
             </li>
           </ul>
         </div>
@@ -143,6 +143,65 @@ export default async function Home() {
             </span>
           </div>
         </div>
+      </section>
+
+      <section className="drops-section" aria-labelledby="drops-heading">
+        <div className="section-header">
+          <h2 id="drops-heading">
+            {drops.length ? "Browse drops" : "Start here"}
+            {drops.length ? (
+              <span className="count-chip">{drops.length}</span>
+            ) : null}
+          </h2>
+          <Link href="/audit">
+            Explore the public record
+            <ArrowUpRight size={16} />
+          </Link>
+        </div>
+        {drops.length ? <TicketCard drop={drops[0]} /> : <DemoInvitation />}
+        {drops.length > 1 ? (
+          <div className="other-drops">
+            {drops.slice(1).map((drop) => {
+              const status = dropStatus(drop);
+              return (
+                <Link href={`/drops/${drop.id}`} key={drop.id}>
+                  <span>{drop.title}</span>
+                  <span>
+                    <span className="pill">
+                      <span
+                        className={`status-dot ${status === "open" ? "live" : ""}`}
+                      />
+                      {statusLabel[status]}
+                    </span>
+                    {status === "open"
+                      ? `Closes ${fromNow(drop.closes_at)}`
+                      : `${drop.items} items · ${drop.entry_count} entries`}
+                    <ArrowRight size={17} />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
+        {!drops.length ? (
+          <div className="availability-note">
+            <span className="status-dot" />
+            <p>
+              <strong>No public drops yet.</strong> You can explore the
+              walkthrough while the first drop gets ready.
+            </p>
+            <Link href="/admin">
+              For organisers <ArrowRight size={15} />
+            </Link>
+          </div>
+        ) : (
+          <div className="availability-note">
+            <p>New to Tenjō? Follow one fan through a concert ballot.</p>
+            <Link href="/demo">
+              Try the walkthrough <ArrowRight size={15} />
+            </Link>
+          </div>
+        )}
       </section>
 
       <section className="problem" aria-labelledby="problem-heading">
@@ -251,65 +310,6 @@ export default async function Home() {
       <Architecture sui={sui} />
 
       <WhySui sui={sui} latestDraw={latestDraw} />
-
-      <section className="drops-section" aria-labelledby="drops-heading">
-        <div className="section-header">
-          <h2 id="drops-heading">
-            {drops.length ? "Browse drops" : "Start here"}
-            {drops.length ? (
-              <span className="count-chip">{drops.length}</span>
-            ) : null}
-          </h2>
-          <Link href="/audit">
-            Explore the public record
-            <ArrowUpRight size={16} />
-          </Link>
-        </div>
-        {drops.length ? <TicketCard drop={drops[0]} /> : <DemoInvitation />}
-        {drops.length > 1 ? (
-          <div className="other-drops">
-            {drops.slice(1).map((drop) => {
-              const status = dropStatus(drop);
-              return (
-                <Link href={`/drops/${drop.id}`} key={drop.id}>
-                  <span>{drop.title}</span>
-                  <span>
-                    <span className="pill">
-                      <span
-                        className={`status-dot ${status === "open" ? "live" : ""}`}
-                      />
-                      {statusLabel[status]}
-                    </span>
-                    {status === "open"
-                      ? `Closes ${fromNow(drop.closes_at)}`
-                      : `${drop.items} items · ${drop.entry_count} entries`}
-                    <ArrowRight size={17} />
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        ) : null}
-        {!drops.length ? (
-          <div className="availability-note">
-            <span className="status-dot" />
-            <p>
-              <strong>No public drops yet.</strong> You can explore the
-              walkthrough while the first drop gets ready.
-            </p>
-            <Link href="/admin">
-              For organisers <ArrowRight size={15} />
-            </Link>
-          </div>
-        ) : (
-          <div className="availability-note">
-            <p>New to Tenjō? Follow one fan through a concert ballot.</p>
-            <Link href="/demo">
-              Try the walkthrough <ArrowRight size={15} />
-            </Link>
-          </div>
-        )}
-      </section>
 
       <section className="trust-section" aria-labelledby="trust-heading">
         <div className="section-intro">

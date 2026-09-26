@@ -45,11 +45,14 @@ Verification: tests/app.spec.ts exercises the walkthrough’s loss/win/refusal/r
 Discovery follows the Capsule direction in DESIGN.md.
 
 1. **Hero:** a split panel. The forest copy side states the product ("Lose a ballot, gain a chance"), then the World ID and Sui roles, then live status pills. The periwinkle side holds the capsule machine: four of six capsules, with fact pills.
-2. **Problem:** sourced ballot figures on tilted cards.
-3. **How it works:** four sequential steps: verify, enter, draw, win or try again.
-4. **Under the hood** (src/components/architecture.tsx): the map of browser, World App, Tenjō server, World verify, Postgres and the tenjo::ballot package. Sui is drawn solid only when configured. Below 1100px the map gives way to six step cards, so no text shrinks unreadably and the page never scrolls sideways.
-5. **Why Sui** (src/components/why-sui.tsx): four jobs Sui does (randomness, one-transaction settlement, the loss ledger, self-refunding deposits) and a sourced "Sui right now" strip. It shows a package link only when configured.
-6. **Drops**, then **Why it works** (the World ID trust moment and the 天井 name), then the lookup.
+2. **Drops:** the featured opportunity and other drops, immediately after the hero so visitors can act before reading the technical explanation.
+3. **Problem:** sourced ballot figures on tilted cards.
+4. **How it works:** four sequential steps: verify, enter, draw, win or try again.
+5. **Under the hood** (src/components/architecture.tsx): the map of browser, World App, Tenjō server, World verify, Postgres and the tenjo::ballot package. Sui is drawn solid only when configured. Below 1100px the map gives way to six step cards, so no text shrinks unreadably and the page never scrolls sideways.
+6. **Why Sui** (src/components/why-sui.tsx): four jobs Sui does (randomness, one-transaction settlement, the loss ledger, self-refunding deposits) and a sourced "Sui right now" strip. It shows a package link only when configured.
+7. **Why it works** (the World ID trust moment and the 天井 name), then the lookup.
+
+The hero shows a featured paid drop's refundable deposit rather than describing every drop as free. A saved free entry awaiting Sui registration is not yet in the chain draw: its receipt and history say so. After settlement an unregistered entry says "Not included in draw" and explains that no loss was added. These labels do not change retry or settlement rules.
 
 Examples use concert ballots; a real artist appears only in the sourced statistic, never as a demo drop. Every chance count is drawn as capsules with a text equivalent.
 

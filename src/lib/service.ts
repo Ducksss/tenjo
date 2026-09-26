@@ -901,10 +901,12 @@ export async function codeHistory(db: SQL, code: string, page = 1) {
       created_at: string;
       sui_network: string | null;
       sui_drop_id: string | null;
+      sui_status: string | null;
+      drop_state: string;
       sui_tx: string | null;
       settle_tx: string | null;
     }>(
-      `SELECT e.drop_id,d.title,s.name AS series_name,e.tickets,r.outcome,r.losses_before,r.losses_after,d.is_setup,e.created_at,d.sui_network,d.sui_drop_id,e.sui_tx,d.settle_tx FROM entries e JOIN drops d ON d.id=e.drop_id JOIN series s ON s.id=d.series_id LEFT JOIN results r USING(drop_id,member_code) WHERE e.member_code=$1 ORDER BY e.created_at DESC LIMIT 20 OFFSET $2`,
+      `SELECT e.drop_id,d.title,s.name AS series_name,e.tickets,r.outcome,r.losses_before,r.losses_after,d.is_setup,e.created_at,d.sui_network,d.sui_drop_id,e.sui_status,d.state AS drop_state,e.sui_tx,d.settle_tx FROM entries e JOIN drops d ON d.id=e.drop_id JOIN series s ON s.id=d.series_id LEFT JOIN results r USING(drop_id,member_code) WHERE e.member_code=$1 ORDER BY e.created_at DESC LIMIT 20 OFFSET $2`,
       [code, (page - 1) * 20],
     ),
     db.query<{

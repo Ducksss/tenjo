@@ -268,6 +268,10 @@ test("free drops register on Sui after commit, retry pending entries and mirror 
     assert.equal(history.pity[0].losses, 1);
     assert.equal(history.pity[0].sui_series_id, drop.sui_series_id);
     assert.equal(losses(drop.sui_series_id!, loser), 1, "chain ledger agrees");
+    const excluded = (await codeHistory(db, fan("c").code)).entries[0];
+    assert.equal(excluded.sui_status, "pending");
+    assert.equal(excluded.drop_state, "settled");
+    assert.equal(excluded.outcome, null);
 
     failing.clear();
     const next = await createDrop(db, input("chain"), { demo: true });

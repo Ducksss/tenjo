@@ -13,6 +13,12 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
   await expect(
     page.getByRole("heading", { name: /Lose a ballot/ }),
   ).toBeVisible();
+  const sections = await page
+    .locator("main > section")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("aria-labelledby")),
+    );
+  expect(sections.slice(0, 2)).toEqual(["hero-heading", "drops-heading"]);
   // The isolated fixture adds a newer closed drop; discovery still leads with the drop fans can enter.
   await page.getByRole("link", { name: "See the open drop" }).click();
   await expect(page).toHaveURL(/\/drops\/weekend-drop$/);
@@ -65,6 +71,31 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
     page.getByText("No entries found for this code.", { exact: false }),
   ).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("a pending Sui receipt never claims confirmed chances in the draw", async ({
+  page,
+}) => {
+  await page.route("**/api/demo/weekend-drop", (route) =>
+    route.fulfill({
+      json: {
+        code: demoCode("pending-receipt"),
+        tickets: 4,
+        sui_status: "pending",
+      },
+    }),
+  );
+  await page.goto("/drops/weekend-drop");
+  await page.getByRole("button", { name: "Enter with demo identity" }).click();
+  await expect(
+    page.getByText("Awaiting Sui registration", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".entry-card").getByRole("status")).toContainText(
+    "not yet in the on-chain draw",
+  );
+  await expect(
+    page.getByText("4 chances in this draw", { exact: true }),
+  ).toHaveCount(0);
 });
 
 test("closed draw confirmation, exactly three winners, wrong collector refusal and one-time pickup", async ({
@@ -259,6 +290,10 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
     .click();
   await expect(page.getByRole("table")).toContainText("Won · collected");
   await expect(page.getByRole("table")).toContainText("4 → 0");
+  // Wait for the walkthrough's scheduled focus before moving keyboard focus ourselves.
+  await expect(
+    page.getByRole("heading", { name: "Seats collected. Fresh start." }),
+  ).toBeFocused();
   await context.setOffline(false);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
