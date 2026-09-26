@@ -210,7 +210,7 @@ The [PRD](docs/PRD.md) covers acceptance criteria and open decisions. [Implement
 
 ## AI usage
 
-Built during ETHGlobal Tokyo 2026 with Claude Code as a pair programmer. Commits it helped write carry a `Co-Authored-By: Claude` trailer. Product decisions, prize scope and review stayed with the team. The spec files that steered the work are in the repo: [docs/PRD.md](docs/PRD.md) (requirements R1–R17), [DESIGN.md](DESIGN.md) (visual system) and [UX-CONTRACT.md](UX-CONTRACT.md) (interaction rules).
+Built during ETHGlobal Tokyo 2026 with Claude Code (Anthropic) as a pair programmer. It helped write the application code (`src/`), the Move package and its tests (`move/tenjo`), the scripts and test suites, the docs and diagrams, the pitch deck and the scripts that cut the demo video. Commits it helped write carry a `Co-Authored-By: Claude` trailer, so `git log --grep "Co-Authored-By: Claude"` lists them. The team set the product idea, the rules, the prize scope and the design direction, reviewed the changes and tested on real phones with real World IDs; the voice in the video is ours. The spec files that steered the work are in the repo: [docs/PRD.md](docs/PRD.md) (requirements R1–R17), [DESIGN.md](DESIGN.md) (visual system), [UX-CONTRACT.md](UX-CONTRACT.md) (interaction rules) and [AGENTS.md](AGENTS.md).
 
 ## License and contact
 
