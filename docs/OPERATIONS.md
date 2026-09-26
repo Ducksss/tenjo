@@ -209,11 +209,11 @@ npm run format:check
 npm run sui:test
 ```
 
-Browser tests start an isolated database and server on port 3100 with a separate `.next-e2e` directory and every `SUI_*` variable blank; set `TENJO_TEST_PORT` if another server holds the port. They use installed Playwright Chromium (`npx playwright install chromium` once).
+Browser tests start an isolated database and server on port 3100 with a separate `.next-e2e` directory and every `SUI_*` variable blank; set `TENJO_TEST_PORT` if another server holds the port. They use installed Playwright Chromium (`npx playwright install chromium` once). `npm run test:e2e` then runs `playwright.world.config.ts`: the server again, with a throwaway staging World setup whose signing key is made for the run. There `tests/world-entry.spec.ts` plays World App (IDKit's in-app transport) and a Wallet Standard wallet in the page, and answers the permit, entry and confirmation routes itself, so no proof reaches World and nothing reaches Sui.
 
 - **TypeScript tests:** weighted probabilities and the cap, nullifier normalisation, duplicate-entry races, early draws, settlement idempotency, cross-series counts, wrong identity and duplicate pickup; exact proof forwarding, nonce, signal, action, environment and credential checks, partial verifier success, replay, dependency failure, bounded payloads, admin access and fail-closed configuration; the Sui mirror against an in-memory chain and the TypeScript re-run of the Move draw; passkeys, with a software authenticator holding a real Ed25519 key: registration, signatures bound to one drop and request, one entry per person and per passkey, and losses carried across free and paid drops.
 - **Move tests:** permits, deposits, refunds and payout, the six-chance cap and every draw and settle gate.
-- **Browser tests:** rendered receipts and history, confirmations and refusals, keyboard access, desktop (1440×1000) and mobile (390×844) layouts, and page overflow.
+- **Browser tests:** rendered receipts and history, confirmations and refusals, keyboard access, desktop (1440×1000) and mobile (390×844) layouts, and page overflow; World ID entry and pickup, including a paid entry's hand-over from World ID to the wallet, its refused signature, and World ID closed without a proof.
 
 For a browser check of passkeys, Chrome's DevTools protocol can add a virtual authenticator (`WebAuthn.addVirtualAuthenticator`) to a Playwright page against `next dev`.
 

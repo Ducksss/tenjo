@@ -188,7 +188,7 @@ The Move suite covers:
 - the six-chance cap;
 - every draw and settle gate.
 
-Browser tests check keyboard access, mobile layouts and page overflow. They start an isolated database and server on port 3100, with Sui switched off; if that port is busy, run `TENJO_TEST_PORT=3112 npm run test:e2e`. Real World ID runs are measured in the [debrief](docs/OPERATIONS.md#world-integration-debrief).
+Browser tests check keyboard access, mobile layouts and page overflow. They start an isolated database and server on port 3100, with Sui switched off; if that port is busy, run `TENJO_TEST_PORT=3112 npm run test:e2e`. A second pass restarts the server with a throwaway staging World setup and plays World App and a Sui wallet in the page: a paid entry waits on the wallet after World ID closes, a refused signature says the deposit did not move, and closing World ID without a proof leaves an entry or pickup not completed. Real World ID runs are measured in the [debrief](docs/OPERATIONS.md#world-integration-debrief).
 
 ## Roadmap
 

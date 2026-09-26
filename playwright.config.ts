@@ -7,6 +7,8 @@ const testOrigin = `http://127.0.0.1:${testPort}`;
 export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
+  // Needs World config, so playwright.world.config.ts runs it on a server of its own.
+  testIgnore: "world-entry.spec.ts",
   fullyParallel: false,
   workers: 1,
   timeout: 45000,
