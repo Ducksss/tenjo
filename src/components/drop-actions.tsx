@@ -52,6 +52,7 @@ export function DropActions({
   demo,
   demoEnabled,
   worldReady,
+  realWorld = false,
   pickupAllowed,
   paid,
   suiNetwork,
@@ -65,6 +66,8 @@ export function DropActions({
   demo: boolean;
   demoEnabled: boolean;
   worldReady: boolean;
+  /** Real World IDs (production) can enter beside the staging simulator. */
+  realWorld?: boolean;
   pickupAllowed: boolean;
   /** A priced drop on Sui: entry locks a refundable deposit from the fan's wallet. */
   paid?: { priceLabel: string } | null;
@@ -170,7 +173,13 @@ export function DropActions({
         : undefined,
     });
   }
-  async function verify(nextPurpose: "enter" | "collect") {
+  // Entry uses a real World ID when the site takes them; pickup stays on the primary setup.
+  async function verify(
+    nextPurpose: "enter" | "collect",
+    mode: "primary" | "production" = realWorld && nextPurpose === "enter"
+      ? "production"
+      : "primary",
+  ) {
     completedFlow.current = false;
     setPurpose(nextPurpose);
     setBusy(true);
@@ -201,7 +210,7 @@ export function DropActions({
           await api<Challenge>("/api/rp-signature", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ drop_id: id, purpose: nextPurpose }),
+            body: JSON.stringify({ drop_id: id, purpose: nextPurpose, mode }),
           }),
         );
       }
@@ -298,6 +307,22 @@ export function DropActions({
                 ? `Refundable deposit · ${paid.priceLabel} · One entry per person`
                 : "Free entry · One entry per person"}
             </p>
+            {realWorld && !demo ? (
+              <button
+                type="button"
+                className="text-button simulator-entry"
+                disabled={
+                  now === null ||
+                  busy ||
+                  closed ||
+                  notOpen ||
+                  (!!paid && !address)
+                }
+                onClick={() => verify("enter", "primary")}
+              >
+                No World ID? Use the World ID simulator
+              </button>
+            ) : null}
             {!demo && !worldReady ? (
               <Notice>
                 The organiser is finishing World ID setup. You can explore the

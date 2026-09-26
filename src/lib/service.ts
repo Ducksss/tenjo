@@ -299,6 +299,8 @@ export type VerifiedIdentity = {
   code: string;
   challengeId?: string;
   policy?: string;
+  /** Which World setup verified it; the second setup keeps its own identity lock. */
+  mode?: "primary" | "production";
   demo?: boolean;
 };
 async function consumeChallenge(
@@ -314,13 +316,18 @@ async function consumeChallenge(
       "identity_policy",
       "A verified identity policy is required.",
     );
+  const production = identity.mode === "production";
   await tx.query(
-    "INSERT INTO identity_policy(singleton,fingerprint) VALUES(true,$1) ON CONFLICT DO NOTHING",
+    production
+      ? "INSERT INTO identity_policy_modes(mode,fingerprint) VALUES('production',$1) ON CONFLICT DO NOTHING"
+      : "INSERT INTO identity_policy(singleton,fingerprint) VALUES(true,$1) ON CONFLICT DO NOTHING",
     [identity.policy],
   );
   const policy = (
     await tx.query<{ fingerprint: string }>(
-      "SELECT fingerprint FROM identity_policy WHERE singleton=true FOR UPDATE",
+      production
+        ? "SELECT fingerprint FROM identity_policy_modes WHERE mode='production' FOR UPDATE"
+        : "SELECT fingerprint FROM identity_policy WHERE singleton=true FOR UPDATE",
     )
   ).rows[0];
   if (policy.fingerprint !== identity.policy)

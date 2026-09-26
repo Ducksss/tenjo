@@ -249,3 +249,113 @@ test("missing config and unvalidated pickup fail closed", async () => {
     await db.close();
   }
 });
+test("real World IDs enter beside the staging simulator, each checked against its own setup", async () => {
+  const db = await makeDatabase("memory://");
+  await migrate(db);
+  process.env.WORLD_PRODUCTION_APP_ID = "app_real";
+  process.env.WORLD_PRODUCTION_RP_ID = "rp_real";
+  process.env.WORLD_PRODUCTION_RP_SIGNING_KEY = "0x" + "22".repeat(32);
+  try {
+    const now = Date.now();
+    const drop = await createDrop(db, {
+      title: "Both kinds of World ID",
+      series_id: "both",
+      series_name: "Both test",
+      items: 1,
+      opens_at: new Date(now - 1000).toISOString(),
+      closes_at: new Date(now + 600000).toISOString(),
+    });
+    const real = await issueChallenge(db, drop.id, "enter", "production");
+    assert.equal(real.environment, "production");
+    assert.equal(real.app_id, "app_real");
+    const proof = (identifier: string) =>
+      JSON.stringify({
+        protocol_version: "4.0",
+        nonce: real.rp_context.nonce,
+        action: real.action,
+        environment: "production",
+        responses: [
+          {
+            identifier,
+            nullifier: "0x1",
+            signal_hash: hashSignal(real.signal),
+            proof: "test-placeholder",
+          },
+        ],
+      });
+    const humanOk = ok({
+      success: true,
+      environment: "production",
+      action: real.action,
+      results: [
+        { identifier: "proof_of_human", success: true, nullifier: "0x01" },
+      ],
+    });
+    let url = "";
+    const capture = (async (target, init) => {
+      url = String(target);
+      return humanOk(target, init);
+    }) as typeof fetch;
+    // The Orb's Proof of Human is the real-ID credential; a passport answer is refused.
+    await assert.rejects(
+      verifyWorldProof(
+        db,
+        proof("passport"),
+        real.id,
+        drop.id,
+        "enter",
+        humanOk,
+      ),
+      /credential/,
+    );
+    const person = await verifyWorldProof(
+      db,
+      proof("proof_of_human"),
+      real.id,
+      drop.id,
+      "enter",
+      capture,
+    );
+    assert.equal(person.mode, "production");
+    assert.match(url, /\/verify\/rp_real$/);
+    await enterDrop(db, drop.id, person);
+    // The simulator still works on the primary staging setup, with its own lock.
+    const sim = await issueChallenge(db, drop.id, "enter");
+    const simProof = JSON.stringify({
+      protocol_version: "3.0",
+      nonce: sim.rp_context.nonce,
+      action: sim.action,
+      environment: "staging",
+      responses: [
+        {
+          identifier: "document",
+          nullifier: "0x1",
+          signal_hash: hashSignal(sim.signal),
+          proof: "test-placeholder",
+          merkle_root: "0x00",
+        },
+      ],
+    });
+    const simulated = await verifyWorldProof(
+      db,
+      simProof,
+      sim.id,
+      drop.id,
+      "enter",
+      ok(),
+    );
+    assert.equal(simulated.mode, "primary");
+    assert.notEqual(simulated.code, person.code);
+    await enterDrop(db, drop.id, simulated);
+    assert.equal((await db.query("SELECT * FROM entries")).rows.length, 2);
+    assert.equal(
+      (await db.query("SELECT * FROM identity_policy_modes")).rows.length,
+      1,
+    );
+  } finally {
+    delete process.env.WORLD_PRODUCTION_APP_ID;
+    delete process.env.WORLD_PRODUCTION_RP_ID;
+    delete process.env.WORLD_PRODUCTION_RP_SIGNING_KEY;
+    await db.close();
+  }
+});

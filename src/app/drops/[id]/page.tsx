@@ -18,7 +18,7 @@ import {
   statusLabel,
 } from "@/lib/format";
 import { pageNumber } from "@/lib/http";
-import { worldConfig } from "@/lib/world";
+import { realWorldConfig, worldConfig } from "@/lib/world";
 import { DrawControls } from "@/components/draw-controls";
 import { DropActions } from "@/components/drop-actions";
 import { SuiEvidence } from "@/components/sui-evidence";
@@ -63,6 +63,7 @@ export default async function DropPage({
   }
   const { drop, entries, total, record, winners } = audit;
   const world = worldConfig();
+  const realWorld = realWorldConfig();
   const status = dropStatus(drop);
   const closesLabel = formatJST(drop.closes_at);
   const onSui = !!drop.sui_drop_id && !!drop.sui_network;
@@ -105,9 +106,10 @@ export default async function DropPage({
         </Notice>
       ) : (
         <Notice>
-          World ID {world.environment} ·{" "}
-          {world.credential === "orb" ? "Proof of Human" : "Passport"}{" "}
-          credential · Public record uses anonymous codes.
+          {realWorld
+            ? `Your World ID (${realWorld.credential === "orb" ? "Proof of Human" : "Passport"}) or the World ID simulator (${world.credential === "orb" ? "Proof of Human" : "Passport"}, staging)`
+            : `World ID ${world.environment} · ${world.credential === "orb" ? "Proof of Human" : "Passport"} credential`}{" "}
+          · Public record uses anonymous codes.
         </Notice>
       )}
       <div className="detail-grid">
@@ -225,6 +227,7 @@ export default async function DropPage({
               !process.env.VERCEL
             }
             worldReady={world.ready}
+            realWorld={!!realWorld}
             pickupAllowed={world.pickupAllowed}
             paid={paid ? { priceLabel: formatSui(drop.price_mist) } : null}
             suiNetwork={onSui ? drop.sui_network : null}

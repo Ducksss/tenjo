@@ -3,7 +3,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
 import { database } from "@/lib/db";
 import { listDrops } from "@/lib/service";
 import { dropStatus, formatJST, fromNow, statusLabel } from "@/lib/format";
-import { worldConfig } from "@/lib/world";
+import { realWorldConfig, worldConfig } from "@/lib/world";
 import { formatSui, suiStatus } from "@/lib/sui-status";
 import { TicketCard } from "@/components/ticket-card";
 import { Lookup } from "@/components/lookup";
@@ -87,7 +87,9 @@ export default async function Home() {
               />
               World ID ·{" "}
               {world.ready
-                ? `live on ${world.environment}`
+                ? realWorldConfig()
+                  ? "live for real World IDs and the simulator"
+                  : `live on ${world.environment}`
                 : "integrated, awaiting credentials"}
             </li>
             <li>

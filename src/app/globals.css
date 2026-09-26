@@ -775,6 +775,12 @@ main {
 .text-button {
   min-height: 40px;
 }
+.action-panel .simulator-entry {
+  display: flex;
+  min-height: 44px;
+  margin: 0 auto;
+  font-size: 13px;
+}
 .footer {
   max-width: 1188px;
   margin: 40px auto 24px;

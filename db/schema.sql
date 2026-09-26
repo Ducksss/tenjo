@@ -66,4 +66,10 @@ ALTER TABLE drops ADD COLUMN IF NOT EXISTS settle_tx text;
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS sui_status text CHECK (sui_status IN ('pending','registered'));
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS sui_tx text;
 ALTER TABLE entries ADD COLUMN IF NOT EXISTS payer text;
-ALTER TABLE entries ADD COLUMN IF NOT EXISTS paid_mist numeric(20,0) NOT NULL DEFAULT 0 CHECK (paid_mist >= 0)
+ALTER TABLE entries ADD COLUMN IF NOT EXISTS paid_mist numeric(20,0) NOT NULL DEFAULT 0 CHECK (paid_mist >= 0);
+-- Real World IDs beside the simulator: each challenge names its World setup, and the second setup has its own lock.
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'primary' CHECK (mode IN ('primary','production'));
+CREATE TABLE IF NOT EXISTS identity_policy_modes (
+  mode text PRIMARY KEY CHECK (mode IN ('production')),
+  fingerprint text NOT NULL
+)
