@@ -28,14 +28,17 @@ A pity counter only works if nobody can cheat it, and the two cheats need two ne
 - **Farming losses on fake accounts.** World ID proves each entrant is one unique human, so fifty accounts can’t pile up fifty pity counters.
 - **Fiddling the draw, the money or the counts.** A Sui Move package commits the draw’s randomness from `sui::random`, holds entry deposits in escrow, refunds every loser in the settlement transaction and keeps the loss ledger on-chain.
 
+A real World ID starts fresh in every drop, so a passkey on the fan’s phone remembers their losses. It never buys a second entry: World ID still decides who gets in.
+
 ## Status: what’s real right now
 
 | Piece                         | Status                                                                                                                                                                                                                                                                                                                          |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| World ID (IDKit 4)            | Live on production for World's simulator and real World IDs, verified server-side byte for byte: 14 verified entries so far ([debrief](docs/OPERATIONS.md#world-integration-debrief)).                                                                                                                                          |
+| World ID (IDKit 4)            | Live on production for World's simulator and real World IDs, verified server-side byte for byte: 17 verified entries so far ([debrief](docs/OPERATIONS.md#world-integration-debrief)).                                                                                                                                          |
 | Pity ledger, weighted draw    | Live. New drops draw on Sui testnet from a `sui::random` seed and keep the loss ledger on-chain; a local run without Sui draws on Tenjō’s server with `crypto.randomInt`.                                                                                                                                                       |
 | Sui Move package              | Live on Sui testnet: [`tenjo::ballot`](move/tenjo/sources/ballot.move), package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65) ([publish](https://suiscan.xyz/testnet/tx/EbbQyCRbv9Xv5LMvTZxK78fEUGjV1e1Lym4tSDF7Pe3G)), covered by 22 Move unit tests. |
 | Paid drops (deposit → refund) | Live on testnet: the fan’s wallet locks a refundable deposit in the drop’s escrow, and one [settlement](https://suiscan.xyz/testnet/tx/DGAHZgteY7e1HMmmkCNsLwV67NzLqbGUoXN1Wci6RsuJ) pays the organiser for the winners’ seats and refunds every loser.                                                                         |
+| Returning real World IDs      | Live: a passkey keeps the fan’s code, so losses carry across drops, while World ID still allows one entry per person per drop ([how](docs/IMPLEMENTATION.md#passkeys)).                                                                                                                                                         |
 | Hosting                       | [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app) on Vercel with Neon Postgres (Singapore).                                                                                                                                                                                                                              |
 
 Every chain claim on the site links to its object or transaction on Suiscan.
@@ -58,7 +61,7 @@ Every chain claim on the site links to its object or transaction on Suiscan.
 ## How it works
 
 1. **Prove you’re one person.** World ID checks that you’re a unique human, on the server. No name, email or phone.
-2. **Enter once.** Your chances are `1 + min(5, losses in this series)`. On a paid drop, your wallet locks a refundable deposit in the drop’s escrow on Sui. A real World ID gets a fresh code in every drop, so its losses follow the passkey it enters with ([src/lib/passkey.ts](src/lib/passkey.ts)).
+2. **Enter once.** Your chances are `1 + min(5, losses in this series)`. On a paid drop, your wallet locks a refundable deposit in the drop’s escrow on Sui. A real World ID starts fresh in every drop, so a passkey on your phone remembers your losses: one Face ID tap ([src/lib/passkey.ts](src/lib/passkey.ts)).
 3. **The draw.** After close, anyone can start it. `draw` commits 32 random bytes from `sui::random`, and `settle` picks winners deterministically from them, weighted by chances, without replacement.
 4. **Win, or try again.** Winners pay for their seat from the deposit, receive a non-transferable Ticket object and claim with a fresh World ID check. Losers are refunded in the same transaction and start the next draw with one more chance.
 
@@ -71,7 +74,7 @@ The home page’s [How it works](https://tenjo-azure.vercel.app/#how) section pl
 
 Every entry and pickup runs these checks in this order. A stop never saves an entry or a pickup.
 
-![Entry decision tree. After a fan taps Enter, the server checks that World ID is set up and entries are open, the person proves in World App, then it checks that World is reachable, the proof is valid for this drop and the person hasn't entered. The entry is then saved with 1 plus past losses as chances, up to 6.](docs/assets/diagram-entry.svg)
+![Entry decision tree. After a fan taps Enter, the server checks that World ID is set up and entries are open, the person proves in World App, then it checks any passkey before asking World, so a refused passkey leaves the proof unspent. It then checks that World is reachable, the proof is valid for this drop and the person hasn't entered. The entry is then saved with 1 plus past losses as chances, up to 6.](docs/assets/diagram-entry.svg)
 
 "Proof valid" covers five checks: the identity settings haven't changed, the app and environment match, the challenge is fresh and unused, the credential and signal are present, and World confirms them with a matching nullifier.
 
@@ -84,6 +87,7 @@ Every entry and pickup runs these checks in this order. A stop never saves an en
 | Question                 | Who answers it                          | How                                                                                                                                                                                          |
 | ------------------------ | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Who can enter?           | World ID (IDKit 4, passport credential) | RP-signed, purpose-bound challenge; the proof is forwarded byte for byte to World’s verify API; the nullifier becomes a 32-hex anonymous code ([src/lib/world.ts](src/lib/world.ts))         |
+| Whose losses are these?  | A passkey (real World IDs)              | A WebAuthn signature over this drop’s World ID request; Tenjō keeps only the public key, and the entry uses the passkey’s code ([src/lib/passkey.ts](src/lib/passkey.ts))                    |
 | Can this wallet pay in?  | Tenjō server → Sui                      | After World ID, the server signs an Ed25519 permit over `tenjo:enter:v1 ‖ drop ‖ code ‖ sender`; `ballot::enter` verifies it on-chain, so a permit can’t be reused by another wallet or drop |
 | What is a loss worth?    | Sui (`Series` object)                   | `losses: Table<code, u64>`; chances are read on-chain at entry; only `settle` changes a count                                                                                                |
 | Who wins?                | Sui (`sui::random`)                     | `entry fun draw` stores a seed with outcome-independent gas; `public fun settle` is deterministic, so [src/lib/sui-draw.ts](src/lib/sui-draw.ts) re-runs it in TypeScript and compares       |
@@ -105,13 +109,14 @@ Sui right now: [~300 ms to finality](https://www.sui.io/payments), [$0.00 stable
 
 ### World · Best use of IDKit
 
-| Requirement                       | Where                                                                                                                                                                                |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| IDKit in a functioning app        | [src/components/world-widget.tsx](src/components/world-widget.tsx), live on the drop pages                                                                                           |
-| Verified server-side              | [`verifyWorldProof`](src/lib/world.ts): byte-preserving forward to `developer.world.org/api/v4/verify`, then per-credential result, nullifier, action, environment, nonce and signal |
-| Trust moment + minimum credential | Fair access to a scarce benefit. Entry needs uniqueness, not identity, so it uses the passport credential (Orb fallback), and nothing about the fan is stored                        |
-| Success plus alternative paths    | Duplicate entry, cancelled proof, missing credential, tampered proof, World outage and wrong collector are all refused without saving ([tests/world.test.ts](tests/world.test.ts))   |
-| Integration debrief               | [docs/OPERATIONS.md](docs/OPERATIONS.md#world-integration-debrief-in-progress)                                                                                                       |
+| Requirement                       | Where                                                                                                                                                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IDKit in a functioning app        | [src/components/world-widget.tsx](src/components/world-widget.tsx), live on the drop pages                                                                                              |
+| Verified server-side              | [`verifyWorldProof`](src/lib/world.ts): byte-preserving forward to `developer.world.org/api/v4/verify`, then per-credential result, nullifier, action, environment, nonce and signal    |
+| Trust moment + minimum credential | Fair access to a scarce benefit. Entry needs uniqueness, not identity, so it uses the passport credential (Orb fallback), and nothing about the fan is stored                           |
+| Success plus alternative paths    | Duplicate entry, cancelled proof, missing credential, tampered proof, World outage and wrong collector are all refused without saving ([tests/world.test.ts](tests/world.test.ts))      |
+| Returning fans                    | World ID 4 nullifiers are single-use per action, so each drop has its own action; a passkey carries the pity code while World ID gates entry ([src/lib/passkey.ts](src/lib/passkey.ts)) |
+| Integration debrief               | [docs/OPERATIONS.md](docs/OPERATIONS.md#world-integration-debrief)                                                                                                                      |
 
 ### Sui · DeFi & Payments
 
@@ -153,6 +158,10 @@ sui move test
 
 Publishing, testnet configuration (`SUI_NETWORK`, `SUI_PACKAGE_ID`, `SUI_ORGANISER_CAP_ID`, `SUI_SECRET_KEY`) and World staging setup are in the [operations guide](docs/OPERATIONS.md). Keep signing keys server-only.
 
+### Try a paid drop on the live site
+
+You need a Sui wallet extension on testnet and some test SUI: see [Test a paid drop as a fan](docs/OPERATIONS.md#test-a-paid-drop-as-a-fan). In Japan, use an extension: Slush’s web wallet is blocked there.
+
 ## Verification
 
 ```sh
@@ -170,7 +179,8 @@ The TypeScript suite covers:
 - duplicate-entry races, draw timing and settlement;
 - pickup refusal, proof forwarding and replay;
 - dependency failure;
-- the TypeScript re-run of the Move draw.
+- the TypeScript re-run of the Move draw;
+- passkeys, driven by a software authenticator holding a real key.
 
 The Move suite covers:
 
@@ -190,6 +200,8 @@ For a page-by-page wireframe, user journeys and current/optional architecture ma
 - [x] Warm capsule-machine redesign (see [DESIGN.md](DESIGN.md)).
 - [x] Publish to Sui testnet, mirror on-chain draws and link every transaction.
 - [x] Real World ID entries on production, for the simulator and real World IDs, with a measured debrief.
+- [x] Passkeys carry real World IDs’ losses across drops.
+- [ ] World ID session proofs, once World documents their server verification.
 - [ ] Stablecoin deposits (USDsui/USDC) and sponsored gas, so fans never need SUI.
 - [ ] Unclaimed-seat handoff to the next pick after a pickup window.
 
@@ -197,7 +209,7 @@ The [PRD](docs/PRD.md) covers acceptance criteria and open decisions. [Implement
 
 ## AI usage
 
-Built during ETHGlobal Tokyo 2026 with Claude Code as a pair programmer. Commits it helped write carry a `Co-Authored-By: Claude` trailer. Product decisions, prize scope and review stayed with the team. The spec files that steered the work are in the repo: [docs/PRD.md](docs/PRD.md) (requirements R1–R16), [DESIGN.md](DESIGN.md) (visual system) and [UX-CONTRACT.md](UX-CONTRACT.md) (interaction rules).
+Built during ETHGlobal Tokyo 2026 with Claude Code as a pair programmer. Commits it helped write carry a `Co-Authored-By: Claude` trailer. Product decisions, prize scope and review stayed with the team. The spec files that steered the work are in the repo: [docs/PRD.md](docs/PRD.md) (requirements R1–R17), [DESIGN.md](DESIGN.md) (visual system) and [UX-CONTRACT.md](UX-CONTRACT.md) (interaction rules).
 
 ## License and contact
 

@@ -1,6 +1,6 @@
 # Tenjō interaction contract
 
-Business source: docs/PRD.md (R1–R15). Visual source: DESIGN.md. No inherited product workflows exist.
+Business source: docs/PRD.md (R1–R17). Visual source: DESIGN.md. No inherited product workflows exist.
 
 | Capability         | Canonical owner                                             | Policy / verification                                                   |
 | ------------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------- |

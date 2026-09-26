@@ -542,7 +542,7 @@ public fun settle<T>(drop: &mut Drop<T>,
           </a>
           <a
             className="button secondary"
-            href={`${repo}/blob/main/docs/OPERATIONS.md#world-integration-debrief-in-progress`}
+            href={`${repo}/blob/main/docs/OPERATIONS.md#world-integration-debrief`}
           >
             Integration debrief <ArrowUpRight size={16} />
           </a>

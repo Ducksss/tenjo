@@ -1,16 +1,25 @@
-# Operations and integration guide
+# Operations guide
 
-**One person, one entry, and every loss counts.**
+How to run, configure, deploy and check Tenjō. How it works inside is in [IMPLEMENTATION.md](IMPLEMENTATION.md); what it must do is in [PRD.md](PRD.md).
 
-A drop lottery built from scratch for the September 2026 hackathon: free drops, or drops with a refundable testnet deposit. World ID gates entry and pickup; each loss adds a ticket to the next drop in the same series, capped at six total. The public record shows anonymous entries, ticket weights, draws and loss changes.
+## At a glance
 
-**Current status:** live at [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app). World ID entry works end to end on production, for World's simulator (staging, passport) and for real World IDs (Orb): 14 verified entries since the first at 17:25 JST on 26 September (see the [debrief](#world-integration-debrief)). New drops run their draw, deposits, refunds and loss ledger on Sui testnet, package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65) (see [Sui](#sui)). Real World IDs keep their extra chances with a passkey (see [Passkeys](#passkeys-keep-a-real-world-ids-extra-chances)). Pickup for real World IDs stays off until liveness is server-attested; simulator winners collect through the labelled staging fallback. Production holds one demo drop, "Taylor Swift · Tokyo Night 1" (0.01 SUI deposit, closes 28 September at 12:00 JST); the test drops were removed on 26 September.
+|                |                                                                                                                                                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live site      | [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app): Vercel project `ducksss-projects/tenjo`, functions in Singapore (`sin1`)                                                                                     |
+| Database       | Neon Postgres `tenjo-db`, Singapore                                                                                                                                                                                    |
+| World ID       | A staging app for World's simulator (passport credential), and a production app for real World IDs (Orb, Proof of Human)                                                                                               |
+| Sui            | Testnet package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65), organiser `0x2700344d3b6accedebabda56e819b769be2246be4c438434f37ffb0b81c6783c` |
+| Returning fans | The simulator keeps one code, so its losses carry on their own; real World IDs carry theirs with a passkey                                                                                                             |
+| Deploys        | Every push to `main` deploys production                                                                                                                                                                                |
 
-The walkthrough on the landing page (`/#how`; `/demo` redirects there) is interactive and browser-only, with scripted outcomes. It makes no lottery API writes and does not verify World ID; real production records remain separate.
+As of 27 September 2026: 17 World ID entries verified on production (see the [debrief](#world-integration-debrief)), draws, deposits and refunds settle on Sui testnet, and real World IDs keep their extra chances with a passkey (first real passkey entry at 01:21 JST). Real-World-ID pickup stays off until liveness is server-attested; simulator winners collect through the labelled staging fallback.
 
-## Run the local demo
+## Run it locally
 
-Requires Node 22+ and npm.
+Requires Node 22+ and npm. Run `npm ci` after every pull: dependencies change, and a stale install serves "Module not found" errors.
+
+### Demo mode: no credentials
 
 ```sh
 npm ci
@@ -18,166 +27,175 @@ npm run demo:seed
 npm run dev:demo
 ```
 
-Open [the local app](http://127.0.0.1:3000). Choose **The weekend console drop**. Fan A has three losses from labelled setup draws and receives four tickets. Enter again to see duplicate refusal; follow the receipt to public history. The default demo closes 24 hours after setup.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000) and choose **The weekend console drop**. Fan A has three losses from labelled setup draws and gets four chances. Enter again to see the duplicate refusal, then follow the receipt to the public history. The seeded drop closes 24 hours after setup (`TENJO_DEMO_WINDOW_SECONDS` changes it).
 
-PGlite persists local Postgres data in `.data/tenjo`. The seed is idempotent and does not erase data. **Stop the dev server before running a script on the same database directory**; PGlite is single-process.
+For a fresh two-minute rehearsal, stop the dev server and run `npm run demo:rehearsal`: it creates an isolated database, prints the launch command and closes entries after two minutes. Earlier records are kept.
 
-For a fresh short rehearsal, stop the dev server and run:
+Demo mode uses labelled test identities, **not** World's simulator: no World ID check, no live selfie. Its controls need `TENJO_DEMO_MODE=true`, a non-production build and localhost, and they only work on demo drops.
 
-```sh
-npm run demo:rehearsal
-```
+PGlite keeps local data in `.data/tenjo`, and it allows one process at a time: **stop the dev server before running a script on the same database.**
 
-The command creates a new isolated database and prints the exact launch command. Entries close after two minutes. Fan A still has three setup losses. Enter A, demonstrate the duplicate refusal, wait for close, confirm the draw, then pick a winning/losing demo identity for pickup. Starting a new rehearsal preserves all earlier records.
+### With World ID and Sui
 
-The local demo uses test identities, **not** World's simulator. It performs no World ID verification or live selfie. Demo controls require an explicit flag, localhost and non-production; they cannot enter real drops. Use World staging for the actual judging run.
+1. Copy `.env.example` to `.env.local` and fill in the World and Sui values ([configuration](#configuration)).
+2. Run `npm run dev` and open **[http://localhost:3000](http://localhost:3000)**. Use `localhost`, not `127.0.0.1`: passkeys need a host name.
+3. Create a drop at `/admin` with the organiser password, then enter it with World's [simulator](https://simulator.worldcoin.org) or a real World ID.
 
-## Configure World staging and a real drop
+Without `DATABASE_URL`, local runs use PGlite and apply `db/schema.sql` on start.
 
-Copy `.env.example` to `.env.local`. Fill these values from [World Developer Portal](https://developer.world.org):
+## Configuration
 
-```dotenv
-WORLD_APP_ID=app_...
-WORLD_RP_ID=rp_...
-WORLD_ACTION=tenjo-person
-WORLD_RP_SIGNING_KEY=0x...
-WORLD_ENVIRONMENT=staging
-WORLD_PROTOCOL=3.0
-WORLD_CREDENTIAL=passport
-ADMIN_PASSWORD=use-a-unique-password-of-at-least-16-characters
-```
+Every variable is server-only. Never give a secret a `NEXT_PUBLIC_` prefix or commit `.env.local`.
 
-Never expose the signing key with a `NEXT_PUBLIC_` prefix or commit it. Restart `npm run dev`, open `/admin`, create a **new real drop** and enter through IDKit using [World's simulator](https://simulator.worldcoin.org). Staging requests use the document legacy preset and allow legacy proofs. If World's booth confirms document support is unavailable, select `WORLD_CREDENTIAL=orb` **before accepting any real entries**.
+| Variable                                                                               | Purpose                                                                                                                   |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ORIGIN`                                                                           | The site's exact origin (`https://tenjo-azure.vercel.app`). Same-origin checks and passkeys both use it. Optional locally |
+| `DATABASE_URL`                                                                         | Hosted Postgres. Omit locally to use PGlite                                                                               |
+| `TENJO_LOCAL_DB`                                                                       | Another PGlite directory, for tests and rehearsals                                                                        |
+| `ADMIN_PASSWORD`                                                                       | Organiser password, at least 16 characters, sent only in the `Authorization` header                                       |
+| `WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY`                                  | The primary World setup. On production it runs staging, for the simulator                                                 |
+| `WORLD_ACTION`                                                                         | The primary setup's fixed action, `tenjo-person`                                                                          |
+| `WORLD_ENVIRONMENT`                                                                    | `staging` or `production`                                                                                                 |
+| `WORLD_PROTOCOL`                                                                       | `3.0` or `4.0`; production always uses 4.0                                                                                |
+| `WORLD_CREDENTIAL`                                                                     | `passport` (default) or `orb`                                                                                             |
+| `WORLD_STAGING_VERIFICATION_TOKEN`                                                     | Token for World's 24-hour staging window ([below](#the-staging-verification-window))                                      |
+| `WORLD_ALLOW_UNTESTED_PICKUP`                                                          | `true` turns on the staging-only pickup fallback                                                                          |
+| `WORLD_PRODUCTION_APP_ID`, `WORLD_PRODUCTION_RP_ID`, `WORLD_PRODUCTION_RP_SIGNING_KEY` | Real World IDs beside the simulator. Used only while the primary setup is staging                                         |
+| `WORLD_PRODUCTION_ACTION`                                                              | Base action for real World IDs; each drop uses `<action>-<drop id>`                                                       |
+| `WORLD_PRODUCTION_CREDENTIAL`                                                          | `orb` (Proof of Human, default) or `passport`                                                                             |
+| `WORLD_INTEGRATION_STARTED_AT`                                                         | ISO timestamp for the debrief's time to first success                                                                     |
+| `SUI_NETWORK`                                                                          | `testnet` (default), `devnet`, `mainnet` or `localnet`                                                                    |
+| `SUI_RPC_URL`                                                                          | Optional gRPC endpoint; defaults to `https://fullnode.<network>.sui.io:443`                                               |
+| `SUI_PACKAGE_ID`, `SUI_ORGANISER_CAP_ID`                                               | Printed by `npm run sui:publish`                                                                                          |
+| `SUI_SECRET_KEY`                                                                       | Organiser key, `suiprivkey…` (Ed25519)                                                                                    |
+| `SUI_REGISTRAR_SECRET_KEY`                                                             | Optional key that signs entry permits; defaults to the organiser key                                                      |
+| `SUI_PAYOUT_ADDRESS`                                                                   | Optional address for the winners' deposits; defaults to the organiser                                                     |
+| `TENJO_DEMO_MODE`, `TENJO_DEMO_WINDOW_SECONDS`                                         | Local demo controls and the seeded drop's window                                                                          |
+| `TENJO_TEST_PORT`                                                                      | Port for browser tests (default 3100)                                                                                     |
 
-World verifies staging proofs only while the team keeps a staging window open; otherwise it answers `403 environment_not_allowed` and entries fail with "World's staging verification window is closed". The portal has no button for it yet. Create a team API key (**Team settings → API keys**), then run `npm run world:staging-window` and paste the key at the hidden prompt. The script calls the Developer Portal MCP tool `set_world_id_staging_verification`, opens a 24-hour window and writes the one-time token to `.env.local` as `WORLD_STAGING_VERIFICATION_TOKEN`; it never prints the key or the token. Set the same token on Vercel and redeploy; the server sends it as the `x-staging-verification-token` header. When the window lapses, run the script again and replace the token everywhere. `npm run world:staging-window -- --close` closes the window early. Production proofs need no window.
+Sui switches on only when the package, the cap and the key are all set; otherwise every drop uses the server draw. On Vercel, the signing keys, the Sui key, `ADMIN_PASSWORD`, `APP_ORIGIN` and the staging token are Sensitive.
 
-Keep one fixed action. Do not rotate app, RP, action, environment, protocol or credential after accepting entries; a stored policy fingerprint refuses the change. A protocol/credential migration needs identity reconciliation or a fresh database.
+## World ID
 
-Trust moments:
+### Two setups
 
-- **Entry:** server verifies the configured credential, action, environment, nonce, fresh challenge and purpose-bound signal before creating a member/entry. One canonical code per verified nullifier, unique per drop. A real World ID gets a fresh nullifier in every drop, so an entry with a passkey uses the passkey's code instead. The first entry creates the passkey (WebAuthn, bound to this site's host name) and registers its public key in `passkeys`; later entries carry the passkey's signature over a challenge derived from the drop and the World ID request, which is single-use. `entry_identities` keeps each drop's World ID code beside the passkey's code, so one person still gets one entry per drop. Both tables are additive; production Neon has had them since 27 September. See [Passkeys](#passkeys-keep-a-real-world-ids-extra-chances).
-- **Pickup:** require a fresh proof of the winning identity and allow exactly one pickup. The client requests user presence, but a browser-reported boolean is not treated as a cryptographic guarantee.
+The primary setup runs World's staging environment, so the live site accepts the [simulator](https://simulator.worldcoin.org). The `WORLD_PRODUCTION_*` setup accepts real World IDs from World App. With both configured, the drop page's **Enter with World ID** uses a real World ID, and **No World ID? Use the World ID simulator** uses the simulator. Pickup always uses the primary setup.
 
-The passport credential follows the PRD's document-backed anti-multi-accounting choice; Selfie Check alone does not provide its required uniqueness assurance. Proof of Human is the explicit fallback. Passport/My Number Card equivalence and actual simulator behavior still need testing against the chosen credential. The PRD accepts a dual-document limitation.
+- **The simulator keeps one action** (`tenjo-person`), so the same identity gets the same code in every drop, and its losses carry.
+- **Real World IDs get one action per drop** (`tenjo-person-<drop id>`), because World ID 4 lets a person prove each action only once. World itself then refuses a second entry in the same drop, and each drop sees a fresh code. A [passkey](#passkeys) carries the losses instead.
 
-`WORLD_ALLOW_UNTESTED_PICKUP=true` permits the PRD's **staging-only** pickup fallback. It still verifies a fresh World proof, but every pickup is recorded as liveness untested. Production pickup stays disabled until the server-attested presence path is validated.
+### The staging verification window
 
-### Verification code
+Since 25 September 2026, World's verify API refuses staging proofs (`403 environment_not_allowed`) unless the team keeps a 24-hour staging window open and sends its token. Entries then fail with "World's staging verification window is closed". To open one:
 
-The server verifier is [`verifyWorldProof` in src/lib/world.ts](../src/lib/world.ts). The byte-preserving verification boundary is at **src/lib/world.ts:284–286** in this version. Find it after future edits with:
+1. Create a team API key in the Developer Portal (**Team settings → API keys**).
+2. Run `npm run world:staging-window` and paste the key at the hidden prompt. The script opens the window through World's `set_world_id_staging_verification` tool and writes `WORLD_STAGING_VERIFICATION_TOKEN` to `.env.local`, without printing the key or the token.
+3. Set the same token on Vercel and redeploy. The server sends it as the `x-staging-verification-token` header.
+
+Repeat when the window lapses. `npm run world:staging-window -- --close` closes it early. Real World IDs need no window.
+
+### Identity settings lock
+
+The first accepted entry pins each setup's app, RP, action, environment, protocol and credential as a fingerprint. Changing any of them afterwards fails closed with an identity-policy error: restore the settings or use a fresh database. Choose the credential (`passport` or `orb`) **before** real entries arrive.
+
+### Pickup
+
+Pickup needs a fresh World ID proof from a winning code, once. `WORLD_ALLOW_UNTESTED_PICKUP=true` turns on the staging-only fallback, and every such pickup is recorded as liveness untested. Pickup for real World IDs stays off until liveness is server-attested.
+
+### Where the verification happens
+
+[`verifyWorldProof` in src/lib/world.ts](../src/lib/world.ts) forwards the received proof **byte for byte** to `developer.world.org/api/v4/verify`, then checks the credential's own result, nullifier, action, environment, nonce and the purpose-bound signal. HTTP 200 alone is never enough. Find the boundary after edits with:
 
 ```sh
 rg -n 'verification boundary|developer.world.org/api/v4/verify' src/lib/world.ts
 ```
 
-The enter route [`src/app/api/drops/[id]/enter/route.ts`](../src/app/api/drops/[id]/enter/route.ts) calls it before `enterDrop`. The received body is forwarded **byte for byte**, without field remapping. HTTP 200 alone is insufficient: the expected credential must be individually verified with the matching nullifier, action and environment. The challenge is consumed atomically with entry/pickup.
+## Passkeys
 
-## Postgres and deployment
+A real World ID gets a fresh code in every drop, so a passkey keeps one code for the fan. World ID still decides who may enter; the passkey decides whose losses an entry counts toward.
 
-For hosted Postgres, set `DATABASE_URL`, using the provider's TLS connection string, then:
+- **Fan flow.** When the site takes real World IDs and the browser supports passkeys, the entry card shows "Keep my extra chances with a passkey", ticked. The first entry creates a Tenjō passkey behind Face ID or a fingerprint; creating it is that entry's proof, so there is one prompt. Later entries sign the entry's World ID request. A cancelled prompt enters nothing and offers **Confirm passkey** or **Enter with World ID alone**. The simulator never asks for a passkey.
+- **Storage.** `POST /api/passkeys` stores only the passkey's public key, its counter and the code its entries use, in `passkeys`. `entry_identities` keeps each drop's World ID code beside the entry's code, so one person still gets one entry per drop.
+- **Configuration.** No new variables. Passkeys belong to the host name in `APP_ORIGIN`, so they don't carry across domains, preview URLs or `127.0.0.1`.
+- **On a paid drop** the wallet only pays the deposit; the passkey carries the code.
 
-```sh
-npm run db:migrate
-npm run build
-npm start
-```
-
-On Vercel, configure the World variables, ADMIN_PASSWORD, DATABASE_URL and `APP_ORIGIN=https://your-deployment.example`. Run migrations against that database before deployment. Do not use PGlite in serverless production. Keep all database credentials server-only and do not grant public/anonymous roles writes to these tables. Tenjō is deployed to [Vercel](https://tenjo-azure.vercel.app), project `ducksss-projects/tenjo`, with a dedicated Neon Free Postgres database (`tenjo-db`) in Singapore. The schema has been applied. Production starts empty; local setup identities and records were not copied. Vercel stores `DATABASE_URL`, `ADMIN_PASSWORD`, `APP_ORIGIN`, the World staging configuration (`WORLD_APP_ID`, `WORLD_RP_ID`, `WORLD_RP_SIGNING_KEY` (Sensitive), `WORLD_ACTION=tenjo-person`, `WORLD_ENVIRONMENT=staging`, `WORLD_PROTOCOL=3.0`, `WORLD_CREDENTIAL=passport`, plus `WORLD_STAGING_VERIFICATION_TOKEN` while a staging window is open), the real-World-ID setup (`WORLD_PRODUCTION_APP_ID`, `WORLD_PRODUCTION_RP_ID`, `WORLD_PRODUCTION_RP_SIGNING_KEY`, `WORLD_PRODUCTION_ACTION`, all Sensitive) and the four `SUI_*` variables (see [Sui](#sui)). Keep the organiser password private; never put it into documentation or a public issue. The staging setup accepts proofs from World's simulator; the `WORLD_PRODUCTION_*` setup accepts real World IDs from World App, with one action per drop. The `tenjo-person` action must exist on the staging app in the Developer Portal. `APP_ORIGIN` must equal the site's origin exactly: same-origin checks and passkeys both use it. `WORLD_ALLOW_UNTESTED_PICKUP=true` turns on the staging pickup fallback, so every pickup is recorded as liveness untested. Vercel applies variable changes only to new deployments, so redeploy production after changing any of them.
-
-`vercel.json` selects the Singapore function region and the existing production build command. `.vercelignore` excludes local data, secrets and development artifacts. The GitHub repository is connected for automatic deployments; production configuration belongs to the production environment only. Preview deployments have no environment variables at all (no database, World or Sui), so a preview only proves that a branch builds; test flows locally. Promoting a preview to production in Vercel puts production ahead of `main`: merge the branch afterwards, or the next push to `main` deploys without it. Merge a branch that already has a preview with a merge commit, because Vercel skips the production build for a commit it has already built as a preview. The Vercel project is on a Hobby team, which only builds commits its owner authored, so [vercel-deploy.yml](../.github/workflows/vercel-deploy.yml) gets teammates' pushes to `main` deployed by committing a timestamped note under `.github/deploys/` as the owner; run it from the Actions tab to redeploy.
-
-`npm run build` uses supported Next.js Webpack mode because this local tool environment denied Turbopack's CSS worker port. Development still uses Turbopack. There are no network-loaded fonts.
+How the checks work is in [IMPLEMENTATION.md](IMPLEMENTATION.md#passkeys).
 
 ## Sui
 
-**Status:** live on Sui testnet. Package [`0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65) was published on 26 September 2026 ([transaction](https://suiscan.xyz/testnet/tx/EbbQyCRbv9Xv5LMvTZxK78fEUGjV1e1Lym4tSDF7Pe3G)) by the organiser `0x2700344d3b6accedebabda56e819b769be2246be4c438434f37ffb0b81c6783c`, and `npm run sui:smoke` then ran a free and a paid drop end to end there: the paid drop's [draw](https://suiscan.xyz/testnet/tx/8hCVmGFzq57mDy488F4bfha9AMdKc5qsYZt2vDAtHKdF) took its seed from `sui::random`, and its [settlement](https://suiscan.xyz/testnet/tx/DGAHZgteY7e1HMmmkCNsLwV67NzLqbGUoXN1Wci6RsuJ) paid the organiser 0.01 SUI and refunded the loser 0.01 SUI in one transaction. It passed again at 23:17 JST the same day ([draw](https://suiscan.xyz/testnet/tx/H9FXbahCWUCwLBQKK5uC4sfEnXvmydnLi6yBAcoDLgMY), [settlement](https://suiscan.xyz/testnet/tx/6QPjXre4j1cqqNzrivc3pH5jP3fVNYWe2Uh76ojD7jpE)), with the on-chain ledger matching the database each time. Vercel production holds the same `SUI_*` variables. The Move unit tests, mocked-chain service tests and a full localnet run cover the rest.
+**Status:** live on testnet. Package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65) was published on 26 September 2026 ([transaction](https://suiscan.xyz/testnet/tx/EbbQyCRbv9Xv5LMvTZxK78fEUGjV1e1Lym4tSDF7Pe3G)). `npm run sui:smoke` ran a free and a paid drop end to end there twice: the paid drop's [draw](https://suiscan.xyz/testnet/tx/8hCVmGFzq57mDy488F4bfha9AMdKc5qsYZt2vDAtHKdF) took its seed from `sui::random`, and its [settlement](https://suiscan.xyz/testnet/tx/DGAHZgteY7e1HMmmkCNsLwV67NzLqbGUoXN1Wci6RsuJ) paid the organiser 0.01 SUI and refunded the loser 0.01 SUI in one transaction. The second run ([draw](https://suiscan.xyz/testnet/tx/H9FXbahCWUCwLBQKK5uC4sfEnXvmydnLi6yBAcoDLgMY), [settlement](https://suiscan.xyz/testnet/tx/6QPjXre4j1cqqNzrivc3pH5jP3fVNYWe2Uh76ojD7jpE)) matched the on-chain ledger to the database again.
 
-On Sui a drop is an escrow vault. A **series** object holds the loss ledger; a **drop** holds each entry's weight and deposit. Free drops: after World ID verification the server registers the entry on-chain and pays the gas. Priced drops: the fan's wallet locks a refundable deposit, admitted by a permit the server signs after verification. After close, `ballot::draw` commits a 32-byte seed from `sui::random`; `ballot::settle` then picks the winners from that seed and, in the same transaction, pays the organiser for the winners' seats, refunds every loser, mints each winner a non-transferable `Ticket` and updates the ledger. The database mirrors the chain's result.
+A drop on Sui is an escrow vault, and a series object holds the loss ledger. Free entries are registered on-chain by the server after World ID; paid entries are sent by the fan's wallet under a permit the server signs. After close, `ballot::draw` commits a seed from `sui::random` and `ballot::settle` picks the winners, pays the organiser, refunds every loser, mints each winner a non-transferable `Ticket` and updates the ledger, in one transaction. The database mirrors the result.
 
-| Variable                   | Purpose                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| `SUI_NETWORK`              | `testnet` (default), `devnet`, `mainnet` or `localnet`                                  |
-| `SUI_RPC_URL`              | Optional gRPC endpoint; defaults to `https://fullnode.<network>.sui.io:443`             |
-| `SUI_PACKAGE_ID`           | Published package, printed by `npm run sui:publish`                                     |
-| `SUI_ORGANISER_CAP_ID`     | `OrganiserCap` owned by the organiser key, printed by `npm run sui:publish`             |
-| `SUI_SECRET_KEY`           | Organiser key, `suiprivkey…` (Ed25519). Server-only; Sensitive on Vercel                |
-| `SUI_REGISTRAR_SECRET_KEY` | Optional Ed25519 key that signs entry permits; defaults to the organiser key            |
-| `SUI_PAYOUT_ADDRESS`       | Optional address that receives the winners' deposits; defaults to the organiser address |
+### Organiser wallet
 
-Sui switches on only when the package, the cap and the key are all set. Otherwise every drop uses the server draw exactly as before. Browser tests blank every `SUI_*` variable.
-
-### Publish
+Keep the organiser above 0.5 SUI. `sui client faucet` only prints a link for testnet now: open `https://faucet.sui.io/?address=<address>`, choose Testnet and press **Request Testnet SUI**. A check runs for about 30 seconds, then 1 SUI arrives. Public fullnodes no longer answer JSON-RPC, so check a balance through GraphQL:
 
 ```sh
-sui client new-address ed25519 tenjo-organiser   # fund it with ~3 testnet SUI at faucet.sui.io
-# Put SUI_SECRET_KEY=<the suiprivkey… from `sui keytool export --key-identity tenjo-organiser`> in .env.local
+curl -s https://graphql.testnet.sui.io/graphql -H 'content-type: application/json' \
+  --data '{"query":"{ address(address: \"0x2700344d3b6accedebabda56e819b769be2246be4c438434f37ffb0b81c6783c\") { balance(coinType: \"0x2::sui::SUI\") { totalBalance } } }"}'
+```
+
+A smoke run costs about 0.05 SUI; a publish about 0.06 SUI.
+
+### Publish, smoke-test and rehearse
+
+```sh
+sui client new-address ed25519 tenjo-organiser   # fund it at faucet.sui.io
+# Put SUI_SECRET_KEY=<suiprivkey… from `sui keytool export --key-identity tenjo-organiser`> in .env.local
 npm run sui:test                                 # Move unit tests
-npm run sui:publish -- --write-env               # publishes; writes SUI_PACKAGE_ID and SUI_ORGANISER_CAP_ID
-npm run sui:smoke                                # end-to-end check: prints every digest and Suiscan link
+npm run sui:publish -- --write-env               # writes SUI_PACKAGE_ID and SUI_ORGANISER_CAP_ID
+npm run sui:smoke                                # free and paid drop end to end, printing every Suiscan link
 ```
 
-**Before deploying this version anywhere hosted, run `npm run db:migrate` against that database**, even without Sui: queries read the new, additive Sui columns. To switch Sui on there, add the same variables to Vercel and redeploy.
+`sui:smoke` uses an in-memory database, so it never touches Postgres. A new package needs new series.
 
-### Rehearse the paid demo
-
-```sh
-npm run sui:demo-drop -- --live-drop   # stop the dev server first; add --fresh to start new series
-npm run dev:demo
-```
-
-Pre-drop 1 of the labelled Nintendo Switch 2 demo is entered by six throwaway fan wallets (funded with 0.05 SUI each, keys in the Git-ignored `.data/demo-wallets.json`) and settled at once, so four fans carry an on-chain loss. Pre-drop 2 is entered by the same fans with those losses counted, and closes after `--closes-in` seconds (default 180) for a live **Run draw**. `--live-drop` adds a real drop, "Taylor Swift · Tokyo Night 2", for entry with World ID and a wallet. Every demo drop's description says it is a demo, not affiliated with Nintendo or Taylor Swift.
-
-### Get a testnet wallet
-
-To enter a paid drop yourself:
-
-1. Install a Sui wallet **browser extension**, such as the Slush extension. When Chrome shows it, set its **Site access** to **On all sites**, so the page can find it.
-2. Switch the wallet to **Testnet**. The wallet picker lists only wallets that support the site's network (`sui:testnet`).
-3. Request testnet SUI at `https://faucet.sui.io/?address=<your address>`. A check runs for about 30 seconds, then 1 SUI arrives; a paid entry needs 0.01 SUI plus gas.
-4. On the drop page, **Connect Wallet** → your wallet → **Enter with World ID + 0.01 SUI**, then approve the deposit.
-
-The picker's single "Slush" entry is Slush's web wallet when no Slush extension is installed; the extension replaces it once detected. **Slush's web wallet (`my.slush.app`) is blocked in Japan**: it answers "451 · not available in your region", so its popup stays blank and the page says "Connection failed". Phone browsers cannot run extensions, so test paid drops from a laptop there; World ID still works by scanning the QR code with World App.
-
-### Verify on the explorer
-
-Every drop on Sui exposes its object IDs and transaction digests through `/api/drops/:id/public` (`sui`) and its draw record (`record.sui`). Open `https://suiscan.xyz/testnet/tx/<digest>` or `https://suiscan.xyz/testnet/object/<id>`. The settle transaction's balance changes show the payout and each refund; its `Settled` event lists the seed, winners in pick order, rolls, pools and every entry's losses before and after. Anyone can recompute the winners from the seed with `chainDraw` in `src/lib/sui-draw.ts`.
+For the paid demo, stop the dev server and run `npm run sui:demo-drop -- --live-drop` (add `--fresh` for new series). Six throwaway fan wallets (0.05 SUI each, keys in the Git-ignored `.data/demo-wallets.json`) enter and settle **Nintendo Switch 2 · Pre-drop 1**, so four carry an on-chain loss; they enter **Pre-drop 2** with those losses counted, and it closes after `--closes-in` seconds (default 180) for a live **Run draw**. `--live-drop` adds an open **Taylor Swift · Tokyo Night 2** for entry with World ID and a wallet. Every demo drop says it is a demo, not affiliated with Nintendo or Taylor Swift.
 
 ### Rules on-chain
 
-- Only a series that starts on Sui joins it, so the chain ledger holds its whole history. Seeded setup history stays off-chain, and a series on Sui refuses new drops while Sui is not configured.
-- The chain accepts entries until 30 seconds after the database closes, so last-second registrations land. The draw opens after that.
-- A free entry is saved first, then registered on-chain. If Sui fails, it stays `pending` and is retried by the next entry and before the draw. An entry that never reaches Sui gets no result and is listed in `record.sui.unregistered`.
+- A series joins Sui only before its first drop, so the chain ledger holds its whole history. Seeded setup history stays off-chain, and a series on Sui refuses new drops while Sui is off.
+- A series takes one unsettled drop at a time.
+- The chain accepts entries until 30 seconds after the database closes, so last-second entries land. The draw opens after that.
+- A free entry is saved first, then registered on-chain. If Sui fails, it stays `pending` and is retried by the next entry and before the draw; an entry that never lands gets no result and is listed in `record.sui.unregistered`.
 - Organiser transactions run one at a time (a database advisory lock plus an in-process queue), so gas coins never race.
-- Retrying a draw repeats only the missing chain step and never rerolls. A mirror lost after settlement is recovered from the chain.
-- Gas measured on a local network: a six-fan settlement costs about 0.01 SUI. The worst case, 300 entrants and 300 items, fits in one transaction: 0.63 SUI computation and 0.72 SUI storage (0.15 SUI rebate).
-- Testnet SUI only. There are no real-money or mainnet payments.
+- Retrying a draw repeats only the missing chain step and never rerolls.
+- A six-fan settlement costs about 0.01 SUI; 300 entrants with 300 items fit in one transaction.
+- Testnet SUI only: no real money, no mainnet.
 
-## Passkeys: keep a real World ID's extra chances
+### Verify on the explorer
 
-World ID 4 lets a real World ID prove each action once, so every drop gets its own action (`tenjo-person-<drop id>`) and a real World ID gets a fresh anonymous code in every drop. The simulator keeps one fixed action, so its code and losses carry on their own. A passkey restores the carry-over for real World IDs: World ID still decides who may enter, and the passkey remembers whose losses an entry counts toward.
+Every drop on Sui exposes its object IDs and transaction digests through `/api/drops/:id/public` (`sui`) and its draw record (`record.sui`). Open `https://suiscan.xyz/testnet/tx/<digest>` or `https://suiscan.xyz/testnet/object/<id>`. The settlement's balance changes show the payout and each refund, and its `Settled` event lists the seed, the winners in pick order, the rolls and every entry's losses before and after. Anyone can recompute the winners from the seed with `chainDraw` in [src/lib/sui-draw.ts](../src/lib/sui-draw.ts); the drop page does it in the browser.
 
-- **Fan flow.** When the site takes real World IDs and the browser supports passkeys, the entry card offers "Keep my extra chances with a passkey", ticked. The first entry creates a Tenjō passkey behind Face ID or a fingerprint; creating it is that entry's proof, so there is one prompt. Later entries sign the entry's World ID request. A cancelled prompt enters nothing and offers "Confirm passkey" or "Enter with World ID alone". The simulator never asks for a passkey.
-- **Server.** `POST /api/passkeys` verifies a new passkey (WebAuthn, attestation `none`) against the site's origin and host name, then stores only its public key in `passkeys`. The enter and permit routes read the `x-tenjo-passkey` header and check it before World verification, so a refusal never spends the proof. Every WebAuthn challenge is `sha256("tenjo:passkey:<create|get>:v1:<drop>:<request>")`, bound to one single-use World ID request. The entry's code is `sha256("tenjo:v1:passkey:" + credential ID)`, truncated like every code, so losses follow the passkey in the database and the on-chain ledger. `entry_identities` keeps each drop's World ID code beside it: one person gets one entry per drop whichever passkey they bring, and one passkey gets one entry per drop. On a paid drop the wallet only pays the deposit.
-- **Configuration.** No new variables. Passkeys belong to the host name in `APP_ORIGIN` (tenjo-azure.vercel.app), so they do not carry across domains or preview URLs. Locally, open `http://localhost:3000`, not `127.0.0.1`: WebAuthn needs a host name.
-- **Testing.** `tests/passkey-link.test.ts` drives the real verification with a software authenticator. For a browser check, Chrome's DevTools protocol can add a virtual authenticator (`WebAuthn.addVirtualAuthenticator`) to a Playwright page against `next dev`.
-- **Why not a wallet or World ID sessions.** A wallet link needed Slush's web wallet, which is blocked in Japan. World ID session proofs would bind pity to the person, but their server verification is not yet documented, they add a second World App prompt, and simulator support is unknown.
+## Test a paid drop as a fan
 
-Limits: sharing a passkey hands over pity (never extra entries); a lost passkey starts fresh; some in-app browsers lack WebAuthn.
+1. Install a Sui wallet **browser extension**, such as the Slush extension. In Chrome, set its **Site access** to **On all sites**, so the page can find it.
+2. Switch the wallet to **Testnet**. The wallet picker lists only wallets that support `sui:testnet`.
+3. Get testnet SUI at `https://faucet.sui.io/?address=<your address>`. A paid entry needs 0.01 SUI plus gas.
+4. On the drop page: **Connect Wallet** → your wallet → **Enter with World ID + 0.01 SUI** → World ID → approve the deposit. The receipt links the deposit on Suiscan.
 
-## Draw and audit rules
+**Slush's web wallet (`my.slush.app`) is blocked in Japan.** It answers "451 · not available in your region", so its popup stays blank and the page says "Connection failed". The picker's single "Slush" entry is that web wallet until a Slush extension is detected; the extension then replaces it. Phone browsers can't run extensions, so test paid drops from a laptop in Japan; World ID still works by scanning the QR code with World App.
 
-- Tickets = `1 + min(5, series losses)`.
-- Select without replacement using Node `crypto.randomInt`: a winner's entire weight leaves the pool.
-- Only after closing time; database clock is checked after acquiring the mutation lock.
-- One unsettled drop per series prevents stale weights and out-of-order counts.
-- Draw and settlement commit together: losers increment, winners reset, receipt stores before/after counts.
-- Concurrent/repeated draws return the same committed record; failed transactions make no partial changes.
-- If entrants are fewer than items, each entrant wins once; unused items are recorded. Empty drops settle with no winners.
-- `/api/drops/:id/public` includes the complete draw record and a page of entries. `/api/codes/:code` returns a page of history and series counts. UI pages contain search and pagination.
+## Database
 
-A record fingerprint uses SHA-256 over recursively key-sorted JSON (`canonicalJson` in `src/lib/domain.ts`). This survives Postgres jsonb reordering. It is **not proof of independent randomness or tamper-proof storage**. Phase 1 still trusts the server/database operator. For drops on Sui, the seed, weights, winners and ledger come from the chain instead (see [Sui](#sui)).
+`db/schema.sql` is the whole schema, written as additive `CREATE … IF NOT EXISTS` and `ADD COLUMN IF NOT EXISTS` statements, so running it again is safe. Local PGlite applies it on start; **hosted Postgres is never migrated automatically**:
 
-See [PRD](PRD.md), [implementation decisions](IMPLEMENTATION.md), [design](../DESIGN.md) and [UX contract](../UX-CONTRACT.md).
+```sh
+DATABASE_URL=<postgres url> npm run db:migrate    # prints "Tenjo schema applied."
+```
+
+Run it from a checkout of the code you are about to deploy, **before** deploying code that reads new tables or columns; otherwise those pages or routes fail. Production Neon has every table, including `passkeys` and `entry_identities` (27 September 2026). The tables are described in [IMPLEMENTATION.md](IMPLEMENTATION.md#data-model).
+
+## Deploy
+
+- **Environments.** Production holds every variable. Preview deployments hold none (no database, World or Sui), so a preview only proves that a branch builds; test flows locally.
+- **Pushes to `main` deploy production.** The Vercel project is on a Hobby team, which only builds commits its owner authored, so [vercel-deploy.yml](../.github/workflows/vercel-deploy.yml) deploys teammates' pushes by committing a timestamped note under `.github/deploys/` as the owner. Run it from the Actions tab to redeploy.
+- **Merge with a merge commit.** Vercel skips the production build for a commit it already built as a preview, so fast-forwarding `main` to a previewed commit deploys nothing. If that happens, push a new commit.
+- **Promoting a preview** in Vercel puts production ahead of `main`. Merge the branch afterwards, or the next push to `main` deploys without it.
+- **Variable changes** apply to new deployments only: redeploy after changing one.
+- **Before shipping:** run the checks below, migrate Neon if the schema changed, merge, then confirm the live pages and `curl -s https://tenjo-azure.vercel.app/api/drops/<id>/public`.
+
+`vercel.json` pins the Singapore region and the build command (`next build --webpack`; this environment denied Turbopack's CSS worker port, while development still uses Turbopack). `.vercelignore` keeps local data and secrets out of uploads. Keep the organiser password out of documentation and issues.
 
 ## Verification
 
@@ -188,38 +206,57 @@ npm test
 npm run test:e2e
 npm run build
 npm run format:check
+npm run sui:test
 ```
 
-Browser tests launch an isolated local database and server on port 3100 (set `TENJO_TEST_PORT` if another server holds it), with a separate `.next-e2e` directory. They use installed Playwright Chromium. If needed, install the browser once with `npx playwright install chromium`.
+Browser tests start an isolated database and server on port 3100 with a separate `.next-e2e` directory and every `SUI_*` variable blank; set `TENJO_TEST_PORT` if another server holds the port. They use installed Playwright Chromium (`npx playwright install chromium` once).
 
-Tests cover weighted probabilities/cap, nullifier normalization, duplicate entry races, early draw, settlement idempotency, cross-series counts, wrong identity, duplicate pickup, exact proof forwarding, nonce/signal/action/environment/credential verification, partial verifier success, replay, dependency failure, bounded payloads, admin access and fail-closed World configuration, plus passkeys: registration and signatures from a software authenticator holding a real Ed25519 key, one entry per person and per passkey, and losses that a passkey carries across free and paid drops. Browser flows check real rendered receipts/history, confirmations/refusals, desktop (1440×1000), mobile (390×844) and page overflow. Real proofs are measured in the [debrief](#world-integration-debrief).
+- **TypeScript tests:** weighted probabilities and the cap, nullifier normalisation, duplicate-entry races, early draws, settlement idempotency, cross-series counts, wrong identity and duplicate pickup; exact proof forwarding, nonce, signal, action, environment and credential checks, partial verifier success, replay, dependency failure, bounded payloads, admin access and fail-closed configuration; the Sui mirror against an in-memory chain and the TypeScript re-run of the Move draw; passkeys, with a software authenticator holding a real Ed25519 key: registration, signatures bound to one drop and request, one entry per person and per passkey, and losses carried across free and paid drops.
+- **Move tests:** permits, deposits, refunds and payout, the six-chance cap and every draw and settle gate.
+- **Browser tests:** rendered receipts and history, confirmations and refusals, keyboard access, desktop (1440×1000) and mobile (390×844) layouts, and page overflow.
+
+For a browser check of passkeys, Chrome's DevTools protocol can add a virtual authenticator (`WebAuthn.addVirtualAuthenticator`) to a Playwright page against `next dev`.
+
+## Troubleshooting
+
+| Symptom                                                 | Cause and fix                                                                                                                      |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| "World's staging verification window is closed"         | Open a new window ([above](#the-staging-verification-window)), update the token on Vercel and redeploy                             |
+| IDKit says "Verification declined" on a simulator entry | The same staging gate, or a closed window; check the page's own message first                                                      |
+| "Already entered" for a real World ID                   | World refuses a second proof for the same drop's action (`nullifier_replayed`). One entry per person is working                    |
+| "Connection failed" after choosing Slush                | Slush's web wallet is blocked in Japan. Use a wallet extension with site access on all sites ([above](#test-a-paid-drop-as-a-fan)) |
+| "Tenjō doesn't know this passkey"                       | The browser remembered a passkey this database never stored. It is forgotten; the next entry creates a new one                     |
+| "This passkey already has an entry in this drop"        | One entry per passkey per drop. Use your own passkey, or untick it to enter with World ID alone                                    |
+| "The passkey step didn't finish"                        | The prompt was cancelled, or the browser wanted a fresh tap. Press **Confirm passkey**                                             |
+| Pages return 500 after a deploy                         | New tables or columns missing on Neon: run `npm run db:migrate` against it                                                         |
+| "Module not found: @mysten/sui/…" locally               | Stale install: run `npm ci`                                                                                                        |
+| A script hangs or fails on the local database           | PGlite allows one process: stop the dev server first                                                                               |
+| Browser tests fail with "port is already used"          | Another server holds 3100: set `TENJO_TEST_PORT`                                                                                   |
+| A push to `main` didn't deploy                          | The commit was already built as a preview: push a new commit                                                                       |
 
 ## World integration debrief
 
-Measured from production's `proof_log` with `npm run world:debrief` at 20:30 JST on 26 September 2026.
+Measured from production's `proof_log` with `npm run world:debrief` at 02:25 JST on 27 September 2026.
 
-| Item                                              | Observed evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Build integration start                           | 25 September 2026, about 23:22 JST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| First server-verified proof on production         | 26 September 2026, 17:25:53 JST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Time to first success                             | About 18 hours. The last stretch went on World's new staging gate (below): the first proof passed minutes after the staging-window token went live at 17:19 JST.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Production attempts, to 19:54 JST on 26 September | 14 verified entries (average 1.0 s, including World's verify call); 16 rejected (average 0.17 s)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Friction                                          | Since 25 September, World's verify API refuses staging proofs (`403 environment_not_allowed`) unless the team opens a 24-hour staging window through the Developer Portal's MCP tool and sends its token as `x-staging-verification-token`. The portal has no button for it, and IDKit only shows "Verification declined". World ID 4 nullifiers are single-use per action, so real World IDs get one action per drop, which costs them the cross-drop pity code (a passkey now restores it; see [Passkeys](#passkeys-keep-a-real-world-ids-extra-chances)). Also: reconciling the docs with the actual 4.3.0 exports, telling staging legacy and v4 identities apart, and checking each credential in a possibly partial verify result. |
-| Missing clarification                             | Server-verifiable presence enforcement, simulator passport support, My Number Card/preset behavior and cross-version identity reconciliation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Highest-value improvement                         | An official Next.js example covering a stable identity across repeat proofs (session proofs), byte-preserving server verification, the staging window, document fallback and server-attested pickup liveness                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Item                        | Observed evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Build integration start     | 25 September 2026, about 23:22 JST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| First server-verified proof | 26 September 2026, 17:25:53 JST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Time to first success       | About 18 hours. The last stretch went on World's new staging gate: the first proof passed minutes after the staging-window token went live at 17:19 JST                                                                                                                                                                                                                                                                                                                                                                  |
+| Production attempts         | 17 verified entries (average 0.98 s, including World's verify call) and 16 rejected (average 0.17 s), from 26 September 16:36 JST to 27 September 01:48 JST, for the simulator and real World IDs                                                                                                                                                                                                                                                                                                                        |
+| Friction                    | World's verify API refuses staging proofs without a 24-hour window, opened only through the Developer Portal's MCP tool, and IDKit then shows only "Verification declined". World ID 4 nullifiers are single-use per action, so real World IDs need one action per drop and lose the cross-drop code; Tenjō restores it with a passkey. Also: reconciling the docs with the actual IDKit 4.3.0 exports, telling staging legacy and v4 identities apart, and checking each credential in a possibly partial verify result |
+| Missing clarification       | Server-verifiable presence for pickup, simulator passport support, My Number Card behaviour, cross-version identity reconciliation and how to verify session proofs on the server                                                                                                                                                                                                                                                                                                                                        |
+| Highest-value improvement   | An official Next.js example covering session proofs (a stable identity across repeat proofs), byte-preserving server verification, the staging window, the document fallback and server-attested pickup liveness                                                                                                                                                                                                                                                                                                         |
 
-Every real verification attempt records only purpose, category, elapsed milliseconds and timestamp in `proof_log`; no proof contents or identity. To refresh these numbers, run `npm run world:debrief` with `DATABASE_URL` set to the database (stop a local PGlite server first), and set `WORLD_INTEGRATION_STARTED_AT` to get the time to first success.
+`proof_log` records only the purpose, the outcome category, the elapsed milliseconds and the time; never proof contents or identity. To refresh these numbers, run `npm run world:debrief` with `DATABASE_URL` set (stop a local PGlite server first) and `WORLD_INTEGRATION_STARTED_AT` for the time to first success.
 
-## Remaining submission work
+## Open work
 
 - [x] Real World ID success and duplicate refusal on production, for the simulator (passport) and real World IDs (Orb).
+- [x] Hosted Postgres and Vercel deployment.
+- [x] Sui testnet package, smoke-tested end to end with free and paid drops.
+- [x] Real World IDs carry their losses with a passkey, tested on production with a real device.
 - [x] Staging pickup fallback on and labelled; real-World-ID pickup off until liveness is server-attested.
-- [x] Provision hosted Postgres and deploy to Vercel.
-- [x] Phase 2: Sui Move package, registration, randomness, settlement, deposits/refunds and database mirror (tested on a local Sui network).
-- [x] Sui testnet: package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65), smoke-tested end to end with a free and a paid drop.
-- [x] Real World IDs carry their losses across drops with a passkey; Neon has the `passkeys` and `entry_identities` tables.
-- [x] Test drops removed from production; one labelled demo drop is live.
-- [ ] A real phone passkey together with a real World ID entry, end to end.
-- [ ] Stretch: unclaimed-item handoff, only after both phase gates pass.
-- [ ] Two clean four-minute rehearsals, recording and ETHGlobal submission.
-- [ ] @Chai decides project replacement, series-scoped privacy and prize scope.
+- [ ] Two clean four-minute rehearsals, the recording and the ETHGlobal submission ([PITCH.md](PITCH.md)).
+- [ ] Stretch: unclaimed-seat handoff.
+- [ ] @Chai decides series-scoped privacy and prize scope.

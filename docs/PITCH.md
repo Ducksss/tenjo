@@ -27,6 +27,7 @@ Name the customer categories, not partners. We have no partners, pilots or conve
 - “Lose a ballot, gain a chance.”
 - “Gacha’s pity, without gacha’s price. A losing deposit comes back in full, so you can’t lose money on Tenjō.”
 - “World ID checks who enters. Sui decides who wins.”
+- “World ID lets you in once per drop. Your passkey remembers your losses.”
 - “We can’t rig this demo. Sui picked who lost.”
 - “Nintendo already built a pity rule by hand. We made it a primitive.”
 
@@ -35,6 +36,7 @@ Name the customer categories, not partners. We have no partners, pilots or conve
 - “Partnered with”, “working with” or “used by” any real company. We have no pilots or users yet.
 - “Fair”, unqualified. Say “every loss counts” and “provably random”.
 - “KYC” or “identity” for World ID. It’s proof of personhood: no name, email or document is stored.
+- That World ID remembers you across drops. A real World ID starts fresh in every drop; the passkey remembers the losses.
 - “On mainnet”, “live payments” or “no fees”. It runs on Sui testnet with test SUI.
 - Guaranteed wins. More chances mean better odds, never a promise.
 
@@ -53,6 +55,8 @@ It runs on the local app, which is configured with World staging, against Sui te
 | 3:10–3:45 | How it’s built → the map                                                                                   | “For the organiser, Tenjō replaces three hacks: play-hour rules to stop bots, chasing winners who don’t pay, and ‘it’s rigged’ complaints. Winners hold a ticket they can’t transfer, which matters in Japan, where resale above face value is illegal. And because deposits are refunded in full, fans can’t lose money.”            |
 | 3:45–4:00 | Landing hero                                                                                               | “World ID for who enters. Sui for who wins. Tenjō: lose a ballot, gain a chance.”                                                                                                                                                                                                                                                     |
 
+**Showing a real World ID instead of the simulator:** tap **Enter with World ID** with “Keep my extra chances with a passkey” ticked, confirm with Face ID, then prove in World App. The receipt says the code comes from the passkey. Say: “World ID proves she’s one person; her passkey remembers her losses. A second passkey doesn’t buy a second entry.”
+
 At normal pace this runs about 4:10, so trim 0:25–0:40 first if rehearsal runs long. Keep one hand on the mouse and say what you click before you click it.
 
 If the network is slow, the walkthrough on the landing page (**See how it works**) runs entirely in the browser, and a screen recording of a rehearsal draw is the backup. Say “this is our rehearsal from an hour ago” if you use it.
@@ -60,6 +64,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 ## Staging: before you go on
 
 1. **Sui:** done. Package [`0x0d0f…3a65`](https://suiscan.xyz/testnet/object/0x0d0fd7d2dbedc277136bb41c3efc1048d1a2158197183899cda6a57a327b3a65) is on testnet, and the `SUI_*` variables are in the main checkout’s `.env.local` and on Vercel. Keep the organiser above 0.5 SUI; top it up at faucet.sui.io.
+   **World:** the staging window is open, so simulator proofs verify ([OPERATIONS](OPERATIONS.md#the-staging-verification-window)). Real World IDs need no window.
 2. **Drops:** `npm run sui:demo-drop -- --live-drop` creates:
    - **Nintendo Switch 2 · Pre-drop 1**, settled, so four of its six test fans carry real on-chain losses;
    - **Nintendo Switch 2 · Pre-drop 2**, closing a few minutes later and left unsettled for the live draw;
@@ -82,6 +87,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 - _Why two transactions?_ Commit, then use. It’s Sui’s recommended pattern for randomness, so a result can’t be seen and then rejected.
 - _What stops bots?_ Entry needs a World ID proof verified on our server, and the nullifier becomes an anonymous code. The Move contract also refuses a repeat code, so a second wallet can’t enter the same human twice.
 - _Real World IDs get a fresh code every drop. How do their losses carry?_ A passkey on the fan’s phone keeps one code for them. World ID lets them in once per drop; the passkey remembers their losses. Tenjō stores only its public key, and a second passkey never buys a second entry.
+- _Why not World ID session proofs?_ They would tie the pity to the person, and we’d switch when their server verification is documented. They also add a second World App prompt. Passkeys work on every phone today.
 - _Two passports?_ It’s a known limit of document credentials, and we disclose it. Orb Proof of Human is the configured fallback.
 - _Scalping?_ The winner’s `Ticket` has `key` but not `store`, so only our module could move it, and it has no transfer function. Pickup also needs a fresh World ID proof from the winner.
 - _Does it scale?_ The demo caps a drop at 300 entrants. Settlement is one atomic transaction, and Sui batches up to 1,024 payments in one. Big ballots would shard into several drops, or refunds would become claimable instead of pushed.
@@ -103,6 +109,7 @@ If the network is slow, the walkthrough on the landing page (**See how it works*
 - **Credential:** passport, because we need uniqueness, not identity. Orb is the fallback.
 - **Verification:** server-side, byte for byte, with nullifier, action, environment, nonce and signal all checked.
 - **Alternative paths:** duplicate, cancelled, missing credential, outage and wrong collector are all refused without saving anything.
+- **Returning fans:** World ID 4 nullifiers are single-use per action, so each drop has its own action and a real World ID starts fresh every time. A passkey carries the fan’s code; World ID still admits one entry per person per drop.
 - **Close:** show the duplicate refusal live, then the debrief in `docs/OPERATIONS.md`.
 
 **Sui (DeFi & Payments):**

@@ -16,13 +16,13 @@ The Capsule palette is plum (`#481427`), tangerine (`#EF5E36`), lime (`#D2DD5C`)
 | [drop-desktop.png](drop-desktop.png)               | 1440 px wide | Real local test-identity drop and public record                        |
 | [drop-mobile.png](drop-mobile.png)                 | 390 px wide  | Same local drop on mobile                                              |
 | [diagram-flow.svg](diagram-flow.svg)               | 760 × 508    | README flow from entry to pickup                                       |
-| [diagram-system.svg](diagram-system.svg)           | 760 × 400    | README map of how the pieces connect                                   |
-| [diagram-entry.svg](diagram-entry.svg)             | 760 × 704    | README decision tree for entry, in code order                          |
+| [diagram-system.svg](diagram-system.svg)           | 760 × 400    | Map of how the pieces connect, in docs/IMPLEMENTATION.md               |
+| [diagram-entry.svg](diagram-entry.svg)             | 760 × 790    | README decision tree for entry, in code order, with the passkey check  |
 | [diagram-pickup.svg](diagram-pickup.svg)           | 760 × 704    | README decision tree for pickup, in code order                         |
 
-The four diagrams are plain SVG in the palette above, drawn from the shared PRD and the checks in `src/lib/service.ts` and `src/lib/world.ts`. Edit them directly, and update them when those checks change.
+The four diagrams are plain SVG in the palette above, drawn from the PRD and the checks in `src/lib/service.ts`, `src/lib/world.ts` and `src/lib/passkey.ts`. Edit them directly, and update them when those checks change.
 
-Screenshots come from the running Next.js app. Discovery and walkthrough captures use an empty or seeded local database; drop captures use labelled local test identities. They contain no real World proofs, personal details or real-money transactions. The capsule machine, capsules and console art are original SVG and CSS; none of the screenshots is a generated mockup.
+Screenshots come from the running Next.js app. They were captured on 26 September 2026, before passkeys, and nothing embeds them. Discovery and walkthrough captures use an empty or seeded local database; drop captures use labelled local test identities. They contain no real World proofs, personal details or real-money transactions. The capsule machine, capsules and console art are original SVG and CSS; none of the screenshots is a generated mockup.
 
 Vector marks and illustrations are original project artwork, with no stock photography or third-party logos. Space Grotesk and Geist are SIL OFL fonts, self-hosted by `next/font/google` at build time.
 
