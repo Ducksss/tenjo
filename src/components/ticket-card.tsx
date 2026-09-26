@@ -54,7 +54,9 @@ export function TicketCard({ drop }: { drop: Drop }) {
         </div>
         <div className="ticket-title">
           <span className="eyebrow">
-            {drop.is_demo ? "A local demo drop" : "Human-first drop"}
+            {drop.is_demo
+              ? "A local demo drop"
+              : "One entry per verified person"}
           </span>
           <h2>{drop.title}</h2>
           <p>{drop.description}</p>

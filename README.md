@@ -180,6 +180,8 @@ Browser tests check keyboard access, mobile layouts and page overflow. They star
 
 ## Roadmap
 
+For a page-by-page wireframe, user journeys and current/optional architecture maps, open the self-contained [review map](docs/review-map.html) in a browser. The [26 September review](docs/REVIEW-2026-09-26.md) prioritises improvements and records the verification limits.
+
 - [x] Entry, refusal, weighted draw, pity counts, pickup and public record.
 - [x] Server-side World ID boundary, hosted on Vercel with Neon Postgres.
 - [x] `tenjo::ballot` Move package: escrow, permits, `sui::random` draw, settlement, ledger, soulbound tickets, unit tests.
@@ -197,7 +199,7 @@ Built during ETHGlobal Tokyo 2026 with Claude Code as a pair programmer. Commits
 
 ## License and contact
 
-No project license has been selected yet; public visibility does not grant an open-source licence. Dependency licences remain their own. Maintained by [Chai / Ducksss](https://github.com/Ducksss); use [repository issues](https://github.com/Ducksss/tenjo/issues) for questions.
+Tenjō is released under the [MIT License](LICENSE). Dependency licences remain their own. Maintained by [Chai / Ducksss](https://github.com/Ducksss); use [repository issues](https://github.com/Ducksss/tenjo/issues) for questions.
 
 ## Acknowledgments
 

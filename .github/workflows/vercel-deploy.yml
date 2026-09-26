@@ -1,0 +1,125 @@
+# Gets teammates' pushes to main deployed on Vercel.
+#
+# The Vercel project is on a Hobby team, which only builds a private repo's commits
+# when the Vercel owner (@Ducksss) authored them, so a teammate's push comes back
+# "Deployment was blocked". When that happens, this workflow commits a UTC-timestamped
+# note to .github/deploys/ with the owner as author, and Vercel builds main from it.
+# Pushes Vercel builds by itself (the owner's, or anyone's once the repo is public) are
+# left alone.
+#
+# Redeploy main by hand: Actions > Deploy to Vercel > Run workflow, or
+#   gh workflow run vercel-deploy.yml -R Ducksss/tenjo
+#
+# After ETHGlobal Tokyo, delete this file and .github/deploys/.
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit the deploy note
+  statuses: read # read Vercel's commit status
+
+concurrency:
+  group: vercel-deploy
+  cancel-in-progress: false
+
+env:
+  OWNER_NAME: Chai Pin Zheng
+  OWNER_EMAIL: chaipinzheng@gmail.com
+  SITE_URL: https://tenjo-azure.vercel.app
+
+jobs:
+  deploy:
+    # The owner's pushes deploy without help. Keep this login in step with OWNER_EMAIL.
+    if: github.event_name == 'workflow_dispatch' || github.event.head_commit.author.username != 'Ducksss'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deploy main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PUSHED_SHA: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          repo=$GITHUB_REPOSITORY
+
+          # Vercel's status on commit $1 as "state<TAB>description", empty until Vercel sees it.
+          vercel_status() {
+            gh api "repos/$repo/commits/$1/status" \
+              --jq '.statuses[] | select(.context == "Vercel") | [.state, .description] | @tsv' || true
+          }
+
+          # Waits up to 15 minutes for Vercel's final verdict on commit $1. Prints "none"
+          # if Vercel still hasn't seen the commit after $2 seconds.
+          wait_for_vercel() {
+            local status waited=0
+            while [ "$waited" -lt 900 ]; do
+              status=$(vercel_status "$1")
+              case "$status" in
+                success* | failure* | error*) echo "$status"; return ;;
+                "") if [ "$waited" -ge "$2" ]; then echo none; return; fi ;;
+              esac
+              sleep 10
+              waited=$((waited + 10))
+            done
+            echo timeout
+          }
+
+          # Reports Vercel's verdict $2 on commit $1, and fails the run unless it deployed.
+          report() {
+            local short=${1:0:7} why
+            case "$2" in
+              success*)
+                echo "::notice::Deployed $short: $SITE_URL"
+                echo "Deployed \`$short\` to production: $SITE_URL" >> "$GITHUB_STEP_SUMMARY"
+                return ;;
+              none) why="Vercel never picked the commit up" ;;
+              timeout) why="Vercel was still building after 15 minutes" ;;
+              *) why="Vercel says: ${2#*$'\t'}" ;;
+            esac
+            echo "::error::$short did not deploy. $why."
+            echo "\`$short\` did not deploy. $why. Only @Ducksss can open the Vercel build log; a local \`npm run build\` reproduces most failures." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+
+          if [ "$EVENT" = push ]; then
+            verdict=$(wait_for_vercel "$PUSHED_SHA" 120)
+            # Anything but a block means Vercel took the push itself.
+            if [ "$verdict" != none ] && [[ ${verdict,,} != failure*blocked* ]]; then
+              report "$PUSHED_SHA" "$verdict"
+              exit 0
+            fi
+            # An owner commit at the tip of main (the owner's, or an earlier run's note) covers this push.
+            read -r head author < <(gh api "repos/$repo/commits/main" --jq '[.sha, .commit.author.email] | @tsv')
+            if [ "$author" = "$OWNER_EMAIL" ]; then
+              report "$head" "$(wait_for_vercel "$head" 120)"
+              exit 0
+            fi
+          fi
+
+          stamp=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+          note="Vercel deploy of main requested by @$ACTOR ($EVENT). Run: $RUN_URL"
+          sha=""
+          for attempt in 1 2 3; do
+            sha=$(gh api -X PUT "repos/$repo/contents/.github/deploys/$stamp.md" \
+              -f message="deploy: trigger Vercel for @$ACTOR" \
+              -f content="$(printf '%s\n' "$note" | base64 -w0)" \
+              -f branch=main \
+              -f "author[name]=$OWNER_NAME" -f "author[email]=$OWNER_EMAIL" \
+              -f "committer[name]=$OWNER_NAME" -f "committer[email]=$OWNER_EMAIL" \
+              --jq .commit.sha) && break
+            echo "Attempt $attempt to commit the deploy note failed; retrying."
+            sleep 5
+          done
+          if ! [[ $sha =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Could not commit the deploy note to main."
+            exit 1
+          fi
+          echo "Committed .github/deploys/$stamp.md as ${sha:0:7}; waiting for Vercel."
+          report "$sha" "$(wait_for_vercel "$sha" 120)"

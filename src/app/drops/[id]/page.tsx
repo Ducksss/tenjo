@@ -24,6 +24,7 @@ import { DropActions } from "@/components/drop-actions";
 import { SuiEvidence } from "@/components/sui-evidence";
 import { Notice } from "@/components/ui";
 import { formatSui } from "@/lib/sui-status";
+import { entryStatus } from "@/lib/entry-status";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -291,10 +292,14 @@ export default async function DropPage({
                       <span className={e.outcome === "won" ? "result-won" : ""}>
                         {e.outcome === "won"
                           ? `Winner #${e.pick_order}`
-                          : e.outcome === "lost"
-                            ? "Not this time"
-                            : "Pending"}
+                          : entryStatus({ ...e, drop_state: drop.state })}
                       </span>
+                      {e.sui_status === "pending" &&
+                      drop.state === "settled" ? (
+                        <p className="small muted">
+                          This entry did not reach Sui. No loss was added.
+                        </p>
+                      ) : null}
                     </td>
                     <td>{e.losses_after ?? "—"}</td>
                     <td>

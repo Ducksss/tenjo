@@ -34,6 +34,7 @@ type Receipt = {
   tickets?: number;
   collected?: boolean;
   digest?: string;
+  sui_status?: string;
 };
 type PermitResponse = {
   code: string;
@@ -142,9 +143,11 @@ export function DropActions({
     setInfo(
       value?.collected
         ? "Item collected. Your pickup is recorded."
-        : value?.digest
-          ? `Entry saved and deposit held on Sui. Lose, and it comes back in the settlement transaction after ${closesLabel}.`
-          : `Entry saved. The draw runs after entries close (${closesLabel}). Keep your code to check your result.`,
+        : value?.sui_status === "pending"
+          ? "Entry saved on Tenjō, but Sui registration is pending. It is not yet in the on-chain draw. Check the public record for confirmation."
+          : value?.digest
+            ? `Entry saved and deposit held on Sui. Lose, and it comes back in the settlement transaction after ${closesLabel}.`
+            : `Entry saved. The draw runs after entries close (${closesLabel}). Keep your code to check your result.`,
     );
     setError("");
     router.refresh();
@@ -315,7 +318,9 @@ export function DropActions({
               <Check size={18} />
               {receipt.collected
                 ? "Pickup recorded"
-                : `${receipt.tickets} chance${receipt.tickets === 1 ? "" : "s"} in this draw`}
+                : receipt.sui_status === "pending"
+                  ? "Awaiting Sui registration"
+                  : `${receipt.tickets} chance${receipt.tickets === 1 ? "" : "s"} in this draw`}
             </div>
             {receipt.tickets ? <Capsules count={receipt.tickets} /> : null}
             {receipt.tickets ? (
