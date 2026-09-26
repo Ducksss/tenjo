@@ -79,7 +79,7 @@ World ID answers "is this a unique person who hasn't entered this drop?". For re
 3. **Later entries.** The passkey signs `sha256("tenjo:passkey:get:v1:<drop>:<request>")` (`{assertion}`), verified against the site's origin and host name (`APP_ORIGIN`, or the Host header locally). The counter must not go backwards.
 4. **Order.** `passkeyForEntry` runs before `verifyWorldProof` and refuses an unknown passkey, a bad signature and a passkey that already entered the drop, all without spending the World ID proof.
 5. **Only real World IDs link.** `linkPasskey` swaps the code only for production-setup identities; the simulator and demo identities keep their own.
-6. **Browser.** `src/components/passkey.ts` remembers the credential ID in `localStorage`, can offer a passkey synced from another device (discoverable credentials), and falls back to a **Confirm passkey** button when a prompt is cancelled or needs a fresh tap.
+6. **Browser.** `src/components/passkey.ts` remembers the credential ID in `localStorage` and signs with it directly. A browser that remembers none asks first (**Use my passkey** or **Create a passkey**): "use" lets the device offer any Tenjō passkey it holds (discoverable credentials), so a fan who cleared their browser data, or brings a passkey synced from another device, keeps their losses instead of starting over. The question runs the passkey prompt from the fan's tap, which browsers that need a fresh gesture expect. A cancelled or failed prompt offers a retry, the other option, or World ID alone.
 
 ### One person, one entry
 

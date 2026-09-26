@@ -152,7 +152,8 @@ Priority: **P0** = core acceptance; **P1** = Sui phase; **P2** = conditional str
 | Missing credential or invalid proof             | What is required, or why it was refused                                             | No member or entry                          |
 | World unavailable or rate-limited               | Temporary unavailability, with manual retry                                         | No entry; outage kept distinct from refusal |
 | Staging window closed                           | World's staging window is closed; the organiser must open a new one                 | No entry                                    |
-| Passkey prompt cancelled or interrupted         | Nothing entered yet; **Confirm passkey** or **Enter with World ID alone**           | No entry; the World ID request stays usable |
+| Browser remembers no passkey                    | "Entered with a passkey before?": **Use my passkey** or **Create a passkey**        | Nothing until the fan chooses               |
+| Passkey prompt cancelled or interrupted         | Nothing entered yet; retry, the other option, or **Enter with World ID alone**      | No entry; the World ID request stays usable |
 | Passkey unknown or its signature invalid        | Nothing saved; enter again to create a new passkey                                  | No entry; the World ID proof is not spent   |
 | Passkey already entered in this drop            | Use your own passkey, or enter with World ID alone                                  | No entry; the World ID proof is not spent   |
 | Wallet can't connect                            | "Connection failed" from the wallet picker (Slush's web wallet is blocked in Japan) | Nothing                                     |

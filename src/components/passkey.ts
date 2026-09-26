@@ -28,6 +28,8 @@ export function forgetPasskey() {
     localStorage.removeItem(KEY);
   } catch {}
 }
+/** `use`: the remembered passkey; `discover`: any Tenjō passkey the device offers; `create`: a new one. */
+export type PasskeyMode = "use" | "discover" | "create";
 const header = (proof: object) =>
   base64url(new TextEncoder().encode(JSON.stringify(proof)));
 
@@ -40,7 +42,7 @@ const header = (proof: object) =>
 export async function passkeyProof(
   dropId: string,
   challengeId: string,
-  mode: "use" | "discover" | "create",
+  mode: PasskeyMode,
 ) {
   const rpId = window.location.hostname;
   if (mode === "create") {
