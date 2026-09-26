@@ -110,6 +110,9 @@ export default async function DropPage({
             ? `Your World ID (${realWorld.credential === "orb" ? "Proof of Human" : "Passport"}) or the World ID simulator (${world.credential === "orb" ? "Proof of Human" : "Passport"}, staging)`
             : `World ID ${world.environment} · ${world.credential === "orb" ? "Proof of Human" : "Passport"} credential`}{" "}
           · Public record uses anonymous codes.
+          {realWorld
+            ? " A real World ID gets a fresh code for each drop, so for now extra chances from past losses build up on the simulator only."
+            : ""}
         </Notice>
       )}
       <div className="detail-grid">
