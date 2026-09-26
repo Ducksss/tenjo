@@ -20,9 +20,12 @@ export type EntryPermit = {
   price_mist: string;
   code_hex: string;
   signature_hex: string;
+  /** The chain stops taking entries then (the drop's close plus its grace). */
+  closes_at_ms?: number;
 };
 export type SuiWalletApi = {
   address: string | null;
+  /** Rejects with `retry: true` when the wallet sent nothing, so the same permit can try again. */
   enter: (permit: EntryPermit) => Promise<string>;
 };
 
@@ -74,8 +77,11 @@ function Bridge({ onChange }: { onChange: (api: SuiWalletApi) => void }) {
           .signAndExecuteTransaction({ transaction: tx })
           .catch((error: unknown) => {
             // Declined, closed or unable to pay: the wallet sent nothing to Sui.
-            throw new Error(
-              `Your wallet didn’t approve the deposit${error instanceof Error && error.message ? ` (${error.message})` : ""}. Your deposit did not move.`,
+            throw Object.assign(
+              new Error(
+                `Your wallet didn’t approve the deposit${error instanceof Error && error.message ? ` (${error.message})` : ""}. Your deposit did not move.`,
+              ),
+              { retry: true },
             );
           });
         if (result.FailedTransaction)

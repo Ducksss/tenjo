@@ -219,20 +219,20 @@ For a browser check of passkeys, Chrome's DevTools protocol can add a virtual au
 
 ## Troubleshooting
 
-| Symptom                                                 | Cause and fix                                                                                                                      |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| "World's staging verification window is closed"         | Open a new window ([above](#the-staging-verification-window)), update the token on Vercel and redeploy                             |
-| IDKit says "Verification declined" on a simulator entry | The same staging gate, or a closed window; check the page's own message first                                                      |
-| "Already entered" for a real World ID                   | World refuses a second proof for the same drop's action (`nullifier_replayed`). One entry per person is working                    |
-| "Connection failed" after choosing Slush                | Slush's web wallet is blocked in Japan. Use a wallet extension with site access on all sites ([above](#test-a-paid-drop-as-a-fan)) |
-| "Tenjō doesn't know this passkey"                       | The browser remembered a passkey this database never stored. It is forgotten; the next entry creates a new one                     |
-| "This passkey already has an entry in this drop"        | One entry per passkey per drop. Use your own passkey, or untick it to enter with World ID alone                                    |
-| "Your passkey didn't answer" or "wasn't created"        | The prompt was cancelled, or no Tenjō passkey is on this device. Retry, or choose **Create a new passkey instead**                 |
-| Pages return 500 after a deploy                         | New tables or columns missing on Neon: run `npm run db:migrate` against it                                                         |
-| "Module not found: @mysten/sui/…" locally               | Stale install: run `npm ci`                                                                                                        |
-| A script hangs or fails on the local database           | PGlite allows one process: stop the dev server first                                                                               |
-| Browser tests fail with "port is already used"          | Another server holds 3100: set `TENJO_TEST_PORT`                                                                                   |
-| A push to `main` didn't deploy                          | The commit was already built as a preview: push a new commit                                                                       |
+| Symptom                                                 | Cause and fix                                                                                                                                                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| "World's staging verification window is closed"         | Open a new window ([above](#the-staging-verification-window)), update the token on Vercel and redeploy                                                                                                                   |
+| IDKit says "Verification declined" on a simulator entry | The same staging gate, or a closed window; check the page's own message first                                                                                                                                            |
+| "World ID has already verified you for this drop"       | World App refuses a second proof for the same drop's action (`nullifier_replayed`) from ten minutes after its first. One entry per person is working; an unfinished paid entry finishes from the permit its browser kept |
+| "Connection failed" after choosing Slush                | Slush's web wallet is blocked in Japan. Use a wallet extension with site access on all sites ([above](#test-a-paid-drop-as-a-fan))                                                                                       |
+| "Tenjō doesn't know this passkey"                       | The browser remembered a passkey this database never stored. It is forgotten; the next entry creates a new one                                                                                                           |
+| "This passkey already has an entry in this drop"        | One entry per passkey per drop. Use your own passkey, or untick it to enter with World ID alone                                                                                                                          |
+| "Your passkey didn't answer" or "wasn't created"        | The prompt was cancelled, or no Tenjō passkey is on this device. Retry, or choose **Create a new passkey instead**                                                                                                       |
+| Pages return 500 after a deploy                         | New tables or columns missing on Neon: run `npm run db:migrate` against it                                                                                                                                               |
+| "Module not found: @mysten/sui/…" locally               | Stale install: run `npm ci`                                                                                                                                                                                              |
+| A script hangs or fails on the local database           | PGlite allows one process: stop the dev server first                                                                                                                                                                     |
+| Browser tests fail with "port is already used"          | Another server holds 3100: set `TENJO_TEST_PORT`                                                                                                                                                                         |
+| A push to `main` didn't deploy                          | The commit was already built as a preview: push a new commit                                                                                                                                                             |
 
 ## World integration debrief
 

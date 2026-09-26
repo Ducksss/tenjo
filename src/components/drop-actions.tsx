@@ -10,6 +10,7 @@ import {
   Check,
   Copy,
   UserRoundX,
+  Wallet,
 } from "lucide-react";
 import { ApiError, api } from "@/lib/client-api";
 import type { DropStatus } from "@/lib/format";
@@ -54,6 +55,34 @@ type PermitResponse = {
   permit: EntryPermit;
   passkey_linked?: boolean;
 };
+// A paid entry whose permit arrived but whose deposit hasn't reached Sui, kept in this browser
+// until it does or Sui stops taking entries. World App proves a drop once (ten minutes after the
+// first proof it refuses another), so finishing must need only the wallet the permit names.
+type Unpaid = PermitResponse & {
+  sender: string;
+  mode?: "primary" | "production";
+};
+const unpaidKey = (dropId: string) => `tenjo:unpaid:${dropId}`;
+function storedUnpaid(dropId: string): Unpaid | null {
+  try {
+    const unpaid: Unpaid | null = JSON.parse(
+      localStorage.getItem(unpaidKey(dropId)) ?? "null",
+    );
+    if (unpaid && Date.now() >= (unpaid.permit.closes_at_ms ?? Infinity)) {
+      localStorage.removeItem(unpaidKey(dropId));
+      return null;
+    }
+    return unpaid;
+  } catch {
+    return null;
+  }
+}
+function storeUnpaid(dropId: string, unpaid: Unpaid | null) {
+  try {
+    if (unpaid) localStorage.setItem(unpaidKey(dropId), JSON.stringify(unpaid));
+    else localStorage.removeItem(unpaidKey(dropId));
+  } catch {}
+}
 export function DropActions({
   id,
   seriesId,
@@ -98,6 +127,8 @@ export function DropActions({
   const [problem, setProblem] = useState<{
     message: string;
     repeat?: { code?: string };
+    /** World App refused a second proof for this drop. */
+    replayed?: boolean;
   } | null>(null);
   const [info, setInfo] = useState("");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
@@ -105,6 +136,14 @@ export function DropActions({
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [wallet, setWallet] = useState<SuiWalletApi | null>(null);
   const address = wallet?.address ?? null;
+  // A permit still waiting on its deposit (see Unpaid). Demo identities can simply enter again.
+  const [unpaid, setUnpaid] = useState<Unpaid | null>(() =>
+    typeof window === "undefined" || demo ? null : storedUnpaid(id),
+  );
+  function keepUnpaid(value: Unpaid | null) {
+    storeUnpaid(id, value);
+    setUnpaid(value);
+  }
   // Sent with the World ID proof: the paying wallet and the entrant's passkey, if any.
   const [entryHeaders, setEntryHeaders] = useState<Record<string, string>>();
   const [entryMode, setEntryMode] = useState<"primary" | "production">(
@@ -153,6 +192,11 @@ export function DropActions({
   const settled = status === "settled";
   const closed = now !== null && now >= Date.parse(closesAt);
   const notOpen = now !== null && now < Date.parse(opensAt);
+  // Once mounted and while entries are open, a kept permit turns entry into its deposit alone,
+  // with the wallet it was issued to.
+  const kept =
+    paid && unpaid && now !== null && !closed && !settled ? unpaid : null;
+  const finishable = !!kept && kept.sender === address;
   // The live clock decides the phase once mounted; the server's view covers the first paint.
   const phase: DropStatus =
     settled || now === null
@@ -198,17 +242,36 @@ export function DropActions({
       ? "Entry not completed. You can verify again when ready."
       : "Pickup not completed. You can verify again when ready.";
   // Paid entry, after World ID (or a demo identity) earned a permit: the wallet locks the deposit on Sui.
-  async function deposit(value: PermitResponse) {
-    if (!wallet?.address) throw new Error("Connect a Sui wallet first.");
+  async function deposit(value: PermitResponse, sender = address) {
+    if (!wallet?.address || !sender)
+      throw new Error("Connect a Sui wallet first.");
+    // Kept until the deposit reaches Sui, so a refusal or a reload never needs World ID again.
+    if (!demo) keepUnpaid({ mode: entryMode, ...value, sender });
+    // The permit only works for the wallet it was issued to, and Sui would refuse it for another.
+    if (wallet.address !== sender) {
+      setInfo("");
+      throw new Error(
+        `This entry’s permit is for wallet ${shortId(sender)}. Connect it to approve the deposit.`,
+      );
+    }
     setInfo(`Approve the ${paid?.priceLabel} deposit in your wallet.`);
     let digest: string;
     try {
       digest = await wallet.enter(value.permit);
     } catch (error) {
       // The wallet's refusal says the deposit didn't move; the prompt above no longer applies.
-      setInfo(unfinished("enter"));
+      // The wallet sent nothing, so the kept permit can try again. Sui refusing the entry
+      // (closed, full or already entered) would refuse the same permit again.
+      const retry = !demo && (error as { retry?: boolean }).retry === true;
+      if (!demo && !retry) keepUnpaid(null);
+      setInfo(
+        retry
+          ? "Entry not completed. World ID is done, so approving the deposit finishes your entry."
+          : unfinished("enter"),
+      );
       throw error;
     }
+    if (!demo) keepUnpaid(null);
     setInfo("Deposit locked on Sui. Recording your entry…");
     verified({
       ...(await api<Receipt>(`/api/drops/${id}/confirm`, {
@@ -242,15 +305,41 @@ export function DropActions({
     }
     const repeat =
       error instanceof ApiError && error.code === "already_entered";
+    const replayed =
+      error instanceof ApiError && error.code === "world_replayed";
     const code = repeat ? error.details.member_code : undefined;
     // A repeat is a final answer, so closing World ID after it shouldn't suggest verifying again.
-    if (repeat) completedFlow.current = true;
+    if (repeat || replayed) completedFlow.current = true;
+    // World ID won't verify this drop again, but an entry kept here needs only its deposit.
+    if (replayed && unpaid) {
+      setProblem(null);
+      setInfo(
+        `World ID has already verified you for this drop. Connect wallet ${shortId(unpaid.sender)} and approve its deposit to finish your entry.`,
+      );
+      return;
+    }
     setProblem({
       message: (error as Error).message,
       repeat: repeat
         ? { code: typeof code === "string" ? code : undefined }
         : undefined,
+      replayed,
     });
+  }
+  // A kept entry needs only its deposit: the wallet, not World ID.
+  async function finish(value: Unpaid) {
+    setPendingPasskey(null);
+    setEntryMode(value.mode ?? "primary");
+    setBusy(true);
+    setProblem(null);
+    setInfo("");
+    try {
+      await deposit(value, value.sender);
+    } catch (error) {
+      fail(error);
+    } finally {
+      setBusy(false);
+    }
   }
   function openWorldId(next: Challenge, headers?: Record<string, string>) {
     setEntryHeaders(headers);
@@ -407,7 +496,7 @@ export function DropActions({
                 <SuiWallet network={suiNetwork} onChange={setWallet} />
               </div>
             ) : null}
-            {linkable && !closed && !notOpen ? (
+            {linkable && !closed && !notOpen && !finishable ? (
               <div className="passkey-step">
                 <span className="eyebrow">Keep your extra chances</span>
                 <p>
@@ -451,38 +540,50 @@ export function DropActions({
                 ) : null}
               </div>
             ) : null}
-            <Button
-              className="full"
-              busy={busy}
-              disabled={
-                now === null ||
-                closed ||
-                notOpen ||
-                (demo ? !demoEnabled : !worldReady) ||
-                (!!paid && !address)
-              }
-              onClick={() => verify("enter")}
-            >
-              <Fingerprint size={21} />
-              {closed
-                ? "Entries closed"
-                : notOpen
-                  ? "Entries open soon"
-                  : paid && !address
-                    ? "Connect a wallet to enter"
-                    : demo
-                      ? paid
-                        ? `Enter with demo identity + ${paid.priceLabel}`
-                        : "Enter with demo identity"
-                      : paid
-                        ? `Enter with World ID + ${paid.priceLabel}`
-                        : "Enter with World ID"}
-              <ArrowRight size={18} />
-            </Button>
+            {kept && finishable ? (
+              <Button className="full" busy={busy} onClick={() => finish(kept)}>
+                <Wallet size={21} />
+                Approve the {paid?.priceLabel} deposit
+                <ArrowRight size={18} />
+              </Button>
+            ) : (
+              <Button
+                className="full"
+                busy={busy}
+                disabled={
+                  now === null ||
+                  closed ||
+                  notOpen ||
+                  (demo ? !demoEnabled : !worldReady) ||
+                  (!!paid && !address)
+                }
+                onClick={() => verify("enter")}
+              >
+                <Fingerprint size={21} />
+                {closed
+                  ? "Entries closed"
+                  : notOpen
+                    ? "Entries open soon"
+                    : paid && !address
+                      ? "Connect a wallet to enter"
+                      : demo
+                        ? paid
+                          ? `Enter with demo identity + ${paid.priceLabel}`
+                          : "Enter with demo identity"
+                        : paid
+                          ? `Enter with World ID + ${paid.priceLabel}`
+                          : "Enter with World ID"}
+                <ArrowRight size={18} />
+              </Button>
+            )}
             <p className="action-hint">
-              {paid
-                ? `Refundable deposit · ${paid.priceLabel} · One entry per person`
-                : "Free entry · One entry per person"}
+              {kept
+                ? finishable
+                  ? "World ID is done. Approving the refundable deposit finishes your entry."
+                  : `Your unfinished entry is for wallet ${shortId(kept.sender)}. Connect it to finish without World ID.`
+                : paid
+                  ? `Refundable deposit · ${paid.priceLabel} · One entry per person`
+                  : "Free entry · One entry per person"}
             </p>
             {pendingPasskey ? (
               <div className="passkey-step" role="status">
@@ -558,7 +659,7 @@ export function DropActions({
                 </button>
               </div>
             ) : null}
-            {realWorld && !demo ? (
+            {realWorld && !demo && !finishable ? (
               <button
                 type="button"
                 className="text-button simulator-entry"
@@ -683,6 +784,8 @@ export function DropActions({
             demo={demo}
             paid={!!paid}
           />
+        ) : problem?.replayed ? (
+          <AlreadyVerified paid={!!paid} />
         ) : problem ? (
           <Notice error>{problem.message}</Notice>
         ) : null}
@@ -704,7 +807,11 @@ export function DropActions({
               completedFlow.current = true;
               if (paid && purpose === "enter") {
                 setBusy(true);
-                deposit(value as unknown as PermitResponse)
+                // The permit names the wallet that asked for it, even if another is connected now.
+                deposit(
+                  value as unknown as PermitResponse,
+                  entryHeaders?.["x-tenjo-sui-address"] ?? address,
+                )
                   .catch(fail)
                   .finally(() => setBusy(false));
               } else verified(value as Receipt);
@@ -750,6 +857,27 @@ function AlreadyEntered({
             <ArrowRight size={14} />
           </Link>
         ) : null}
+      </div>
+    </div>
+  );
+}
+/** World App refused a second proof for this drop before Tenjō saw one, so whether the first
+ * became an entry is unknown here: the card says what is certain and where to check. */
+function AlreadyVerified({ paid }: { paid: boolean }) {
+  return (
+    <div className="notice notice-error already-entered" role="alert">
+      <UserRoundX size={20} aria-hidden="true" />
+      <div>
+        <strong>World ID has already verified you for this drop</strong>
+        <p>
+          World ID proves each person once per drop, so it can’t verify you here
+          again. Nothing new was saved{paid ? " and no deposit moved" : ""}. An
+          entry you finished still counts.
+        </p>
+        <Link className="text-link" href="/results">
+          Look up your code
+          <ArrowRight size={14} />
+        </Link>
       </div>
     </div>
   );

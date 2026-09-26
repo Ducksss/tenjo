@@ -1,7 +1,8 @@
 // Passkey-linked pity for real World IDs. World ID 4 gives a real World ID a fresh code in every
 // drop, so its losses can't carry over. A passkey the entrant creates here gives their entries a
 // stable code instead; the per-drop World ID proof still decides who may enter. The entry checks
-// here run before World verification, so a refusal never spends the proof.
+// here run before World verification, so a refusal saves nothing. World App made the proof already,
+// though, and proves the drop again only for ten minutes after its first proof.
 import {
   verifyAuthenticationResponse,
   verifyRegistrationResponse,

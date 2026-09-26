@@ -5,8 +5,20 @@ import { test, expect, type Page } from "@playwright/test";
 // wallet. The routes that would verify a proof or read Sui are answered here, and nothing
 // leaves the machine.
 
+// World App's own state: its clock, how often it was asked, and when it first disclosed each
+// action's nullifier. It lives on the phone, so it outlives a reload of the page.
+type Phone = {
+  later: number;
+  asked: number;
+  disclosed: Record<string, number>;
+};
 type Fakes = {
-  world: { mode: string };
+  world: {
+    mode: string;
+    phone?: () => Phone;
+    /** The fan comes back later: moves World App's clock on. */
+    later?: (ms: number) => void;
+  };
   wallet: {
     requests: number;
     settle?: { resolve(result: unknown): void; reject(error: Error): void };
@@ -43,22 +55,44 @@ function fakes({ worldApp }: { worldApp: boolean }) {
   const win = window as unknown as Fakes & Record<string, unknown>;
   win.world = { mode: "success" };
   if (worldApp) {
+    const load = (): Phone =>
+      JSON.parse(
+        localStorage.getItem("fake-world-app") ??
+          '{"later":0,"asked":0,"disclosed":{}}',
+      );
+    const save = (phone: Phone) =>
+      localStorage.setItem("fake-world-app", JSON.stringify(phone));
+    win.world.phone = load;
+    win.world.later = (ms) => save({ ...load(), later: load().later + ms });
     // IDKit inside World App posts "verify" to the app and waits for its answer as a message.
     win.WorldApp = { world_app_version: 1 };
     win.webkit = {
       messageHandlers: {
         minikit: {
-          postMessage() {
+          postMessage(message: { payload?: { action?: string } }) {
+            const phone = load();
+            phone.asked++;
+            // WalletKit's replay guard: a nullifier first disclosed more than ten minutes ago is
+            // refused before any proof leaves the phone. A decline discloses nothing.
+            const now = Date.now() + phone.later;
+            const action = message.payload?.action ?? "";
+            const first = phone.disclosed[action];
+            const replayed = first !== undefined && first < now - 600000;
+            if (win.world.mode === "success" && !replayed)
+              phone.disclosed[action] ??= now;
+            save(phone);
             const payload =
-              win.world.mode === "success"
-                ? {
-                    status: "success",
-                    verification_level: "document",
-                    proof: "0x" + "1".repeat(512),
-                    merkle_root: "0x" + "2".repeat(64),
-                    nullifier_hash: "0x" + "3".repeat(64),
-                  }
-                : { status: "error", error_code: win.world.mode };
+              win.world.mode !== "success"
+                ? { status: "error", error_code: win.world.mode }
+                : replayed
+                  ? { status: "error", error_code: "nullifier_replayed" }
+                  : {
+                      status: "success",
+                      verification_level: "document",
+                      proof: "0x" + "1".repeat(512),
+                      merkle_root: "0x" + "2".repeat(64),
+                      nullifier_hash: "0x" + "3".repeat(64),
+                    };
             setTimeout(
               () =>
                 window.postMessage(
@@ -127,6 +161,33 @@ function fakes({ worldApp }: { worldApp: boolean }) {
 }
 const notices = (page: Page) =>
   page.evaluate(() => (window as unknown as Fakes).notices);
+const phone = (page: Page) =>
+  page.evaluate(() => (window as unknown as Fakes).world.phone!());
+// Only World App's clock matters here: a permit has no expiry and the drops stay open an hour.
+const comeBackLater = (page: Page, minutes: number) =>
+  page.evaluate(
+    (ms) => (window as unknown as Fakes).world.later!(ms),
+    minutes * 60000,
+  );
+const refuseDeposit = (page: Page) =>
+  page.evaluate(() =>
+    (window as unknown as Fakes).wallet.settle!.reject(
+      new Error("User rejected the request"),
+    ),
+  );
+const approveDeposit = (page: Page) =>
+  page.evaluate(
+    (result) => (window as unknown as Fakes).wallet.settle!.resolve(result),
+    executed,
+  );
+// After a tap on the entry card: the wallet's deposit prompt opened, or a refusal card appeared.
+const walletOrRefusal = (page: Page, requests: number) =>
+  page.waitForFunction(
+    (requests) =>
+      (window as unknown as Fakes).wallet.requests === requests ||
+      !!document.querySelector(".entry-card .already-entered"),
+    requests,
+  );
 
 test.beforeEach(async ({ context, baseURL }) => {
   // World's bridge gets a request that never completes; Sui and wallet hosts are refused.
@@ -181,39 +242,116 @@ test("a paid entry waits on the wallet after World ID closes, then shows its rec
   await expect(card.getByRole("status")).toHaveText(
     "Approve the 0.01 SUI deposit in your wallet.",
   );
-  await expect(enter).toBeDisabled();
-  await page.evaluate(
-    (result) => (window as unknown as Fakes).wallet.settle!.resolve(result),
-    executed,
-  );
+  // The entry now waits on its deposit alone, and its button waits on the wallet.
+  await expect(
+    card.getByRole("button", { name: "Approve the 0.01 SUI deposit" }),
+  ).toBeDisabled();
+  await approveDeposit(page);
   await expect(card.getByText("1 chance in this draw")).toBeVisible();
   await expect(card.getByRole("status")).toContainText(
     "Entry saved and deposit held on Sui.",
   );
-  // The flow never called itself unfinished on the way.
+  // The flow never called itself unfinished on the way, and keeps no permit once it's done.
   expect(await notices(page)).not.toContain(notCompleted);
+  expect(
+    await page.evaluate(() => localStorage.getItem("tenjo:unpaid:world-paid")),
+  ).toBeNull();
 });
 
-test("a refused wallet signature says the deposit did not move and offers another try", async ({
+test("a refused wallet signature says the deposit did not move and offers the deposit again", async ({
   page,
 }) => {
   const enter = await openPaidDrop(page, true);
   await enter.click();
   await awaitWalletPrompt(page);
-  await page.evaluate(() =>
-    (window as unknown as Fakes).wallet.settle!.reject(
-      new Error("User rejected the request"),
-    ),
-  );
+  await refuseDeposit(page);
   const card = page.locator(".entry-card");
   await expect(card.getByRole("alert")).toHaveText(
     "Your wallet didn’t approve the deposit (User rejected the request). Your deposit did not move.",
   );
-  await expect(card.getByRole("status")).toHaveText(notCompleted);
-  await expect(enter).toBeEnabled();
+  await expect(card.getByRole("status")).toHaveText(
+    "Entry not completed. World ID is done, so approving the deposit finishes your entry.",
+  );
+  await expect(
+    card.getByRole("button", { name: "Approve the 0.01 SUI deposit" }),
+  ).toBeEnabled();
   expect((await notices(page))[0]).toBe(
     "Approve the 0.01 SUI deposit in your wallet.",
   );
+});
+
+// World App (WalletKit) records a drop's nullifier when it makes the proof and refuses to disclose
+// it again ten minutes later. Real World IDs have one action per drop, so after that the fan can't
+// verify for the drop again: finishing an entry can't depend on World ID a second time.
+test("a fan who refused the deposit can finish the entry after World ID's ten minutes", async ({
+  page,
+}) => {
+  const enter = await openPaidDrop(page, true);
+  await enter.click();
+  await awaitWalletPrompt(page);
+  await refuseDeposit(page);
+  const card = page.locator(".entry-card");
+  await expect(card.getByRole("alert")).toContainText(
+    "Your deposit did not move.",
+  );
+  await comeBackLater(page, 11);
+  await card.getByRole("button", { name: /0\.01 SUI/ }).click();
+  await walletOrRefusal(page, 2);
+  await expect(card).not.toContainText("already entered this draw");
+  expect((await phone(page)).asked).toBe(1);
+  await approveDeposit(page);
+  await expect(card.getByText("1 chance in this draw")).toBeVisible();
+});
+
+test("an unfinished paid entry survives a reload and finishes without World ID", async ({
+  page,
+}) => {
+  const enter = await openPaidDrop(page, true);
+  await enter.click();
+  await awaitWalletPrompt(page);
+  // The fan leaves the deposit prompt (a phone switching apps can reload the tab) and returns.
+  await page.reload();
+  await comeBackLater(page, 11);
+  const card = page.locator(".entry-card");
+  // dApp Kit reconnects the wallet by itself.
+  const deposit = card.getByRole("button", { name: /0\.01 SUI/ });
+  await expect(deposit).toBeEnabled();
+  await deposit.click();
+  await walletOrRefusal(page, 1);
+  await expect(card).not.toContainText("already entered this draw");
+  expect((await phone(page)).asked).toBe(1);
+  await approveDeposit(page);
+  await expect(card.getByText("1 chance in this draw")).toBeVisible();
+});
+
+test("when World ID won't verify a drop again, the card doesn't claim an entry that was never saved", async ({
+  page,
+}) => {
+  await page.addInitScript(fakes, { worldApp: true });
+  await page.route("**/api/drops/world-free/enter", (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        error:
+          "World verification is unavailable. Try again shortly. Nothing was saved.",
+        code: "world_unavailable",
+      },
+    }),
+  );
+  await page.goto("/drops/world-free");
+  const card = page.locator(".entry-card");
+  const enter = page.getByRole("button", { name: "Enter with World ID" });
+  await enter.click();
+  await expect(card.getByRole("alert")).toContainText(
+    "World verification is unavailable.",
+  );
+  await comeBackLater(page, 11);
+  await enter.click();
+  await expect(card.getByRole("alert")).toContainText(
+    "World ID has already verified you for this drop",
+  );
+  await expect(card).not.toContainText("Your first entry still counts");
+  expect((await phone(page)).asked).toBe(2);
 });
 
 test("closing World ID without a proof leaves an entry or pickup not completed", async ({

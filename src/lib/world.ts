@@ -86,7 +86,8 @@ function requireConfig(mode: WorldMode = "primary") {
     );
   return config;
 }
-/** World ID 4 nullifiers are single-use per action, so real World IDs get one action per drop:
+/** World ID 4 nullifiers are one-time: World App won't prove an action again from ten minutes after
+ * its first proof (the verify API accepts a repeat). So real World IDs get one action per drop:
  * World itself then refuses a second entry, and each drop sees a fresh anonymous code.
  * The primary (simulator) setup keeps one action, so its code and losses carry across drops. */
 const actionFor = (config: WorldConfig, dropId: string) =>

@@ -88,12 +88,13 @@ export function WorldWidget<
       onError={(code) => {
         // Host refusals were already reported from handleVerify.
         if (code === "failed_by_host_app") return;
-        // World ID 4 refuses a second proof for the same drop before Tenjō sees it.
+        // World App proves a drop once: ten minutes after its first proof it refuses another,
+        // before Tenjō sees anything, so whether that first proof became an entry is unknown here.
         if (code === "nullifier_replayed") {
           onError(
             new ApiError(
-              "Already entered. One person gets one entry per drop.",
-              "already_entered",
+              "World ID has already verified you for this drop.",
+              "world_replayed",
             ),
           );
           onOpenChange(false);
