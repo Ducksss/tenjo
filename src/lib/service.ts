@@ -394,10 +394,12 @@ async function admit(
       )
     ).rows.length
   )
+    // The proof or demo identity was checked before this, so the code is the requester's own.
     throw new AppError(
       409,
       "already_entered",
       "Already entered. One person gets one entry per drop.",
+      { member_code: identity.code },
     );
   if (drop.entry_count >= MAX_ENTRANTS)
     throw new AppError(

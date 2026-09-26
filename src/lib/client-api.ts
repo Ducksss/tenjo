@@ -1,3 +1,13 @@
+/** A refusal from Tenjō's API, keeping its code and any fields a screen can act on. */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public code = "",
+    public details: Record<string, unknown> = {},
+  ) {
+    super(message);
+  }
+}
 export async function api<T>(
   url: string,
   options: RequestInit = {},
@@ -21,6 +31,11 @@ export async function api<T>(
       "The server returned an unreadable response. Refresh and try again.",
     );
   }
-  if (!response.ok) throw new Error(data.error || "Request failed. Try again.");
+  if (!response.ok)
+    throw new ApiError(
+      data.error || "Request failed. Try again.",
+      data.code,
+      data,
+    );
   return data as T;
 }

@@ -6,7 +6,7 @@ import {
   useSyncExternalStore,
   type CSSProperties,
 } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
+import { Pause, Play, RotateCcw, UserRoundX } from "lucide-react";
 import { Capsule } from "./capsule-machine";
 
 type Phone = "entry" | "verify" | "verified" | "entered";
@@ -906,7 +906,21 @@ export function FlowAnimation({ sui }: { sui: boolean }) {
             <strong>{beat.chances}</strong> of 6
           </span>
         </div>
-        <Scene key={run} beat={beat} />
+        <div className="flow-scene-box">
+          <Scene key={run} beat={beat} />
+          {beat.id === "duplicate" || beat.id === "enter" ? (
+            // The drop page's repeat-entry refusal, said by the second phone.
+            <p
+              className={`flow-refusal${beat.id === "enter" ? " leaving" : ""}`}
+            >
+              <UserRoundX size={15} aria-hidden="true" />
+              <span>
+                <strong>Already entered</strong>
+                One person gets one entry.
+              </span>
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className="flow-panel">
         {/* Every caption shares one grid cell, so the box is always as tall as the longest and nothing below it jumps. */}

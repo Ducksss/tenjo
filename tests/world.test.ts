@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { hashSignal } from "@worldcoin/idkit-core/hashing";
 import { makeDatabase, migrate } from "../src/lib/db";
+import { AppError } from "../src/lib/domain";
 import { createDrop, enterDrop } from "../src/lib/service";
 import { issueChallenge, verifyWorldProof } from "../src/lib/world";
 
@@ -148,7 +149,15 @@ test("server verifies exact bytes, binds purpose and nonce, refuses tampering an
       ok(),
     );
     assert.equal(same.code, identity.code);
-    await assert.rejects(enterDrop(db, drop.id, same), /Already entered/);
+    // A repeat is refused on its own terms, carrying the person's own code back to them.
+    await assert.rejects(
+      enterDrop(db, drop.id, same),
+      (error: unknown) =>
+        error instanceof AppError &&
+        error.code === "already_entered" &&
+        /Already entered/.test(error.message) &&
+        error.details.member_code === identity.code,
+    );
     assert.equal((await db.query("SELECT * FROM entries")).rows.length, 1);
     process.env.WORLD_PROTOCOL = "4.0";
     await assert.rejects(

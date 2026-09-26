@@ -39,7 +39,8 @@ export function WorldWidget<
   headers?: Record<string, string>;
   onOpenChange: (open: boolean) => void;
   onVerified: (receipt: T) => void;
-  onError: (error: string) => void;
+  /** Called with the refusal itself, so a screen can tell a repeat entry from a failure. */
+  onError: (error: Error) => void;
 }) {
   const preset =
     challenge.protocol === "3.0"
@@ -76,16 +77,18 @@ export function WorldWidget<
           );
           onVerified(receipt);
         } catch (error) {
-          onError((error as Error).message);
+          onError(error as Error);
           throw error;
         }
       }}
       onSuccess={() => onOpenChange(false)}
       onError={(code) =>
         onError(
-          code === "user_presence_failed"
-            ? "Pickup refused. The live presence check failed."
-            : `Verification was not completed (${code}). Nothing was entered. Try again.`,
+          new Error(
+            code === "user_presence_failed"
+              ? "Pickup refused. The live presence check failed."
+              : `Verification was not completed (${code}). Nothing was entered. Try again.`,
+          ),
         )
       }
     />

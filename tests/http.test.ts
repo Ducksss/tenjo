@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { requireSameOrigin, requireLocalDemo, readBody } from "../src/lib/http";
+import { AppError } from "../src/lib/domain";
+import {
+  handle,
+  requireSameOrigin,
+  requireLocalDemo,
+  readBody,
+} from "../src/lib/http";
 
 test("origin check accepts Next internal URL normalization but rejects cross-origin mutation", () => {
   assert.doesNotThrow(() =>
@@ -46,4 +52,18 @@ test("bounded body reader rejects oversized proof uploads", async () => {
     ),
     /too large/,
   );
+});
+test("a refusal's details reach the client, but never replace its code or message", async () => {
+  const response = await handle(async () => {
+    throw new AppError(409, "already_entered", "Already entered.", {
+      member_code: "a".repeat(32),
+      code: "spoofed",
+    });
+  });
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), {
+    member_code: "a".repeat(32),
+    error: "Already entered.",
+    code: "already_entered",
+  });
 });
