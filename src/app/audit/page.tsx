@@ -17,7 +17,7 @@ export default async function Audit({
   return (
     <>
       <section className="page-heading">
-        <span className="eyebrow">TRUST, WITH RECEIPTS</span>
+        <span className="eyebrow">Trust, with receipts</span>
         <h1>The public record.</h1>
         <p>
           Every entry. Every chance. Every outcome. Find a drop to inspect the
@@ -39,7 +39,7 @@ export default async function Audit({
               <div>
                 <span className="eyebrow">
                   {drop.series_name}
-                  {drop.is_demo ? " · LOCAL DEMO" : ""}
+                  {drop.is_demo ? " · Local demo" : ""}
                 </span>
                 <h2>{drop.title}</h2>
                 <span>

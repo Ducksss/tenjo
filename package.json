@@ -20,6 +20,9 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@mysten/dapp-kit-react": "^2.1.35",
+    "@mysten/sui": "^2.33.1",
+    "@noble/hashes": "^1.8.0",
     "@worldcoin/idkit": "^4.3.0",
     "@worldcoin/idkit-core": "^4.3.0",
     "lucide-react": "^1.48.0",

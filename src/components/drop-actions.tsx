@@ -3,16 +3,42 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Fingerprint, Check, Copy } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Fingerprint,
+  Check,
+  Copy,
+} from "lucide-react";
 import { api } from "@/lib/client-api";
 import type { DropStatus } from "@/lib/format";
+import { shortId, suiscan } from "@/lib/sui-status";
 import { Button, Notice } from "./ui";
 import { useNow } from "./use-now";
 import type { Challenge } from "./world-widget";
+import type { EntryPermit, SuiWalletApi } from "./sui-wallet";
 const WorldWidget = dynamic(
   () => import("./world-widget").then((m) => m.WorldWidget),
   { ssr: false },
 );
+const SuiWallet = dynamic(
+  () => import("./sui-wallet").then((m) => m.SuiWallet),
+  {
+    ssr: false,
+    loading: () => <p className="action-hint">Loading wallets…</p>,
+  },
+);
+type Receipt = {
+  code: string;
+  tickets?: number;
+  collected?: boolean;
+  digest?: string;
+};
+type PermitResponse = {
+  code: string;
+  tickets: number;
+  permit: EntryPermit;
+};
 export function DropActions({
   id,
   status,
@@ -24,6 +50,8 @@ export function DropActions({
   demoEnabled,
   worldReady,
   pickupAllowed,
+  paid,
+  suiNetwork,
 }: {
   id: string;
   status: DropStatus;
@@ -35,6 +63,9 @@ export function DropActions({
   demoEnabled: boolean;
   worldReady: boolean;
   pickupAllowed: boolean;
+  /** A priced drop on Sui: entry locks a refundable deposit from the fan's wallet. */
+  paid?: { priceLabel: string } | null;
+  suiNetwork?: string | null;
 }) {
   const router = useRouter();
   const completedFlow = useRef(false);
@@ -45,11 +76,9 @@ export function DropActions({
   const [info, setInfo] = useState("");
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [purpose, setPurpose] = useState<"enter" | "collect">("enter");
-  const [receipt, setReceipt] = useState<{
-    code: string;
-    tickets?: number;
-    collected?: boolean;
-  } | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [wallet, setWallet] = useState<SuiWalletApi | null>(null);
+  const address = wallet?.address ?? null;
   const settled = status === "settled";
   const closed = now !== null && now >= Date.parse(closesAt);
   const notOpen = now !== null && now < Date.parse(opensAt);
@@ -92,13 +121,29 @@ export function DropActions({
       text: `Winning codes are listed on this page. If one is yours, collect with the same ${demo ? "demo identity" : "World ID"} you entered with. Anyone else is refused.`,
     },
   }[phase];
-  function verified(value: typeof receipt) {
+  // Paid entry, after World ID (or a demo identity) earned a permit: the wallet locks the deposit on Sui.
+  async function deposit(value: PermitResponse) {
+    if (!wallet?.address) throw new Error("Connect a Sui wallet first.");
+    setInfo(`Confirm the ${paid?.priceLabel} deposit in your wallet.`);
+    const digest = await wallet.enter(value.permit);
+    setInfo("Deposit locked on Sui. Recording your entry…");
+    verified(
+      await api<Receipt>(`/api/drops/${id}/confirm`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ digest }),
+      }),
+    );
+  }
+  function verified(value: Receipt | null) {
     completedFlow.current = true;
     setReceipt(value);
     setInfo(
       value?.collected
         ? "Item collected. Your pickup is recorded."
-        : `Entry saved. The draw runs after entries close (${closesLabel}). Keep your code to check your result.`,
+        : value?.digest
+          ? `Entry saved and deposit held on Sui. Lose, and it comes back in the settlement transaction after ${closesLabel}.`
+          : `Entry saved. The draw runs after entries close (${closesLabel}). Keep your code to check your result.`,
     );
     setError("");
     router.refresh();
@@ -110,7 +155,18 @@ export function DropActions({
     setError("");
     setInfo("");
     try {
-      if (demo) {
+      if (demo && paid && nextPurpose === "enter") {
+        await deposit(
+          await api<PermitResponse>(`/api/demo/${id}`, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-tenjo-sui-address": address ?? "",
+            },
+            body: JSON.stringify({ identity, purpose: "permit" }),
+          }),
+        );
+      } else if (demo) {
         verified(
           await api(`/api/demo/${id}`, {
             method: "POST",
@@ -174,6 +230,19 @@ export function DropActions({
         ) : null}
         {!settled ? (
           <>
+            {paid && suiNetwork && !closed ? (
+              <div className="wallet-step">
+                <span className="eyebrow">
+                  Paid drop · {paid.priceLabel} deposit on Sui {suiNetwork}
+                </span>
+                <p>
+                  Your deposit waits in this drop’s escrow. Win, and it pays for
+                  your seat. Lose, and it’s refunded in the same Sui transaction
+                  as the draw.
+                </p>
+                <SuiWallet network={suiNetwork} onChange={setWallet} />
+              </div>
+            ) : null}
             <Button
               className="full"
               busy={busy}
@@ -181,7 +250,8 @@ export function DropActions({
                 now === null ||
                 closed ||
                 notOpen ||
-                (demo ? !demoEnabled : !worldReady)
+                (demo ? !demoEnabled : !worldReady) ||
+                (!!paid && !address)
               }
               onClick={() => verify("enter")}
             >
@@ -190,12 +260,22 @@ export function DropActions({
                 ? "Entries closed"
                 : notOpen
                   ? "Entries open soon"
-                  : demo
-                    ? "Enter with demo identity"
-                    : "Enter with World ID"}
+                  : paid && !address
+                    ? "Connect a wallet to enter"
+                    : demo
+                      ? paid
+                        ? `Enter with demo identity + ${paid.priceLabel}`
+                        : "Enter with demo identity"
+                      : paid
+                        ? `Enter with World ID + ${paid.priceLabel}`
+                        : "Enter with World ID"}
               <ArrowRight size={18} />
             </Button>
-            <p className="action-hint">Free entry · One entry per person</p>
+            <p className="action-hint">
+              {paid
+                ? `Refundable deposit · ${paid.priceLabel} · One entry per person`
+                : "Free entry · One entry per person"}
+            </p>
             {!demo && !worldReady ? (
               <Notice>
                 The organiser is finishing World ID setup. You can explore the
@@ -243,6 +323,19 @@ export function DropActions({
                   : `1 base + ${receipt.tickets - 1} for past losses in this series${receipt.tickets === 6 ? ": the maximum" : ""}.`}
               </p>
             ) : null}
+            {receipt.digest && suiNetwork ? (
+              <p className="receipt-breakdown">
+                Deposit held on Sui ·{" "}
+                <a
+                  className="text-link"
+                  href={suiscan(suiNetwork, "tx", receipt.digest)}
+                  title={receipt.digest}
+                >
+                  {shortId(receipt.digest)}
+                  <ArrowUpRight size={13} />
+                </a>
+              </p>
+            ) : null}
             <span className="eyebrow">Your anonymous code</span>
             <code>{receipt.code}</code>
             <div className="receipt-links">
@@ -277,7 +370,23 @@ export function DropActions({
             challenge={challenge}
             dropId={id}
             purpose={purpose}
-            onVerified={verified}
+            endpoint={
+              paid && purpose === "enter"
+                ? `/api/drops/${id}/permit`
+                : undefined
+            }
+            headers={
+              paid && purpose === "enter" && address
+                ? { "x-tenjo-sui-address": address }
+                : undefined
+            }
+            onVerified={(value) => {
+              if (paid && purpose === "enter")
+                deposit(value as unknown as PermitResponse).catch((error) =>
+                  setError((error as Error).message),
+                );
+              else verified(value as Receipt);
+            }}
             onError={setError}
             onOpenChange={(open) => {
               if (!open) {

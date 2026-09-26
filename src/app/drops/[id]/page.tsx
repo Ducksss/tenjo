@@ -129,19 +129,19 @@ export default async function DropPage({
             </div>
           </div>
           <div className="odds-card">
-            <span className="eyebrow">A BETTER NEXT TRY</span>
+            <span className="eyebrow">A better next try</span>
             <h2>Every loss earns a little more chance.</h2>
-            <div
-              className="ticket-marks"
+            <ol
+              className="chance-slots"
               aria-label="One base chance plus up to five more for past losses"
             >
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <span className={n === 1 ? "base-ticket" : ""} key={n}>
-                  <Ticket size={20} />
-                  <small>{n === 1 ? "BASE" : `+${n - 1}`}</small>
-                </span>
+              {["Base", "+1", "+2", "+3", "+4", "+5"].map((label, n) => (
+                <li className={n === 0 ? "base" : undefined} key={label}>
+                  <i aria-hidden="true" />
+                  <small>{label}</small>
+                </li>
               ))}
-            </div>
+            </ol>
             <p>
               Your name goes in the draw once, plus once for every past loss in
               the {drop.series_name} series: six chances at most. A win resets
@@ -155,7 +155,7 @@ export default async function DropPage({
           {record ? (
             <div className="result-card">
               <span className="eyebrow">
-                SETTLED {formatJST(drop.drawn_at!)}
+                Settled {formatJST(drop.drawn_at!)}
               </span>
               <h2>
                 {winners.length} winner{winners.length === 1 ? "" : "s"}, on the
@@ -217,7 +217,7 @@ export default async function DropPage({
       <section id="record" className="audit-section">
         <div className="section-header">
           <div>
-            <span className="eyebrow">OPEN TO EVERYONE</span>
+            <span className="eyebrow">Open to everyone</span>
             <h2>Public entry record</h2>
           </div>
           <span className="pill">{statusLabel[status]}</span>
@@ -267,7 +267,7 @@ export default async function DropPage({
                     </td>
                     <td>
                       <span className="table-ticket">
-                        <Ticket size={15} />
+                        <i className="mini-capsule" aria-hidden="true" />
                         {e.tickets}
                       </span>
                     </td>

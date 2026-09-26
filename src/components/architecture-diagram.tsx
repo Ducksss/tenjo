@@ -1,6 +1,7 @@
+import type { SuiStatus } from "@/lib/sui-status";
 /**
  * Detailed system map for /architecture. Same language and step numbers as the
- * discovery map in architecture.tsx, plus the public record and the Sui design.
+ * discovery map in architecture.tsx, plus the public record and the Sui package.
  * Coordinates are in a 1000×540 viewBox.
  */
 type Node = {
@@ -22,7 +23,7 @@ type Edge = {
   both?: boolean;
   next?: boolean;
 };
-const edges: Edge[] = [
+const edges = (live: boolean): Edge[] => [
   {
     d: "M366 78H284",
     number: "01",
@@ -75,15 +76,21 @@ const edges: Edge[] = [
   },
   {
     d: "M500 344V406",
-    number: "next",
+    number: live ? "07" : "next",
     label: "register · draw · settle",
     lx: 512,
     ly: 381,
     anchor: "start",
-    next: true,
+    next: !live,
   },
 ];
-export function ArchitectureDiagram({ credential }: { credential: string }) {
+export function ArchitectureDiagram({
+  credential,
+  sui,
+}: {
+  credential: string;
+  sui: SuiStatus;
+}) {
   const nodes: Node[] = [
     {
       x: 20,
@@ -138,15 +145,18 @@ export function ArchitectureDiagram({ credential }: { credential: string }) {
       x: 370,
       y: 410,
       w: 610,
-      kicker: "NEXT · NOT BUILT YET",
-      name: "Sui · Move package",
+      kicker: sui.ready
+        ? `SUI ${sui.network.toUpperCase()} · LIVE`
+        : "SUI · TESTED, NOT PUBLISHED",
+      name: "tenjo::ballot",
       lines: [
-        "PityLedger per series · Drop · RegistrarCap",
-        "draw with sui::random (0x8), then settle updates the ledger",
+        "Series (loss ledger) · Drop<T> escrow · soulbound Ticket",
+        "draw commits a sui::random seed · settle pays, refunds, updates",
       ],
-      variant: "next",
+      variant: sui.ready ? undefined : "next",
     },
   ];
+  const lines = edges(sui.ready);
   return (
     <div
       className="sys-map-scroll"
@@ -167,8 +177,10 @@ export function ArchitectureDiagram({ credential }: { credential: string }) {
           the zero-knowledge proof to the server. 04. The server checks it with
           World ID’s verify service. 05. The entry, pity ledger and draws are
           recorded in Postgres. 06. Everything is published on the public
-          record. Next, not built yet: a Sui Move package takes over
-          registration, the random draw and the loss ledger.
+          record.{" "}
+          {sui.ready
+            ? "07. The server registers entries on Sui, and after close the tenjo::ballot package commits a random seed and settles the drop: loss ledger, refunds and tickets."
+            : "Next, tested but not published: the tenjo::ballot Move package takes over registration, the random draw, refunds and the loss ledger."}
         </desc>
         <defs>
           <marker
@@ -184,7 +196,7 @@ export function ArchitectureDiagram({ credential }: { credential: string }) {
           </marker>
         </defs>
         <g className="sys-lines">
-          {edges.map((e) => (
+          {lines.map((e) => (
             <path
               key={e.number}
               className={e.next ? "next" : undefined}
@@ -194,7 +206,7 @@ export function ArchitectureDiagram({ credential }: { credential: string }) {
             />
           ))}
         </g>
-        {edges.map((e) => (
+        {lines.map((e) => (
           <text
             key={e.number}
             className="sys-step"

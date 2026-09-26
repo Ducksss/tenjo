@@ -1,6 +1,6 @@
 # Tenjō (天井) — Product Requirements Document
 
-Version 1.0 · September 26, 2026 · Product owner: Chai · Status: draft for review
+Version 1.1 · September 26, 2026 · Product owner: Chai · Status: draft for review
 
 **One person, one entry, and every loss counts.**
 
@@ -50,15 +50,16 @@ Initial context is a small, English-language hackathon demonstration of Japanese
 
 ### Delivery scope
 
-| Scope                   | Included                                                                                                         | Status based on repository evidence                                                       |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Phase 1 core            | Discovery, organiser creation, entries, weighted draw, settlement, pickup checks, public records and code lookup | Implemented with local test identities and automated test coverage                        |
-| First-visit explanation | Browser-only walkthrough of loss, win, duplicate refusal and pickup                                              | Present in current working tree; scripted, ephemeral and separate from real entries       |
-| World integration       | Signed requests, server verification, stable codes and replay protection                                         | Implemented and mock-tested; first real simulator success remains pending in project docs |
-| Production pickup       | Fresh winning identity plus server-attested liveness                                                             | Blocked pending liveness validation and implementation of a supported enforcement path    |
-| Hosting                 | Vercel application with hosted Postgres                                                                          | Reported deployed in operations docs; deployment was not revalidated for this PRD         |
-| Phase 2                 | Sui registration, randomness, ledger, settlement and explorer evidence                                           | Planned; no Move package or chain integration implemented                                 |
-| Stretch                 | Unclaimed-item handoff and test deposits/refunds                                                                 | Planned only after both phase gates pass                                                  |
+| Scope                   | Included                                                                                                         | Status based on repository evidence                                                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Phase 1 core            | Discovery, organiser creation, entries, weighted draw, settlement, pickup checks, public records and code lookup | Implemented with local test identities and automated test coverage                            |
+| First-visit explanation | Browser-only walkthrough of loss, win, duplicate refusal and pickup                                              | Present in current working tree; scripted, ephemeral and separate from real entries           |
+| World integration       | Signed requests, server verification, stable codes and replay protection                                         | Implemented and mock-tested; first real simulator success remains pending in project docs     |
+| Production pickup       | Fresh winning identity plus server-attested liveness                                                             | Blocked pending liveness validation and implementation of a supported enforcement path        |
+| Hosting                 | Vercel application with hosted Postgres                                                                          | Reported deployed in operations docs; deployment was not revalidated for this PRD             |
+| Phase 2                 | Sui registration, randomness, ledger, settlement and explorer evidence                                           | `tenjo::ballot` Move package implemented with unit tests; testnet publish and mirror pending  |
+| Deposits (R13)          | Testnet deposits into a per-drop escrow, refunded to losers at settlement                                        | Promoted for the Sui DeFi & Payments track: in the Move package and wallet flow; testnet-only |
+| Stretch                 | Unclaimed-item handoff                                                                                           | Planned only after both phase gates pass                                                      |
 
 ### Non-goals for the MVP
 
@@ -127,7 +128,7 @@ Priority: **P0** = Phase 1 acceptance requirement; **P1** = Phase 2; **P2** = co
 | R10 | P1       | Sui randomness                       | A published testnet package performs a weighted draw after close and exposes a transaction identifying winning codes. Current Sui implementation guidance must be validated before build.                                                         |
 | R11 | P1       | Sui series ledger                    | On-chain counts match settled audit records; only authorised settlement changes them. Registration derives weights from the ledger; failed mirroring is recoverable without repeating a draw.                                                     |
 | R12 | P2       | Unclaimed-item handoff               | After a defined pickup window, the next eligible person is offered the allocation once. Deadline, alternate ordering and loss-count consequences require a product decision before implementation.                                                |
-| R13 | P2       | Test deposits and refunds            | Losing test wallets receive the required full refund with settlement; fee rules and failure recovery are defined before implementation. No real-money or mainnet rollout is authorised by this PRD.                                               |
+| R13 | P1       | Test deposits and refunds            | Losing test wallets receive the full refund in the settlement transaction; winners' deposits pay the organiser as one coin. No fees. A failed wallet signature moves nothing. No real-money or mainnet rollout is authorised by this PRD.         |
 | R14 | P0       | Minimise retained identity data      | No names, emails, phone numbers, raw proofs or raw nullifiers are stored. Public codes and lottery records are retained; proof logs contain only purpose, outcome, timing and timestamp.                                                          |
 | R15 | P0       | Record the World integration debrief | Document measured first real verification timing, observed friction, unresolved behavior and the highest-value improvement. Pending measurements remain labelled pending.                                                                         |
 | R16 | P0       | Explain the loop without credentials | Walkthrough demonstrates loss increment, ticket cap explanation, win reset, duplicate refusal and matching-identity pickup. Restart/refresh resets example state; no entry or proof is saved.                                                     |
@@ -233,18 +234,18 @@ The original plan targets **September 27, 2026, 07:00 JST** for submission. This
 
 ## 12. Risks and open decisions
 
-| Risk or decision                                  | Current position                                                                                    | Owner / resolution gate                                 |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Real document proofs and repeated-action identity | Mocked behavior is insufficient; verify simulator and device behavior                               | Integration owner + Chai, before Phase 1 acceptance     |
-| Passport, My Number Card and Orb choice           | Compatibility and dual-document uniqueness remain unresolved; do not switch after accepting entries | Chai + World support, before first real entry           |
-| Pickup presence                                   | Production blocked; staging fallback must remain labelled untested                                  | Integration owner, before production collection         |
-| Public cross-series history                       | Current code is globally stable; series-scoped privacy would change R4 behavior                     | Chai, before identity migration or broader launch       |
-| Operator influence over Phase 1                   | Records and fingerprints do not remove server/database trust                                        | Disclose for Phase 1; reassess after Phase 2 validation |
-| Sui implementation and time budget                | No chain implementation exists; preserve standalone Phase 1 release                                 | Chai, at Phase 2 cut line                               |
-| Unclaimed items                                   | Wins reset losses even without pickup; no automatic reassignment                                    | Chai, before R12 implementation                         |
-| Deposits, fees and prize scope                    | No payments implemented; confirm test-only rules and relevance                                      | Chai, before R13 implementation                         |
-| Production operations                             | Retention, abuse protection, capacity, support and recovery expectations remain unspecified         | Product and engineering owners, before broader rollout  |
-| Team/project positioning                          | Original project-replacement, naming, demo-item and prize decisions remain owner decisions          | Chai, before submission                                 |
+| Risk or decision                                  | Current position                                                                                               | Owner / resolution gate                                 |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Real document proofs and repeated-action identity | Mocked behavior is insufficient; verify simulator and device behavior                                          | Integration owner + Chai, before Phase 1 acceptance     |
+| Passport, My Number Card and Orb choice           | Compatibility and dual-document uniqueness remain unresolved; do not switch after accepting entries            | Chai + World support, before first real entry           |
+| Pickup presence                                   | Production blocked; staging fallback must remain labelled untested                                             | Integration owner, before production collection         |
+| Public cross-series history                       | Current code is globally stable; series-scoped privacy would change R4 behavior                                | Chai, before identity migration or broader launch       |
+| Operator influence over Phase 1                   | Records and fingerprints do not remove server/database trust                                                   | Disclose for Phase 1; reassess after Phase 2 validation |
+| Sui implementation and time budget                | Move package and tests exist; testnet publish needs a funded organiser address; Phase 1 still ships standalone | Chai, at Phase 2 cut line                               |
+| Unclaimed items                                   | Wins reset losses even without pickup; no automatic reassignment                                               | Chai, before R12 implementation                         |
+| Deposits, fees and prize scope                    | Testnet-only deposits built for the Sui DeFi & Payments track; no fees; prize targets World IDKit and Sui      | Chai, before any mainnet or real-money use              |
+| Production operations                             | Retention, abuse protection, capacity, support and recovery expectations remain unspecified                    | Product and engineering owners, before broader rollout  |
+| Team/project positioning                          | Original project-replacement, naming, demo-item and prize decisions remain owner decisions                     | Chai, before submission                                 |
 
 ## 13. Repository evidence
 

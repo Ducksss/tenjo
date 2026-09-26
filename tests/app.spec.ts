@@ -11,7 +11,7 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
   await page.goto("/");
   await expect(page).toHaveTitle("Tenjō — Every loss counts");
   await expect(
-    page.getByRole("heading", { name: /Good things come/ }),
+    page.getByRole("heading", { name: /Lose a ballot/ }),
   ).toBeVisible();
   // The isolated fixture adds a newer closed drop; discovery still leads with the drop fans can enter.
   await page.getByRole("link", { name: "See the open drop" }).click();
@@ -38,7 +38,7 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Good things come/ }),
+    page.getByRole("heading", { name: /Lose a ballot/ }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -381,14 +381,17 @@ test("architecture page explains the World ID pipeline with honest live and plan
   const status = page.getByRole("list", { name: "What is live today" });
   // The browser tests run without World credentials, so nothing may claim a live proof.
   await expect(status).toContainText("Integrated · awaiting credentials");
-  await expect(status).toContainText("Phase 2");
+  // Without Sui config the package is described as tested, never as live.
+  await expect(status).toContainText("Tested · not published");
   await expect(
     page.getByRole("img", { name: "Tenjō system architecture" }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "One human, one anonymous code." }),
   ).toBeVisible();
-  await expect(page.getByText("Design sketch · not deployed")).toBeVisible();
+  await expect(
+    page.locator(".move-sketch").getByText("Tested · not published"),
+  ).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(

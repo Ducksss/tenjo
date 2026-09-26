@@ -1,1 +1,1 @@
-Tenjō — Every loss counts. A pity system for ticket ballots: one base chance plus three past losses gives four chances next time.
+Tenjō — Lose a ballot, gain a chance. A capsule machine holding four of six capsules: one base chance plus three past losses gives four chances next time. World ID lets each person enter once; Sui runs the draw, refunds and loss ledger.

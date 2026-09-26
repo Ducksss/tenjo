@@ -19,7 +19,7 @@ Failures distinguish refused, unavailable, cancelled, missing configuration, and
 
 R4 currently uses a global anonymous code; cross-series pseudonymous linking is explicitly visible. Entries are capped at 300 per drop for this demo. Series are serialized: a new drop may only open after its predecessor settles, so weights cannot become stale through overlapping same-series draws. If entrants are fewer than items, every entrant wins and unused items remain undistributed. These edge-case resolutions are documented in docs/IMPLEMENTATION.md.
 
-Free/test use only; no deposits, payments, legal promises or account data. World simulator and local setup are distinct. Production requires hosted Postgres and real World config; local fixtures cannot enter real drops. No Sui explorer badge before a real chain transaction exists.
+Free drops need no money. Paid drops take a refundable deposit on Sui testnet only; there is no mainnet, real money, legal promise or account data. The fan's own wallet signs the deposit after World ID earns a server permit, and a loser's refund arrives in the settlement transaction. World simulator and local setup are distinct. Production requires hosted Postgres and real World config; local fixtures cannot enter real drops. No Sui explorer link or "live on Sui" label appears before the configured package and a real chain transaction exist. Without Sui configuration the UI says "Tested · not published" or "not published yet".
 
 Checks: npm run lint; npm run typecheck; npm test; npm run build; npm run test:e2e. Validate desktop/mobile, keyboard, success, refusal, empty lookup, early draw, wrong identity, duplicate draw and pickup. Native Japanese full-locale testing is outside this English hackathon build.
 
@@ -42,7 +42,16 @@ Verification: tests/app.spec.ts exercises the walkthrough’s loss/win/refusal/r
 
 ## Story and storefront clarity
 
-Discovery states the product before the brand line: a free pity system for ticket ballots, World ID for one entry per real person, and an extra chance after each loss. An “Under the hood” section follows the hero (src/components/architecture.tsx): a full-width map of the browser, World App, Tenjō server, World’s verify service and Postgres, with Sui drawn dashed as next and not built. Below 1100px the map gives way to its five numbered step cards, so no text shrinks unreadably and the page never scrolls sideways. A four-step story (verify, enter, draw, win or try again) follows, introduced by sourced real-world ballot figures. A “why” section explains the World ID trust moment and credential choice, the 天井 name, and the server-now/Sui-next trust boundary. Examples use concert ballots; a real artist appears only in the sourced statistic, never as a demo drop.
+Discovery follows the Capsule direction in DESIGN.md.
+
+1. **Hero:** a split panel. The forest copy side states the product ("Lose a ballot, gain a chance"), then the World ID and Sui roles, then live status pills. The periwinkle side holds the capsule machine: four of six capsules, with fact pills.
+2. **Problem:** sourced ballot figures on tilted cards.
+3. **How it works:** four sequential steps: verify, enter, draw, win or try again.
+4. **Under the hood** (src/components/architecture.tsx): the map of browser, World App, Tenjō server, World verify, Postgres and the tenjo::ballot package. Sui is drawn solid only when configured. Below 1100px the map gives way to six step cards, so no text shrinks unreadably and the page never scrolls sideways.
+5. **Why Sui** (src/components/why-sui.tsx): four jobs Sui does (randomness, one-transaction settlement, the loss ledger, self-refunding deposits) and a sourced "Sui right now" strip. It shows a package link only when configured.
+6. **Drops**, then **Why it works** (the World ID trust moment and the 天井 name), then the lookup.
+
+Examples use concert ballots; a real artist appears only in the sourced statistic, never as a demo drop. Every chance count is drawn as capsules with a text equivalent.
 
 Discovery features drops that are open for entry before newer closed ones. One status vocabulary (Entries open, Opens soon, Awaiting draw, Draw complete) is shared by discovery, drop and record pages. On the drop page the entry card’s copy follows the live phase, and crossing the open or close time refreshes server-rendered status. Draw controls sit in their own step-03 card rather than beside entry. Receipts explain the chance breakdown and when the draw runs.
 
@@ -50,4 +59,18 @@ Fan-facing copy calls draw weight chances; tickets means real event tickets only
 
 ## How it’s built
 
-/architecture is the technical companion to discovery’s map, linked from the main navigation. It uses the same node language and step numbers (01 request to 05 record, plus 06 publish) in src/components/architecture-diagram.tsx, then walks through the World ID pipeline, the pity ledger, draw integrity and the Sui Phase 2 design, pickup, failure paths and World’s IDKit brief. Its live, pending and planned status comes from worldConfig at request time, so it never claims live proofs without credentials; Sui stays labelled designed and not deployed. Below 700px the detailed map scrolls inside its own region and the page never scrolls sideways.
+/architecture is the technical companion to discovery’s map, linked from the main navigation. It uses the same node language and step numbers in src/components/architecture-diagram.tsx: 01 request to 06 publish, plus 07 register/draw/settle on Sui when configured. It then walks through:
+
+- the World ID pipeline;
+- the pity ledger;
+- draw integrity, with the real `draw`/`settle` Move excerpt;
+- where the money goes (permit, deposit, settlement);
+- pickup;
+- failure paths;
+- both partner briefs (World IDKit, and Sui DeFi & Payments).
+
+Live, pending and planned status comes from worldConfig and suiStatus at request time, so it never claims live proofs or chain activity without configuration. Below 700px the detailed map scrolls inside its own region and the page never scrolls sideways.
+
+## Paid drops
+
+A drop with a price shows a wallet step inside the entry card: a periwinkle panel, the dApp Kit connect button and one sentence on the deposit. The entry button stays disabled until a wallet is connected and names the deposit ("Enter with World ID + 0.01 SUI"). The flow has four stages: World ID proof, then the server permit, then the wallet signature, then server confirmation of the on-chain `Entered` event. The receipt only appears after confirmation, with the Suiscan link. A refused or cancelled wallet signature leaves the deposit unmoved and says so; the World ID challenge is consumed, so the fan verifies again to retry.

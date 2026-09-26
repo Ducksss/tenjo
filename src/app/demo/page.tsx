@@ -8,7 +8,7 @@ export default function Demo() {
   return (
     <>
       <section className="page-heading walkthrough-heading">
-        <span className="eyebrow">A MINUTE TO GET THE IDEA</span>
+        <span className="eyebrow">A minute to get the idea</span>
         <h1>Your next try is different.</h1>
         <p>
           Follow one fan through the ballots for two nights of a sold-out dome

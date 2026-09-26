@@ -7,7 +7,7 @@ export function DemoInvitation() {
       aria-labelledby="demo-invitation-title"
     >
       <div>
-        <span className="eyebrow">NO ACCOUNT NEEDED / INTERACTIVE EXAMPLE</span>
+        <span className="eyebrow">No account needed · interactive example</span>
         <h2 id="demo-invitation-title">
           Try a concert ballot
           <br />

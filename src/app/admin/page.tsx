@@ -5,7 +5,7 @@ export default function Admin() {
   return (
     <>
       <section className="page-heading">
-        <span className="eyebrow">FOR ORGANISERS</span>
+        <span className="eyebrow">For organisers</span>
         <h1>Make room for real fans.</h1>
         <p>Choose the item, set the window, and let every entry count.</p>
       </section>

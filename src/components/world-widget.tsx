@@ -19,10 +19,14 @@ export type Challenge = {
   require_user_presence: boolean;
   rp_context: RpContext;
 };
-export function WorldWidget({
+export function WorldWidget<
+  T = { code: string; tickets?: number; collected?: boolean },
+>({
   challenge,
   dropId,
   purpose,
+  endpoint,
+  headers,
   onOpenChange,
   onVerified,
   onError,
@@ -30,12 +34,11 @@ export function WorldWidget({
   challenge: Challenge;
   dropId: string;
   purpose: "enter" | "collect";
+  /** Paid drops send the same proof to /permit instead of /enter. */
+  endpoint?: string;
+  headers?: Record<string, string>;
   onOpenChange: (open: boolean) => void;
-  onVerified: (receipt: {
-    code: string;
-    tickets?: number;
-    collected?: boolean;
-  }) => void;
+  onVerified: (receipt: T) => void;
   onError: (error: string) => void;
 }) {
   const preset =
@@ -59,18 +62,18 @@ export function WorldWidget({
       preset={preset({ signal: challenge.signal })}
       handleVerify={async (result) => {
         try {
-          const receipt = await api<{
-            code: string;
-            tickets?: number;
-            collected?: boolean;
-          }>(`/api/drops/${dropId}/${purpose}`, {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "x-tenjo-challenge": challenge.id,
+          const receipt = await api<T>(
+            endpoint ?? `/api/drops/${dropId}/${purpose}`,
+            {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-tenjo-challenge": challenge.id,
+                ...headers,
+              },
+              body: JSON.stringify(result),
             },
-            body: JSON.stringify(result),
-          });
+          );
           onVerified(receipt);
         } catch (error) {
           onError((error as Error).message);

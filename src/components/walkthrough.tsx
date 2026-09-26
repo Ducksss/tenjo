@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button, Notice } from "./ui";
+import { Capsules } from "./capsules";
 
 type Stage = "ready" | "entered" | "lost" | "next" | "won" | "collected";
 const stages = {
@@ -107,8 +108,8 @@ export function Walkthrough() {
           aria-labelledby="walkthrough-title"
         >
           <span className="eyebrow">
-            {second ? "EXAMPLE BALLOT 02" : "EXAMPLE BALLOT 01"} / DOME TOUR ·
-            TOKYO DOME, NIGHT {second ? "2" : "1"}
+            {second ? "Example ballot 2" : "Example ballot 1"} · Dome tour ·
+            Tokyo Dome, Night {second ? "2" : "1"}
           </span>
           <h2 id="walkthrough-title" ref={heading} tabIndex={-1}>
             {current.title}
@@ -165,7 +166,7 @@ export function Walkthrough() {
         </section>
         <aside className="example-ticket" aria-label="Example entry summary">
           <div className="example-ticket-top">
-            <span className="eyebrow">TENJŌ / EXAMPLE ONLY</span>
+            <span className="eyebrow">Tenjō · example only</span>
             <Ticket size={24} />
           </div>
           <span className="example-ticket-caption">
@@ -177,16 +178,11 @@ export function Walkthrough() {
             {chances}
             <span>{chances === 1 ? "chance" : "chances"}</span>
           </strong>
-          <div
-            className="example-pips"
-            aria-label={`${chances} out of six possible chances`}
-          >
-            {Array.from({ length: 6 }, (_, i) => (
-              <span key={i} className={i < chances ? "filled" : ""}>
-                <Ticket size={18} />
-              </span>
-            ))}
-          </div>
+          <Capsules
+            count={chances}
+            large
+            label={`${chances} out of six possible chances`}
+          />
           <p>1 base + {chances - 1} for past losses</p>
           <div className="example-ticket-stub">
             <span>

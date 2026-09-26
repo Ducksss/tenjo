@@ -1,45 +1,52 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Fingerprint,
-  Gift,
-  Ticket,
-  ScanLine,
-  ArrowUpRight,
-  RotateCcw,
-  Vote,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight, RotateCcw } from "lucide-react";
 import { database } from "@/lib/db";
 import { listDrops } from "@/lib/service";
 import { dropStatus, formatJST, fromNow, statusLabel } from "@/lib/format";
 import { worldConfig } from "@/lib/world";
+import { suiStatus } from "@/lib/sui-status";
 import { TicketCard } from "@/components/ticket-card";
 import { DemoInvitation } from "@/components/demo-invitation";
 import { Lookup } from "@/components/lookup";
 import { Architecture } from "@/components/architecture";
+import { CapsuleMachine } from "@/components/capsule-machine";
+import { Capsules } from "@/components/capsules";
+import { WhySui } from "@/components/why-sui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
   const drops = await listDrops(await database(), 6, 0, true);
   const open = drops.filter((drop) => drop.entry_open);
+  const world = worldConfig();
+  const sui = suiStatus();
   const credential =
-    worldConfig().credential === "orb"
+    world.credential === "orb"
       ? "Proof of Human credential: one Orb-verified person, one entrant"
       : "Passport credential: one document, one entrant";
   return (
     <>
-      <section className="discovery-hero">
+      <section className="hero" aria-labelledby="hero-heading">
         <div className="hero-copy">
-          <span className="eyebrow">01 / A PITY SYSTEM FOR TICKET BALLOTS</span>
-          <h1>
-            Good things come
-            <br />
-            to those who <em>try.</em>
+          <span className="chip on-dark">
+            <span className="jp">天井</span> A pity system for ticket ballots
+          </span>
+          <h1 id="hero-heading">
+            Lose a ballot, <span className="squiggle">gain a chance.</span>
           </h1>
-          <p>
-            Tenjō is a free ballot for concert tickets and limited drops. World
-            ID lets each real person enter once. Didn’t win? Like a gacha pity
-            counter, your next entry on the same tour gets an extra chance in
-            the draw.
+          <p className="hero-lede">
+            In gacha games, <em>tenjō</em> is the pity ceiling: keep trying and
+            your luck builds. Tenjō brings it to concert ballots and limited
+            drops. <strong>World ID</strong> lets each real person enter once.{" "}
+            {sui.ready ? (
+              <>
+                <strong>Sui</strong> draws the winners with on-chain randomness
+                and keeps every loss on a public ledger.
+              </>
+            ) : (
+              <>
+                Every entry, chance and result goes on a public record, and the
+                draw is moving on-chain to <strong>Sui</strong>.
+              </>
+            )}
           </p>
           <div className="hero-actions">
             {open.length ? (
@@ -50,143 +57,165 @@ export default async function Home() {
                       ? `/drops/${open[0].id}`
                       : "#drops-heading"
                   }
-                  className="button"
+                  className="button pop"
                 >
                   {open.length === 1
                     ? "See the open drop"
-                    : `See ${open.length} open drops`}{" "}
+                    : `See ${open.length} open drops`}
                   <ArrowRight size={17} />
                 </Link>
                 <Link href="/demo" className="button secondary">
                   Try the walkthrough
+                  <ArrowRight size={17} />
                 </Link>
               </>
             ) : (
               <>
-                <Link href="/demo" className="button">
-                  Try the walkthrough <ArrowRight size={17} />
+                <Link href="/demo" className="button pop">
+                  Try the walkthrough
+                  <ArrowRight size={17} />
                 </Link>
                 <Link href="#how-heading" className="button secondary">
                   How it works
+                  <ArrowRight size={17} />
                 </Link>
               </>
             )}
           </div>
-          <span className="hero-caption">
-            {open.length === 1
-              ? `Free to enter · entries close ${formatJST(open[0].closes_at)}`
-              : "Free to enter. No account needed for the walkthrough."}
-          </span>
+          <ul className="hero-proof" aria-label="What’s running now">
+            <li>
+              <span
+                className={`status-dot ${world.ready ? "live" : "pending"}`}
+              />
+              World ID ·{" "}
+              {world.ready
+                ? `live on ${world.environment}`
+                : "integrated, awaiting credentials"}
+            </li>
+            <li>
+              <span
+                className={`status-dot ${sui.ready ? "live" : "pending"}`}
+              />
+              Sui ·{" "}
+              {sui.ready
+                ? `live on ${sui.network}`
+                : "Move package in testing, not published yet"}
+            </li>
+            <li>
+              {open.length === 1
+                ? `Free to enter · closes ${formatJST(open[0].closes_at)}`
+                : "Free to enter"}
+            </li>
+          </ul>
         </div>
         <div
-          className="hero-art"
+          className="hero-stage"
           role="img"
-          aria-label="Example: one base chance plus three past losses gives four chances in the next draw."
+          aria-label="A capsule machine holding four of six capsules: one base chance plus three past losses gives four chances in the next draw. Six fills the dome, the pity ceiling."
         >
-          <span className="hero-art-label">
-            EVERY LOSS BECOMES A LITTLE MORE POSSIBILITY.
-          </span>
-          <div className="ticket-object" aria-hidden="true">
-            <div className="ticket-layer" />
-            <div className="ticket-layer second" />
-            <div className="hero-ticket">
-              <div className="hero-ticket-top">
-                <span>tenjō.</span>
-                <ArrowUpRight size={20} />
-              </div>
-              <strong className="hero-ticket-number">4</strong>
-              <span className="hero-ticket-unit">chances, next time.</span>
-              <div className="hero-ticket-stub">
-                <span>1 BASE + 3 PAST LOSSES</span>
-                <Ticket />
-              </div>
-            </div>
+          <CapsuleMachine filled={4} />
+          <div className="float-card float-a" aria-hidden="true">
+            <span className="float-icon">4</span>
+            <span>
+              <strong>4 chances next draw</strong>
+              <small>1 base + 3 past losses, same tour</small>
+            </span>
           </div>
-          <span className="hero-art-note">ILLUSTRATIVE ENTRY / SAME TOUR</span>
+          <div className="float-card float-b" aria-hidden="true">
+            <span className="float-icon jp">天井</span>
+            <span>
+              <strong>Six fills the dome</strong>
+              <small>That ceiling is the tenjō.</small>
+            </span>
+          </div>
         </div>
       </section>
-      <Architecture />
-      <section className="story" aria-labelledby="how-heading">
-        <div className="story-intro">
-          <span className="eyebrow">HOW TENJŌ WORKS</span>
-          <h2 id="how-heading">
-            One real person. One entry. Every loss counts.
+
+      <section className="problem" aria-labelledby="problem-heading">
+        <div className="section-intro">
+          <span className="chip">Why ballots feel unfair</span>
+          <h2 id="problem-heading">
+            Millions apply. Most lose. The ballot forgets.
           </h2>
         </div>
-        <div className="story-stats">
-          <div>
+        <ul className="stat-cards">
+          <li className="stat-card">
             <strong>3.5M</strong>
             <span>
               people pre-registered for Taylor Swift’s Eras Tour presale. About
-              1.5M got a code.{" "}
-              <a href="https://business.ticketmaster.com/press-release/taylor-swift-the-eras-tour-onsale-explained/">
-                Ticketmaster, 2022
-              </a>
+              1.5M got a code.
             </span>
-          </div>
-          <div>
+            <a href="https://business.ticketmaster.com/press-release/taylor-swift-the-eras-tour-onsale-explained/">
+              Ticketmaster, 2022
+            </a>
+          </li>
+          <li className="stat-card">
             <strong>2.2M</strong>
             <span>
-              people applied for the first Switch 2 lottery, in Japan alone.{" "}
-              <a href="https://mynintendonews.com/2025/04/23/japan-nintendo-confirms-2-2-million-people-applied-for-the-switch-2-lottery/">
-                Nintendo, 2025
-              </a>
+              people applied for the first Switch 2 lottery, in Japan alone.
             </span>
-          </div>
-          <div>
+            <a href="https://mynintendonews.com/2025/04/23/japan-nintendo-confirms-2-2-million-people-applied-for-the-switch-2-lottery/">
+              Nintendo, 2025
+            </a>
+          </li>
+          <li className="stat-card">
             <strong>0</strong>
             <span>
-              extra chance for losing. In a normal ballot, every loss is
+              extra chances for losing. In a normal ballot, every loss is
               forgotten.
             </span>
-          </div>
+          </li>
+        </ul>
+      </section>
+
+      <section className="panel how" aria-labelledby="how-heading">
+        <div className="section-intro">
+          <span className="chip">How Tenjō works</span>
+          <h2 id="how-heading">
+            One real person. One entry. Every loss counts.
+          </h2>
+          <p>
+            A drop is anything scarce that’s decided by ballot: concert seats,
+            event entry, a limited release. Here’s one concert ballot, the Tenjō
+            way.
+          </p>
         </div>
-        <p className="story-lede">
-          A drop is anything scarce that’s decided by ballot: concert seats,
-          event entry, a limited release. Here’s one concert ballot, the Tenjō
-          way.
-        </p>
-        <ol className="story-steps">
+        <ol className="steps">
           <li>
-            <span className="story-number">01</span>
-            <span className="how-icon">
-              <Fingerprint size={22} />
-            </span>
+            <span className="step-number">1</span>
             <h3>Prove you’re one person</h3>
             <p>
               World ID checks that you’re a unique human, on our server. No
               name, email or phone, and one fan can’t apply as fifty.
             </p>
-            <span className="story-tag">World ID</span>
+            <span className="step-tag world">World ID</span>
           </li>
           <li>
-            <span className="story-number">02</span>
-            <span className="how-icon">
-              <Vote size={22} />
-            </span>
+            <span className="step-number">2</span>
             <h3>Enter the ballot once</h3>
             <p>
               Apply for Tokyo Dome, Night 1. Your name goes in the draw once,
-              plus once more for every ballot you’ve lost on this tour: up to 6
-              chances.
+              plus once more for every ballot you’ve lost on this tour.
             </p>
+            <Capsules count={4} label="Example: 4 of 6 chances" />
+            <span className={`step-tag ${sui.ready ? "sui" : ""}`}>
+              {sui.ready ? "Pity ledger on Sui" : "Up to 6 chances"}
+            </span>
           </li>
           <li>
-            <span className="story-number">03</span>
-            <span className="how-icon">
-              <ScanLine size={22} />
-            </span>
+            <span className="step-number">3</span>
             <h3>The draw</h3>
             <p>
-              When the ballot closes, seats go to names picked at random. More
-              chances, better odds. Every entry and result is public.
+              {sui.ready
+                ? "When entries close, anyone can start the draw. Sui’s on-chain randomness picks the winners, weighted by chances, so nobody can choose the result. Not even us."
+                : "When entries close, anyone can start the draw. Names are picked at random, weighted by chances, and every entry and result is public."}
             </p>
+            <span className={`step-tag ${sui.ready ? "sui" : ""}`}>
+              {sui.ready ? "sui::random" : "Public record"}
+            </span>
           </li>
           <li>
-            <span className="story-number">04</span>
-            <span className="how-icon">
-              <Gift size={22} />
-            </span>
+            <span className="step-number">4</span>
             <h3>Win, or try again</h3>
             <p>
               <strong>Won?</strong> Claim your seats with a fresh World ID
@@ -198,13 +227,18 @@ export default async function Home() {
             </p>
           </li>
         </ol>
-        <p className="story-loop">
-          <RotateCcw size={16} aria-hidden="true" />
+        <p className="loop-note">
+          <RotateCcw size={18} aria-hidden="true" />
           Every loss on the same tour adds a chance, up to six. A win resets you
           to one.
         </p>
       </section>
-      <section aria-labelledby="drops-heading">
+
+      <Architecture sui={sui} />
+
+      <WhySui sui={sui} />
+
+      <section className="drops-section" aria-labelledby="drops-heading">
         <div className="section-header">
           <h2 id="drops-heading">
             {drops.length ? "Browse drops" : "Start here"}
@@ -242,32 +276,33 @@ export default async function Home() {
             })}
           </div>
         ) : null}
+        {!drops.length ? (
+          <div className="availability-note">
+            <span className="status-dot" />
+            <p>
+              <strong>No public drops yet.</strong> You can explore the
+              walkthrough while the first drop gets ready.
+            </p>
+            <Link href="/admin">
+              For organisers <ArrowRight size={15} />
+            </Link>
+          </div>
+        ) : (
+          <div className="availability-note">
+            <p>New to Tenjō? Follow one fan through a concert ballot.</p>
+            <Link href="/demo">
+              Try the walkthrough <ArrowRight size={15} />
+            </Link>
+          </div>
+        )}
       </section>
-      {!drops.length ? (
-        <div className="availability-note">
-          <span className="status-dot" />
-          <p>
-            <strong>No public drops yet.</strong> You can explore the
-            walkthrough while the first drop gets ready.
-          </p>
-          <Link href="/admin">
-            For organisers <ArrowRight size={15} />
-          </Link>
+
+      <section className="trust-section" aria-labelledby="trust-heading">
+        <div className="section-intro">
+          <span className="chip">Why it works</span>
+          <h2 id="trust-heading">A little less luck. A little more fair.</h2>
         </div>
-      ) : (
-        <div className="availability-note">
-          <p>New to Tenjō? Follow one fan through a concert ballot.</p>
-          <Link href="/demo">
-            Try the walkthrough <ArrowRight size={15} />
-          </Link>
-        </div>
-      )}
-      <section className="how-section" aria-labelledby="why-heading">
-        <div className="section-header">
-          <h2 id="why-heading">A little less luck. A little more fair.</h2>
-          <span className="subtle-label">WHY IT WORKS</span>
-        </div>
-        <div className="how-grid why-grid">
+        <div className="trust-grid">
           <article>
             <span className="eyebrow">The trust moment · World ID</span>
             <h3>A pity counter needs real people.</h3>
@@ -289,7 +324,9 @@ export default async function Home() {
             </ul>
           </article>
           <article>
-            <span className="eyebrow">The name · 天井</span>
+            <span className="name-seal jp" aria-hidden="true">
+              天井
+            </span>
             <h3>Tenjō is gacha’s pity ceiling.</h3>
             <p>
               In gacha games, <em>tenjō</em> (天井, “ceiling”) is the pity
@@ -298,21 +335,13 @@ export default async function Home() {
               to six. Better odds, never a guarantee.
             </p>
           </article>
-          <article>
-            <span className="eyebrow">The record · Server now, Sui next</span>
-            <h3>Nothing behind the curtain.</h3>
-            <p>
-              Every entry, chance count and result is public. Today the draw
-              runs on Tenjō’s server, so you still trust the operator. Next up:
-              Sui on-chain randomness and a public loss ledger.
-            </p>
-          </article>
         </div>
       </section>
-      <section className="lookup-section">
+
+      <section className="lookup-section" aria-labelledby="lookup-heading">
         <div>
-          <span className="eyebrow">YOUR STORY SO FAR</span>
-          <h2>Kept your code?</h2>
+          <span className="chip">Your story so far</span>
+          <h2 id="lookup-heading">Kept your code?</h2>
           <p>See your entries, results and what comes next.</p>
         </div>
         <Lookup />

@@ -1,29 +1,6 @@
-const arrow = "url(#architecture-arrow)";
+import type { SuiStatus } from "@/lib/sui-status";
 
-const steps = [
-  {
-    title: "Request",
-    text: "Tenjō’s server signs a one-time request for this drop and hands it to your browser.",
-  },
-  {
-    title: "Prove",
-    text: "You approve it in World App. World ID shows you’re one real person, without your name.",
-    world: true,
-  },
-  {
-    title: "Send",
-    text: "Your browser passes the proof back to Tenjō, untouched.",
-  },
-  {
-    title: "Check",
-    text: "World confirms the proof. Tenjō checks it’s fresh, for this drop and not a repeat.",
-    world: true,
-  },
-  {
-    title: "Record",
-    text: "Your entry and chances are saved. Draws and results go on the public record.",
-  },
-];
+const arrow = "url(#architecture-arrow)";
 
 function Node({
   x,
@@ -48,7 +25,7 @@ function Node({
         y={y - 64}
         width="300"
         height="128"
-        rx="20"
+        rx="24"
       />
       <text className="arch-kicker" x={x} y={y - 26} textAnchor="middle">
         {kicker}
@@ -63,16 +40,57 @@ function Node({
   );
 }
 
-export function Architecture() {
+export function Architecture({ sui }: { sui: SuiStatus }) {
+  const steps = [
+    {
+      title: "Request",
+      text: "Tenjō’s server signs a one-time request for this drop and hands it to your browser.",
+      tag: "",
+    },
+    {
+      title: "Prove",
+      text: "You approve it in World App. World ID shows you’re one real person, without your name.",
+      tag: "World ID",
+    },
+    {
+      title: "Send",
+      text: "Your browser passes the proof back to Tenjō, untouched.",
+      tag: "",
+    },
+    {
+      title: "Check",
+      text: "World confirms the proof. Tenjō checks it’s fresh, for this drop and not a repeat.",
+      tag: "World ID",
+    },
+    {
+      title: "Record",
+      text: "Your entry and chances are saved, and every result goes on the public record.",
+      tag: "",
+    },
+    {
+      title: "Draw",
+      text: sui.ready
+        ? "After close, the drop settles on Sui: on-chain randomness picks the winners and the pity ledger updates in the same step."
+        : "Next: the Sui package takes the draw, the loss ledger and deposits. Until it’s published, the draw runs on Tenjō’s server.",
+      tag: "Sui",
+    },
+  ];
   return (
-    <section className="architecture" aria-labelledby="architecture-heading">
-      <div className="architecture-intro">
-        <span className="eyebrow">UNDER THE HOOD</span>
-        <h2 id="architecture-heading">Every entry is checked with World ID.</h2>
+    <section
+      className="panel periwinkle architecture"
+      aria-labelledby="architecture-heading"
+    >
+      <div className="section-intro">
+        <span className="chip">Under the hood</span>
+        <h2 id="architecture-heading">
+          World ID checks who enters. Sui decides who wins.
+        </h2>
         <p>
-          Your phone proves you’re one person. Tenjō’s server confirms that
-          proof with World before anything is saved, then keeps every chance and
-          result on the public record.
+          Your phone proves you’re one person, and Tenjō’s server confirms that
+          proof with World before anything is saved.{" "}
+          {sui.ready
+            ? "The draw, the refunds and every loss count then live on Sui, where anyone can check them."
+            : "The draw, the refunds and every loss count are moving to Sui, where anyone will be able to check them."}
         </p>
       </div>
       <figure className="architecture-figure">
@@ -82,13 +100,17 @@ export function Architecture() {
           role="img"
           aria-labelledby="architecture-map-title architecture-map-desc"
         >
-          <title id="architecture-map-title">How Tenjō uses World ID</title>
+          <title id="architecture-map-title">
+            How Tenjō uses World ID and Sui
+          </title>
           <desc id="architecture-map-desc">
             Your browser gets a signed request from the Tenjō server. You prove
             you’re one person in World App, and the proof goes back to the
-            server. The server confirms it with World’s verify service, then
-            records the entry in Postgres. Sui is planned next for an on-chain
-            draw.
+            server. The server confirms it with World’s verify service and
+            records the entry.{" "}
+            {sui.ready
+              ? "After close, the server settles the drop on Sui, which runs the random draw and updates the loss ledger. Postgres mirrors the chain for fast pages."
+              : "Sui is drawn dashed: its draw and loss ledger are not published yet, so Postgres holds the record today."}
           </desc>
           <defs>
             <marker
@@ -109,7 +131,7 @@ export function Architecture() {
             y="300"
             width="750"
             height="240"
-            rx="28"
+            rx="32"
           />
           <rect
             className="arch-band-chip"
@@ -122,13 +144,36 @@ export function Architecture() {
           <text className="arch-band-label" x="102" y="338" textAnchor="middle">
             WORLD ID
           </text>
+          <rect
+            className={`arch-band sui${sui.ready ? "" : " next"}`}
+            x="840"
+            y="300"
+            width="340"
+            height="240"
+            rx="32"
+          />
+          <rect
+            className="arch-band-chip sui"
+            x="864"
+            y="318"
+            width="72"
+            height="30"
+            rx="15"
+          />
+          <text className="arch-band-label" x="900" y="338" textAnchor="middle">
+            SUI
+          </text>
           <g className="arch-lines">
             <path d="M450 120H340" markerEnd={arrow} />
             <path d="M340 160H450" markerEnd={arrow} />
             <path d="M190 204V356" markerStart={arrow} markerEnd={arrow} />
             <path d="M600 204V356" markerStart={arrow} markerEnd={arrow} />
             <path d="M750 140H860" markerEnd={arrow} />
-            <path className="next" d="M750 180H805V420H860" markerEnd={arrow} />
+            <path
+              className={sui.ready ? "sui" : "next"}
+              d="M750 180H805V420H860"
+              markerEnd={arrow}
+            />
           </g>
           <text className="arch-step" x="395" y="106" textAnchor="middle">
             <tspan className="arch-step-number">01</tspan> request
@@ -145,8 +190,8 @@ export function Architecture() {
           <text className="arch-step" x="805" y="126" textAnchor="middle">
             <tspan className="arch-step-number">05</tspan> record
           </text>
-          <text className="arch-next-label" x="817" y="306">
-            next
+          <text className="arch-step" x="817" y="290">
+            <tspan className="arch-step-number">06</tspan> draw
           </text>
           <Node
             x={190}
@@ -160,7 +205,7 @@ export function Architecture() {
             y={140}
             kicker="VERCEL"
             name="Tenjō server"
-            sub="checks proofs, runs the draw"
+            sub="checks proofs, starts draws"
             variant="hub"
           />
           <Node
@@ -168,7 +213,11 @@ export function Architecture() {
             y={140}
             kicker="NEON"
             name="Postgres"
-            sub="entries, chances, results"
+            sub={
+              sui.ready
+                ? "fast mirror of the record"
+                : "entries, chances, results"
+            }
           />
           <Node
             x={190}
@@ -187,10 +236,14 @@ export function Architecture() {
           <Node
             x={1010}
             y={420}
-            kicker="NEXT · NOT BUILT YET"
-            name="Sui"
-            sub="on-chain draw and loss ledger"
-            variant="next"
+            kicker={
+              sui.ready
+                ? `SUI ${sui.network.toUpperCase()}`
+                : "NEXT · NOT PUBLISHED"
+            }
+            name="tenjo::ballot"
+            sub="random draw, pity ledger, refunds"
+            variant={sui.ready ? undefined : "next"}
           />
         </svg>
         <figcaption>
@@ -200,17 +253,16 @@ export function Architecture() {
                 <span className="story-number">0{index + 1}</span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
-                {step.world ? (
-                  <span className="story-tag">World ID</span>
+                {step.tag ? (
+                  <span
+                    className={`story-tag ${step.tag === "Sui" ? "sui" : ""}`}
+                  >
+                    {step.tag}
+                  </span>
                 ) : null}
               </li>
             ))}
           </ol>
-          <p className="architecture-next">
-            <strong>Next:</strong> Sui’s on-chain randomness will run the draw
-            and keep a public loss ledger. It isn’t built yet, so today the draw
-            runs on Tenjō’s server.
-          </p>
         </figcaption>
       </figure>
     </section>

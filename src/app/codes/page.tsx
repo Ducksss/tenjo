@@ -6,7 +6,7 @@ export default function Codes() {
   return (
     <>
       <section className="page-heading">
-        <span className="eyebrow">EVERY TRY IS PART OF YOUR STORY</span>
+        <span className="eyebrow">Every try is part of your story</span>
         <h1>Find your next chance.</h1>
         <p>
           Your anonymous code links your entries and results. No account, email

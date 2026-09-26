@@ -33,7 +33,7 @@ export default async function CodePage({
   return (
     <>
       <section className="page-heading">
-        <span className="eyebrow">YOUR ANONYMOUS RECEIPT</span>
+        <span className="eyebrow">Your anonymous receipt</span>
         <h1>Every try, accounted for.</h1>
         <code className="full-code">{code}</code>
       </section>
