@@ -753,6 +753,12 @@ main {
 }
 .button.full {
   width: 100%;
+  /* A long label ("Enter with World ID + 0.01 SUI") wraps inside a narrow card instead of spilling out. */
+  white-space: normal;
+  text-align: center;
+}
+.button.full > svg {
+  flex: none;
 }
 .button-row {
   display: flex;
@@ -3966,9 +3972,6 @@ main {
 .passkey-step .choice,
 .passkey-step .text-button {
   justify-self: start;
-}
-.passkey-step .button {
-  white-space: normal;
 }
 /* dApp Kit reads shadcn-style variables; map them so the wallet UI matches the capsule palette. */
 mysten-dapp-kit-connect-button,
