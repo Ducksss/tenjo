@@ -165,6 +165,65 @@ test("server verifies exact bytes, binds purpose and nonce, refuses tampering an
     await db.close();
   }
 });
+test("staging verification carries the window token and reports a closed window", async () => {
+  const db = await makeDatabase("memory://");
+  await migrate(db);
+  try {
+    const now = Date.now();
+    const drop = await createDrop(db, {
+      title: "Staging window",
+      series_id: "window",
+      series_name: "Window test",
+      items: 1,
+      opens_at: new Date(now - 1000).toISOString(),
+      closes_at: new Date(now + 600000).toISOString(),
+    });
+    const proof = async () => {
+      const challenge = await issueChallenge(db, drop.id, "enter");
+      const raw = JSON.stringify({
+        protocol_version: "3.0",
+        nonce: challenge.rp_context.nonce,
+        action: challenge.action,
+        environment: "staging",
+        responses: [
+          {
+            identifier: "document",
+            nullifier: "0x1",
+            signal_hash: hashSignal(challenge.signal),
+            proof: "test-placeholder",
+            merkle_root: "0x00",
+          },
+        ],
+      });
+      return { raw, id: challenge.id };
+    };
+    let sent: string | null = null;
+    const capture = (async (_url, init) => {
+      sent = new Headers(init!.headers).get("x-staging-verification-token");
+      return Response.json(success);
+    }) as typeof fetch;
+    process.env.WORLD_STAGING_VERIFICATION_TOKEN = "stg_test";
+    const open = await proof();
+    await verifyWorldProof(db, open.raw, open.id, drop.id, "enter", capture);
+    assert.equal(sent, "stg_test");
+    const closed = await proof();
+    await assert.rejects(
+      verifyWorldProof(db, closed.raw, closed.id, drop.id, "enter", (async () =>
+        Response.json(
+          { code: "environment_not_allowed" },
+          { status: 403 },
+        )) as typeof fetch),
+      /staging verification window is closed/,
+    );
+    delete process.env.WORLD_STAGING_VERIFICATION_TOKEN;
+    const none = await proof();
+    await verifyWorldProof(db, none.raw, none.id, drop.id, "enter", capture);
+    assert.equal(sent, null);
+  } finally {
+    delete process.env.WORLD_STAGING_VERIFICATION_TOKEN;
+    await db.close();
+  }
+});
 test("missing config and unvalidated pickup fail closed", async () => {
   const db = await makeDatabase("memory://");
   await migrate(db);

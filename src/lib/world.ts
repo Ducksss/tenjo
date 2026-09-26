@@ -280,13 +280,21 @@ export async function verifyWorldProof(
     // In staging, this is explicitly an untested liveness fallback. Do not mistake
     // a browser-supplied user_presence_completed flag for server-attested liveness.
     let response: Response;
+    // World verifies staging proofs only while the team keeps a 24-hour staging window
+    // open. Its token travels as a header, so the forwarded body stays untouched.
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    const stagingToken = process.env.WORLD_STAGING_VERIFICATION_TOKEN;
+    if (config.environment === "staging" && stagingToken)
+      headers["x-staging-verification-token"] = stagingToken;
     try {
       // R2: verification boundary. Forward the exact received bytes, without remapping.
       response = await fetcher(
         `https://developer.world.org/api/v4/verify/${encodeURIComponent(config.rp_id)}`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers,
           body: rawBody,
           signal: AbortSignal.timeout(15000),
         },
@@ -304,6 +312,17 @@ export async function verifyWorldProof(
         "world_unavailable",
         "World verification is unavailable. Try again shortly. Nothing was saved.",
       );
+    if (response.status === 403) {
+      const refusal = (await response.json().catch(() => null)) as {
+        code?: string;
+      } | null;
+      if (refusal?.code === "environment_not_allowed")
+        throw new AppError(
+          503,
+          "staging_window_closed",
+          "World's staging verification window is closed. The organiser must open a new one. Nothing was saved.",
+        );
+    }
     if (!response.ok)
       throw new AppError(
         400,
