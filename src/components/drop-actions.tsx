@@ -103,7 +103,7 @@ export function DropActions({
   const method = demo ? "a demo identity" : "World ID";
   const copy = {
     open: {
-      eyebrow: "Steps 01–02 · Your way in",
+      eyebrow: "Verify & enter · your way in",
       title: "One entry. All you.",
       text: `Enter once with ${method}. Your name goes in the draw once, plus once for every past loss in this series, up to 6 chances. Your receipt is an anonymous code for checking the result.`,
     },
@@ -118,7 +118,7 @@ export function DropActions({
       text: "No new entries. Winners appear on this page after the draw. Entered? Your anonymous code shows your result.",
     },
     settled: {
-      eyebrow: "Step 04 · Winner pickup",
+      eyebrow: "Collect · winners only",
       title: "Did you win?",
       text: `Winning codes are listed on this page. If one is yours, collect with the same ${demo ? "demo identity" : "World ID"} you entered with. Anyone else is refused.`,
     },
@@ -284,7 +284,7 @@ export function DropActions({
               <Notice>
                 The organiser is finishing World ID setup. You can explore the
                 rules now in the{" "}
-                <Link className="text-link" href="/demo">
+                <Link className="text-link" href="/#how">
                   walkthrough
                 </Link>
                 , or come back to enter once verification is ready.

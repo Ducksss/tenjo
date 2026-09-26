@@ -38,7 +38,7 @@ export function DrawControls({
   }
   return (
     <section className="draw-card" aria-labelledby="draw-heading">
-      <span className="eyebrow">Step 03 · The draw</span>
+      <span className="eyebrow">The draw</span>
       <h2 id="draw-heading">
         {closed ? "Entries are closed. Ready to draw." : "Then comes the draw."}
       </h2>

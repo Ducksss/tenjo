@@ -6,7 +6,7 @@ A free drop lottery built from scratch for the September 2026 hackathon. World I
 
 **Current status:** Phase 1 application and a working local demonstration. The World ID request/verification integration is implemented and tested with mocked verifier responses, but **no real simulator proof has been verified yet**: app/RP/signing credentials are missing. Production pickup is deliberately blocked pending server-attested liveness. **Sui escrow drops (randomness, loss ledger, deposits and refunds) are implemented and tested locally; the testnet publish is pending funding** (see [Sui](#sui)). Video and submission are not complete. Hosting is live at [tenjo-azure.vercel.app](https://tenjo-azure.vercel.app); World credentials are still required for real entries. No fabricated World successes, transactions or explorer links.
 
-The hosted `/demo` route is an interactive, browser-only walkthrough with scripted outcomes. It makes no lottery API writes and does not verify World ID; real production records remain separate.
+The walkthrough on the landing page (`/#how`; `/demo` redirects there) is interactive and browser-only, with scripted outcomes. It makes no lottery API writes and does not verify World ID; real production records remain separate.
 
 ## Run the local demo
 

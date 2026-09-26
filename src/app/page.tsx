@@ -1,16 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, RotateCcw } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
 import { database } from "@/lib/db";
 import { listDrops } from "@/lib/service";
 import { dropStatus, formatJST, fromNow, statusLabel } from "@/lib/format";
 import { worldConfig } from "@/lib/world";
 import { formatSui, suiStatus } from "@/lib/sui-status";
 import { TicketCard } from "@/components/ticket-card";
-import { DemoInvitation } from "@/components/demo-invitation";
 import { Lookup } from "@/components/lookup";
 import { Architecture } from "@/components/architecture";
 import { CapsuleMachine } from "@/components/capsule-machine";
-import { Capsules } from "@/components/capsules";
+import { Walkthrough } from "@/components/walkthrough";
 import { WhySui } from "@/components/why-sui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
@@ -32,10 +31,13 @@ export default async function Home() {
         )
       ).rows[0]
     : undefined;
-  const credential =
-    world.credential === "orb"
-      ? "Proof of Human credential: one Orb-verified person, one entrant"
-      : "Passport credential: one document, one entrant";
+  // One place to act: the open drop when there is exactly one, otherwise the list below.
+  const enter =
+    open.length === 1
+      ? { href: `/drops/${open[0].id}`, label: "Enter the open drop" }
+      : open.length
+        ? { href: "#drops", label: `See ${open.length} open drops` }
+        : { href: "#drops", label: "Browse drops" };
   return (
     <>
       <section className="hero" aria-labelledby="hero-heading">
@@ -64,37 +66,18 @@ export default async function Home() {
           </p>
           <div className="hero-actions">
             {open.length ? (
-              <>
-                <Link
-                  href={
-                    open.length === 1
-                      ? `/drops/${open[0].id}`
-                      : "#drops-heading"
-                  }
-                  className="button pop"
-                >
-                  {open.length === 1
-                    ? "See the open drop"
-                    : `See ${open.length} open drops`}
-                  <ArrowRight size={17} />
-                </Link>
-                <Link href="/demo" className="button secondary">
-                  Try the walkthrough
-                  <ArrowRight size={17} />
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/demo" className="button pop">
-                  Try the walkthrough
-                  <ArrowRight size={17} />
-                </Link>
-                <Link href="#how-heading" className="button secondary">
-                  How it works
-                  <ArrowRight size={17} />
-                </Link>
-              </>
-            )}
+              <Link href={enter.href} className="button pop">
+                {enter.label}
+                <ArrowRight size={17} />
+              </Link>
+            ) : null}
+            <Link
+              href="#how"
+              className={`button ${open.length ? "secondary" : "pop"}`}
+            >
+              See how it works
+              <ArrowDown size={17} />
+            </Link>
           </div>
           <ul className="hero-proof" aria-label="What’s running now">
             <li>
@@ -145,20 +128,24 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="drops-section" aria-labelledby="drops-heading">
+      <section
+        id="drops"
+        className="drops-section"
+        aria-labelledby="drops-heading"
+      >
         <div className="section-header">
           <h2 id="drops-heading">
-            {drops.length ? "Browse drops" : "Start here"}
+            Browse drops
             {drops.length ? (
               <span className="count-chip">{drops.length}</span>
             ) : null}
           </h2>
-          <Link href="/audit">
-            Explore the public record
+          <Link href="/results">
+            See every result
             <ArrowUpRight size={16} />
           </Link>
         </div>
-        {drops.length ? <TicketCard drop={drops[0]} /> : <DemoInvitation />}
+        {drops.length ? <TicketCard drop={drops[0]} /> : null}
         {drops.length > 1 ? (
           <div className="other-drops">
             {drops.slice(1).map((drop) => {
@@ -187,21 +174,14 @@ export default async function Home() {
           <div className="availability-note">
             <span className="status-dot" />
             <p>
-              <strong>No public drops yet.</strong> You can explore the
-              walkthrough while the first drop gets ready.
+              <strong>No public drops yet.</strong> The example below shows how
+              a ballot works while the first drop gets ready.
             </p>
             <Link href="/admin">
               For organisers <ArrowRight size={15} />
             </Link>
           </div>
-        ) : (
-          <div className="availability-note">
-            <p>New to Tenjō? Follow one fan through a concert ballot.</p>
-            <Link href="/demo">
-              Try the walkthrough <ArrowRight size={15} />
-            </Link>
-          </div>
-        )}
+        ) : null}
       </section>
 
       <section className="problem" aria-labelledby="problem-heading">
@@ -241,116 +221,24 @@ export default async function Home() {
         </ul>
       </section>
 
-      <section className="panel how" aria-labelledby="how-heading">
+      <section id="how" className="panel how" aria-labelledby="how-heading">
         <div className="section-intro">
-          <span className="chip">How Tenjō works</span>
+          <span className="chip">How Tenjō works · a one-minute example</span>
           <h2 id="how-heading">
             One real person. One entry. Every loss counts.
           </h2>
           <p>
-            A drop is anything scarce that’s decided by ballot: concert seats,
-            event entry, a limited release. Here’s one concert ballot, the Tenjō
-            way.
+            Follow one fan through the ballots for two nights of a sold-out dome
+            tour. Click through: verify once with World ID, lose Night 1, carry
+            an extra chance into Night 2, win, and collect the seats.
           </p>
         </div>
-        <ol className="steps">
-          <li>
-            <span className="step-number">1</span>
-            <h3>Prove you’re one person</h3>
-            <p>
-              World ID checks that you’re a unique human, on our server. No
-              name, email or phone, and one fan can’t apply as fifty.
-            </p>
-            <span className="step-tag world">World ID</span>
-          </li>
-          <li>
-            <span className="step-number">2</span>
-            <h3>Enter the ballot once</h3>
-            <p>
-              Apply for Tokyo Dome, Night 1. Your name goes in the draw once,
-              plus once more for every ballot you’ve lost on this tour.
-            </p>
-            <Capsules count={4} label="Example: 4 of 6 chances" />
-            <span className={`step-tag ${sui.ready ? "sui" : ""}`}>
-              {sui.ready ? "Pity ledger on Sui" : "Up to 6 chances"}
-            </span>
-          </li>
-          <li>
-            <span className="step-number">3</span>
-            <h3>The draw</h3>
-            <p>
-              {sui.ready
-                ? "When entries close, anyone can start the draw. Sui’s on-chain randomness picks the winners, weighted by chances, so nobody can choose the result. Not even us."
-                : "When entries close, anyone can start the draw. Names are picked at random, weighted by chances, and every entry and result is public."}
-            </p>
-            <span className={`step-tag ${sui.ready ? "sui" : ""}`}>
-              {sui.ready ? "sui::random" : "Public record"}
-            </span>
-          </li>
-          <li>
-            <span className="step-number">4</span>
-            <h3>Win, or try again</h3>
-            <p>
-              <strong>Won?</strong> Claim your seats with a fresh World ID
-              check, so only you can collect them.
-            </p>
-            <p>
-              <strong>Lost?</strong> It’s saved. On Night 2’s ballot, you start
-              with one more chance.
-            </p>
-          </li>
-        </ol>
-        <p className="loop-note">
-          <RotateCcw size={18} aria-hidden="true" />
-          Every loss on the same tour adds a chance, up to six. A win resets you
-          to one.
-        </p>
+        <Walkthrough next={enter} credential={world.credential} />
       </section>
 
       <Architecture sui={sui} />
 
       <WhySui sui={sui} latestDraw={latestDraw} />
-
-      <section className="trust-section" aria-labelledby="trust-heading">
-        <div className="section-intro">
-          <span className="chip">Why it works</span>
-          <h2 id="trust-heading">A little less luck. A little more fair.</h2>
-        </div>
-        <div className="trust-grid">
-          <article>
-            <span className="eyebrow">The trust moment · World ID</span>
-            <h3>A pity counter needs real people.</h3>
-            <p>
-              If one fan could open fifty accounts, each would pile up extra
-              chances. World ID gives each verified person one stable, anonymous
-              ID for Tenjō, and Tenjō keeps your loss count against it. No name,
-              no account.
-            </p>
-            <ul>
-              <li>
-                <strong>Entry:</strong> {credential}. Repeat entries are
-                refused.
-              </li>
-              <li>
-                <strong>Pickup:</strong> a fresh proof from the person who won.
-                Anyone else is refused.
-              </li>
-            </ul>
-          </article>
-          <article>
-            <span className="name-seal jp" aria-hidden="true">
-              天井
-            </span>
-            <h3>Tenjō is gacha’s pity ceiling.</h3>
-            <p>
-              In gacha games, <em>tenjō</em> (天井, “ceiling”) is the pity
-              system: keep pulling and a win eventually comes. Tenjō brings a
-              gentler version to ballots, for free. Each loss adds a chance, up
-              to six. Better odds, never a guarantee.
-            </p>
-          </article>
-        </div>
-      </section>
 
       <section className="lookup-section" aria-labelledby="lookup-heading">
         <div>

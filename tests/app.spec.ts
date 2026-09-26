@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import { jstInputValue } from "../src/lib/date-input";
 import { demoCode } from "../src/lib/domain";
 
 test("desktop discovery, duplicate refusal, 4-chance receipt, public history and mobile reflow", async ({
@@ -20,7 +19,7 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
     );
   expect(sections.slice(0, 2)).toEqual(["hero-heading", "drops-heading"]);
   // The isolated fixture adds a newer closed drop; discovery still leads with the drop fans can enter.
-  await page.getByRole("link", { name: "See the open drop" }).click();
+  await page.getByRole("link", { name: "Enter the open drop" }).click();
   await expect(page).toHaveURL(/\/drops\/weekend-drop$/);
   await expect(
     page.getByRole("button", { name: "Run draw", exact: true }),
@@ -55,11 +54,14 @@ test("desktop discovery, duplicate refusal, 4-chance receipt, public history and
     path: "/private/tmp/tenjo-mobile.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "My entries", exact: true }).click();
-  // Discovery has its own lookup form; wait for the lookup page before using it.
-  await expect(page).toHaveURL(/\/codes$/);
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Results" })
+    .click();
+  // Discovery has its own lookup form; wait for Results before using it.
+  await expect(page).toHaveURL(/\/results$/);
   await expect(
-    page.getByRole("heading", { name: "Find your next chance." }),
+    page.getByRole("heading", { name: "Did you win? It’s on the record." }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Look up", exact: true }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
@@ -171,7 +173,7 @@ test("organiser creates a real drop; missing World config cannot admit anyone", 
   await page.goto("/admin");
   await page.getByRole("button", { name: "Create drop", exact: true }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Complete every required field",
+    "Some details need another look",
   );
   await page
     .getByLabel("Organiser password", { exact: true })
@@ -182,14 +184,14 @@ test("organiser creates a real drop; missing World config cannot admit anyone", 
   await page
     .getByLabel("Series name", { exact: true })
     .fill("Real test series");
-  await page.getByLabel("Series ID", { exact: true }).fill("real-test");
-  const now = Date.now();
-  await page
-    .getByLabel("Entries open (JST)", { exact: true })
-    .fill(jstInputValue(new Date(now - 60000)));
-  await page
-    .getByLabel("Entries close (JST)", { exact: true })
-    .fill(jstInputValue(new Date(now + 3600000)));
+  await expect(page.locator("#series-status")).toHaveText(
+    "Starts a new series. Everyone’s first entry has one chance.",
+  );
+  // Entries open on publish by default; a preset sets the close.
+  await page.getByRole("radio", { name: "1 hour" }).check();
+  await expect(page.locator(".schedule-summary")).toContainText(
+    "Entries open as soon as you publish",
+  );
   await page.getByRole("button", { name: "Create drop", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "World staging integration" }),
@@ -221,7 +223,7 @@ test("keyboard lookup, identity selection, no-results filter and offline recover
   page,
   context,
 }) => {
-  await page.goto("/codes");
+  await page.goto("/results");
   await page.getByLabel("Look up my anonymous code").fill(demoCode("fan-a"));
   await page.getByLabel("Look up my anonymous code").press("Enter");
   await expect(page).toHaveURL(new RegExp(`/codes/${demoCode("fan-a")}`));
@@ -261,9 +263,10 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
       writes.push(request.url());
   });
   await page.goto("/demo");
-  await expect(page).toHaveTitle("Try the walkthrough · Tenjō");
+  await expect(page).toHaveURL(/\/#how$/);
+  const walkthrough = page.locator("#how");
   await expect(
-    page.getByText("Scripted outcomes.", { exact: false }),
+    walkthrough.getByText("Scripted outcomes.", { exact: false }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "Enter with World ID (example)" })
@@ -272,11 +275,13 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
     page.getByRole("heading", { name: "One person. One entry. Four chances." }),
   ).toBeFocused();
   await page.getByRole("button", { name: "Try entering twice" }).click();
-  await expect(page.getByRole("status")).toContainText("already entered");
+  await expect(walkthrough.getByRole("status")).toContainText(
+    "already entered",
+  );
   await page
     .getByRole("button", { name: "Reveal the Night 1 result", exact: true })
     .click();
-  await expect(page.getByRole("table")).toContainText("3 → 4");
+  await expect(walkthrough.getByRole("table")).toContainText("3 → 4");
   await context.setOffline(true);
   await page
     .getByRole("button", { name: "Enter Night 2 with World ID (example)" })
@@ -284,16 +289,20 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
   await expect(page.getByText(/45.5% odds/)).toBeVisible();
   await page.getByRole("button", { name: "Reveal the Night 2 result" }).click();
   await page.getByRole("button", { name: "Try another identity" }).click();
-  await expect(page.getByRole("status")).toContainText("didn’t win");
+  await expect(walkthrough.getByRole("status")).toContainText("didn’t win");
   await page
     .getByRole("button", { name: "Collect with World ID (example)" })
     .click();
-  await expect(page.getByRole("table")).toContainText("Won · collected");
-  await expect(page.getByRole("table")).toContainText("4 → 0");
+  await expect(walkthrough.getByRole("table")).toContainText("Won · collected");
+  await expect(walkthrough.getByRole("table")).toContainText("4 → 0");
   // Wait for the walkthrough's scheduled focus before moving keyboard focus ourselves.
   await expect(
     page.getByRole("heading", { name: "Seats collected. Fresh start." }),
   ).toBeFocused();
+  // The story ends by handing over to the real drops.
+  await expect(
+    walkthrough.getByRole("link", { name: /^Now for real:/ }),
+  ).toBeVisible();
   await context.setOffline(false);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
@@ -306,7 +315,7 @@ test("walkthrough teaches both outcomes and refusals without writing entries", a
   await expect(
     page.getByRole("heading", { name: "You’ve applied before." }),
   ).toBeFocused();
-  await expect(page.getByRole("table")).toContainText("Not entered");
+  await expect(walkthrough.getByRole("table")).toContainText("Not entered");
   await page.screenshot({
     path: "/private/tmp/tenjo-walkthrough-mobile.png",
     fullPage: true,
@@ -335,16 +344,16 @@ test("organiser errors focus the right field and scheduling stays JST in a diffe
     .getByLabel("Drop title", { exact: true })
     .fill("An accessible test drop");
   await page.getByLabel("Series name", { exact: true }).fill("Test series");
-  await page.getByLabel("Series ID", { exact: true }).fill("test-series");
-  await page
-    .getByRole("button", { name: "Start now · close in 1 hour" })
-    .click();
+  await page.getByRole("radio", { name: "At a set time" }).check();
   const open = await page
     .getByLabel("Entries open (JST)", { exact: true })
     .inputValue();
-  expect(Math.abs(Date.parse(open + ":00+09:00") - Date.now())).toBeLessThan(
-    65000,
-  );
+  // The set time starts at the next full hour in Japan, whatever the browser's timezone.
+  const opensAt = Date.parse(open + ":00+09:00");
+  expect(open.endsWith(":00")).toBe(true);
+  expect(opensAt).toBeGreaterThan(Date.now() - 65000);
+  expect(opensAt).toBeLessThanOrEqual(Date.now() + 3600000);
+  await page.getByRole("radio", { name: "Until a set time" }).check();
   await page.getByLabel("Entries close (JST)", { exact: true }).fill(open);
   await page
     .getByLabel("Organiser password", { exact: true })
@@ -382,7 +391,7 @@ test("unfinished organiser form can be kept or discarded when following navigati
     .fill("Keep these details");
   await page
     .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Try the walkthrough" })
+    .getByRole("link", { name: "Results" })
     .click();
   const dialog = page.getByRole("dialog", {
     name: "Leave this unfinished drop?",
@@ -398,10 +407,10 @@ test("unfinished organiser form can be kept or discarded when following navigati
   );
   await page
     .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Try the walkthrough" })
+    .getByRole("link", { name: "Results" })
     .click();
   await page.getByRole("button", { name: "Discard and leave" }).click();
-  await expect(page).toHaveURL(/\/demo$/);
+  await expect(page).toHaveURL(/\/results$/);
 });
 
 test("architecture page explains the World ID pipeline with honest live and planned status", async ({
@@ -434,4 +443,89 @@ test("architecture page explains the World ID pipeline with honest live and plan
     ),
   ).toBe(true);
   expect(errors).toEqual([]);
+});
+
+test("organiser form continues a series by name and stops a busy one before publishing", async ({
+  page,
+  request,
+}) => {
+  // A settled series of its own, created by name alone, the way the form sends it.
+  const now = Date.now();
+  const created = await request.post("/api/admin/drops", {
+    headers: { authorization: "Bearer tenjo-e2e-admin-password" },
+    data: {
+      title: "Rehearsal night 1",
+      series_name: "Rehearsal tour",
+      items: 1,
+      opens_at: new Date(now - 120000).toISOString(),
+      closes_at: new Date(now - 60000).toISOString(),
+    },
+  });
+  expect(created.status()).toBe(200);
+  const { id, series_id } = await created.json();
+  expect(series_id).toBe("rehearsal-tour");
+  expect((await request.post(`/api/drops/${id}/draw`)).status()).toBe(200);
+
+  await page.goto("/admin");
+  const picks = page.locator(".series-picks");
+  // The seeded weekend drop is still open, so its series can't take another drop yet.
+  await expect(
+    picks.getByRole("button", { name: /Weekend tech club/ }),
+  ).toBeDisabled();
+  await picks.getByRole("button", { name: /Rehearsal tour/ }).click();
+  await expect(page.getByLabel("Series name", { exact: true })).toHaveValue(
+    "Rehearsal tour",
+  );
+  await expect(page.locator("#series-status")).toContainText(
+    "Continues Rehearsal tour: 1 drop so far.",
+  );
+  await page.getByRole("button", { name: "Fill in an example" }).click();
+  await expect(page.getByLabel("Drop title", { exact: true })).toHaveValue(
+    "Tokyo Dome · Night 1",
+  );
+  await expect(page.getByLabel("Series name", { exact: true })).toHaveValue(
+    "Dome tour 2026",
+  );
+  await expect(page.getByRole("radio", { name: "1 hour" })).toBeChecked();
+  // Any casing names the same series, and a busy one is refused before anything is sent.
+  await page
+    .getByLabel("Series name", { exact: true })
+    .fill("weekend TECH club");
+  await expect(page.locator("#series-status")).toContainText(
+    "already has a drop waiting for its draw",
+  );
+  await page
+    .getByLabel("Organiser password", { exact: true })
+    .fill("tenjo-e2e-admin-password");
+  await page.getByRole("button", { name: "Create drop", exact: true }).click();
+  await expect(page.getByLabel("Series name", { exact: true })).toBeFocused();
+  await expect(page.locator("#series_name-error")).toContainText(
+    "Run that draw first, or use a new series name.",
+  );
+  await expect(page).toHaveURL(/\/admin$/);
+});
+
+test("old walkthrough, record and lookup links land on their new homes", async ({
+  page,
+}) => {
+  await page.goto("/demo");
+  await expect(page).toHaveURL(/\/#how$/);
+  await expect(
+    page.getByRole("heading", {
+      name: "One real person. One entry. Every loss counts.",
+    }),
+  ).toBeVisible();
+  await page.goto("/audit?page=1");
+  await expect(page).toHaveURL(/\/results\?page=1$/);
+  await page.goto("/codes");
+  await expect(page).toHaveURL(/\/results$/);
+  await expect(
+    page.getByRole("heading", { name: "Did you win? It’s on the record." }),
+  ).toBeVisible();
+  // Codes are linkable across series; Results says so where people look them up.
+  await expect(
+    page.getByText("anyone who has it can see your history across series", {
+      exact: false,
+    }),
+  ).toBeVisible();
 });

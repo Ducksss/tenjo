@@ -55,7 +55,7 @@ It runs on the local app, which is configured with World staging, against Sui te
 
 At normal pace this runs about 4:10, so trim 0:25–0:40 first if rehearsal runs long. Keep one hand on the mouse and say what you click before you click it.
 
-If the network is slow, the `/demo` walkthrough runs entirely in the browser, and a screen recording of a rehearsal draw is the backup. Say “this is our rehearsal from an hour ago” if you use it.
+If the network is slow, the walkthrough on the landing page (**See how it works**) runs entirely in the browser, and a screen recording of a rehearsal draw is the backup. Say “this is our rehearsal from an hour ago” if you use it.
 
 ## Staging: before you go on
 

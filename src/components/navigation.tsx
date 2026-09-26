@@ -21,14 +21,16 @@ export function Navigation() {
       </Link>
       <nav aria-label="Main navigation">
         {[
-          { href: "/", label: "Discover drops" },
-          { href: "/demo", label: "Try the walkthrough" },
-          { href: "/architecture", label: "How it’s built" },
-          { href: "/audit", label: "Public record" },
-          { href: "/codes", label: "My entries" },
-        ].map(({ href, label }) => {
+          // Discovery holds the walkthrough and every drop; a drop's own page belongs to it.
+          { href: "/", label: "Drops", within: ["/drops/"] },
+          // Results covers everyone's record and your own history by code.
+          { href: "/results", label: "Results", within: ["/codes/"] },
+          { href: "/architecture", label: "How it’s built", within: [] },
+        ].map(({ href, label, within }) => {
           const selected =
-            path === href || (href !== "/" && path.startsWith(href));
+            path === href ||
+            (href !== "/" && path.startsWith(href)) ||
+            within.some((prefix) => path.startsWith(prefix));
           return (
             <Link
               key={href}

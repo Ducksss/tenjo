@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { database } from "@/lib/db";
 import { codeHistory } from "@/lib/service";
 import { AppError } from "@/lib/domain";
@@ -34,6 +35,10 @@ export default async function CodePage({
   }
   return (
     <>
+      <Link className="back-link" href="/results">
+        <ArrowLeft size={16} />
+        Results
+      </Link>
       <section className="page-heading">
         <span className="eyebrow">Your anonymous receipt</span>
         <h1>Every try, accounted for.</h1>
