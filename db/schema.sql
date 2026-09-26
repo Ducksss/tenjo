@@ -72,4 +72,13 @@ ALTER TABLE challenges ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'prim
 CREATE TABLE IF NOT EXISTS identity_policy_modes (
   mode text PRIMARY KEY CHECK (mode IN ('production')),
   fingerprint text NOT NULL
+);
+-- A real World ID that links a wallet enters under the wallet's code. Each drop's World ID code stays
+-- beside it, so one person still gets one entry per drop, whichever wallet they bring.
+CREATE TABLE IF NOT EXISTS entry_identities (
+  drop_id text NOT NULL REFERENCES drops(id) ON DELETE CASCADE,
+  identity_code text NOT NULL CHECK (identity_code ~ '^[a-f0-9]{32}$'),
+  member_code text NOT NULL CHECK (member_code ~ '^[a-f0-9]{32}$'),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (drop_id, identity_code)
 )

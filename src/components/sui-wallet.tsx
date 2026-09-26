@@ -24,6 +24,8 @@ export type EntryPermit = {
 export type SuiWalletApi = {
   address: string | null;
   enter: (permit: EntryPermit) => Promise<string>;
+  /** Signs a personal message and returns the serialized signature. */
+  sign: (message: string) => Promise<string>;
 };
 
 const fullnodes: Record<string, string> = {
@@ -79,12 +81,19 @@ function Bridge({ onChange }: { onChange: (api: SuiWalletApi) => void }) {
           );
         return result.Transaction.digest;
       },
+      async sign(message) {
+        const { signature } = await dAppKit.signPersonalMessage({
+          message: new TextEncoder().encode(message),
+        });
+        return signature;
+      },
     });
   }, [account, dAppKit, onChange]);
   return null;
 }
 
-/** Wallet connection for paid drops. Client-only: wallets are detected in the browser. */
+/** Wallet connection for paid drops, and for real World IDs keeping their extra chances. Client-only:
+ * wallets are detected in the browser. */
 export function SuiWallet({
   network,
   onChange,
