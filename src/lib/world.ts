@@ -134,16 +134,20 @@ export async function issueChallenge(
   });
   const id = randomUUID();
   await db.query("DELETE FROM challenges WHERE expires_at < now()");
+  const values = [
+    id,
+    signed.nonce,
+    dropId,
+    purpose,
+    new Date(signed.expiresAt * 1000).toISOString(),
+  ];
+  // Only a real-World-ID challenge names its mode, so a database not yet migrated
+  // for the second setup keeps working while it is unconfigured.
   await db.query(
-    "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at,mode) VALUES($1,$2,$3,$4,$5,$6)",
-    [
-      id,
-      signed.nonce,
-      dropId,
-      purpose,
-      new Date(signed.expiresAt * 1000).toISOString(),
-      mode,
-    ],
+    mode === "production"
+      ? "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at,mode) VALUES($1,$2,$3,$4,$5,'production')"
+      : "INSERT INTO challenges(id,nonce,drop_id,purpose,expires_at) VALUES($1,$2,$3,$4,$5)",
+    values,
   );
   return {
     id,
@@ -220,8 +224,10 @@ export async function verifyWorldProof(
   const start = performance.now();
   let outcome = "rejected";
   try {
-    // The challenge decides which World setup this proof must match.
+    // The challenge decides which World setup this proof must match. Only read when
+    // real World IDs are configured, so an unmigrated database works without them.
     const mode: WorldMode =
+      realWorldConfig() &&
       (
         await db.query<{ mode: string }>(
           "SELECT mode FROM challenges WHERE id=$1",

@@ -359,3 +359,48 @@ test("real World IDs enter beside the staging simulator, each checked against it
     await db.close();
   }
 });
+test("without real World IDs configured, a database not yet migrated for them still admits the simulator", async () => {
+  const db = await makeDatabase("memory://");
+  await migrate(db);
+  await db.query("ALTER TABLE challenges DROP COLUMN mode");
+  await db.query("DROP TABLE identity_policy_modes");
+  try {
+    const now = Date.now();
+    const drop = await createDrop(db, {
+      title: "Before migration",
+      series_id: "premigration",
+      series_name: "Premigration test",
+      items: 1,
+      opens_at: new Date(now - 1000).toISOString(),
+      closes_at: new Date(now + 600000).toISOString(),
+    });
+    const challenge = await issueChallenge(db, drop.id, "enter");
+    const raw = JSON.stringify({
+      protocol_version: "3.0",
+      nonce: challenge.rp_context.nonce,
+      action: challenge.action,
+      environment: "staging",
+      responses: [
+        {
+          identifier: "document",
+          nullifier: "0x1",
+          signal_hash: hashSignal(challenge.signal),
+          proof: "test-placeholder",
+          merkle_root: "0x00",
+        },
+      ],
+    });
+    const identity = await verifyWorldProof(
+      db,
+      raw,
+      challenge.id,
+      drop.id,
+      "enter",
+      ok(),
+    );
+    await enterDrop(db, drop.id, identity);
+    assert.equal((await db.query("SELECT * FROM entries")).rows.length, 1);
+  } finally {
+    await db.close();
+  }
+});
