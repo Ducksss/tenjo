@@ -70,7 +70,8 @@ If the network is slow, the `/demo` walkthrough runs entirely in the browser, an
 3. **Yui’s history (optional):** enter a Night 1 drop in rehearsal with your simulator identity and a few other simulator identities, then draw it. If Yui wins, the story still works (“she won, so she’s back to one chance”), or start a fresh series.
 4. **Wallet:** Slush is on testnet with ≥ 0.05 SUI. Simulator tab open. Suiscan tabs pre-loaded for the package and the settlement.
 5. **Screen:** browser zoom 110%, bookmarks bar hidden, notifications off, the local server already warm (visit every page once).
-6. **Rehearsal:** two clean runs, timed. Record one as the fallback video.
+6. **Timing:** the chain closes entries 30 seconds after the page does, so the last deposits can land. Pressing **Run draw** inside that window returns “try again in a few seconds”. Stage the console lottery so it closed at least a minute before you go on.
+7. **Rehearsal:** two clean runs, timed. Record one as the fallback video.
 
 ## Q&A cheat sheet
 
