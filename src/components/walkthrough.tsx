@@ -37,7 +37,7 @@ const stages = {
   next: {
     step: 2,
     title: "Same person. A little more chance.",
-    copy: "You prove it’s you again with World ID, and your losses carry over, no account needed. A real World ID brings them through the Sui wallet you enter with. Five of the eleven chances are yours: 45.5% odds. Extra chances improve your odds, but never guarantee a win.",
+    copy: "World ID recognises the same anonymous person, so your losses carry over without an account. Five of the eleven chances are yours: 45.5% odds. Extra chances improve your odds, but never guarantee a win.",
     action: "Reveal the Night 2 result",
     next: "won",
   },

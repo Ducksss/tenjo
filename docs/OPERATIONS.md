@@ -55,7 +55,7 @@ Keep one fixed action. Do not rotate app, RP, action, environment, protocol or c
 
 Trust moments:
 
-- **Entry:** server verifies the configured credential, action, environment, nonce, fresh challenge and purpose-bound signal before creating a member/entry. One canonical code per verified nullifier, unique per drop. A real World ID gets a fresh nullifier in every drop, so an entry with a Sui wallet uses the wallet's code instead: a free drop needs the wallet's signature over the drop and the World ID request, and a paid drop's permit already binds the paying wallet. `entry_identities` keeps each drop's World ID code beside the wallet's code, so one person still gets one entry per drop. It is a new table: run `npm run db:migrate` against Neon before this code reaches production.
+- **Entry:** server verifies the configured credential, action, environment, nonce, fresh challenge and purpose-bound signal before creating a member/entry. One canonical code per verified nullifier, unique per drop.
 - **Pickup:** require a fresh proof of the winning identity and allow exactly one pickup. The client requests user presence, but a browser-reported boolean is not treated as a cryptographic guarantee.
 
 The passport credential follows the PRD's document-backed anti-multi-accounting choice; Selfie Check alone does not provide its required uniqueness assurance. Proof of Human is the explicit fallback. Passport/My Number Card equivalence and actual simulator behavior still need testing against the chosen credential. The PRD accepts a dual-document limitation.
